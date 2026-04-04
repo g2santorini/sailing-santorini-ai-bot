@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Santorini Chatbot Widget</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: transparent;
+    }
+
+    #chat-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 64px;
+      height: 64px;
+      border: none;
+      border-radius: 50%;
+      background: #0f62fe;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    #chat-widget {
+      position: fixed;
+      bottom: 95px;
+      right: 20px;
+      width: 360px;
+      height: 520px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #chat-header {
+      background: #0f62fe;
+      color: white;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #chat-messages {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      background: #f7f7f9;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      max-width: 85%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #0f62fe;
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot {
+      background: #e9ecef;
+      color: #111;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    #chat-input-area {
+      display: flex;
+      padding: 12px;
+      border-top: 1px solid #ddd;
+      background: white;
+      gap: 8px;
+    }
+
+    #message {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    #send-btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      background: #0f62fe;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <button id="chat-toggle" onclick="toggleChat()">💬</button>
+
+  <div id="chat-widget">
+    <div id="chat-header">Chat with us</div>
+    <div id="chat-messages">
+      <div class="message bot">Hello! How can I help you today?</div>
+    </div>
+    <div id="chat-input-area">
+      <input id="message" type="text" placeholder="Type your message..." />
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleChat() {
+      const widget = document.getElementById("chat-widget");
+      widget.style.display = widget.style.display === "flex" ? "none" : "flex";
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("message");
+      const messages = document.getElementById("chat-messages");
+      const userMessage = input.value.trim();
+
+      if (!userMessage) return;
+
+      messages.innerHTML += `<div class="message user">${userMessage}</div>`;
+      input.value = "";
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: userMessage
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        messages.innerHTML += `<div class="message bot">${data.reply.replace(/\n/g, "<br>")}</div>`;
+        messages.scrollTop = messages.scrollHeight;
+      } catch (error) {
+        console.error("Fetch error:", error);
+        messages.innerHTML += `<div class="message bot">Sorry, I could not reach the server.</div>`;
+        messages.scrollTop = messages.scrollHeight;
+      }
+    }
+
+    document.getElementById("message").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
+
+</body>
+</html>
