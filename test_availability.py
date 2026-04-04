@@ -1,14 +1,6 @@
-from app.services.availability_service import get_day_availability
-from app.services.tour_mapping import TOUR_OPTIONS
+from app.services.availability_search import find_available_tours
+from app.services.multi_reply_builder import build_multi_availability_reply
 
-# παίρνουμε το tour από το mapping
-tour = TOUR_OPTIONS["red_morning"]
-
-result = get_day_availability(
-    tour["product_id"],
-    tour["product_option_id"],
-    "2026-04-06"
-)
-
-print(tour["reply_label"])
-print(result)
+results = find_available_tours("2026-06-16", "morning")
+reply = build_multi_availability_reply(results, "16 June", "morning")
+print(reply)

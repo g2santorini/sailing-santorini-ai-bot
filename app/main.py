@@ -4,6 +4,12 @@ from pydantic import BaseModel
 
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
+from app.services.availability_lookup import check_tour_availability
+from app.services.reply_builder import build_availability_reply
+from app.services.tour_detector import detect_tour_key
+from app.services.date_detector import detect_date
+from app.services.availability_search import find_available_tours
+from app.services.multi_reply_builder import build_multi_availability_reply
 
 app = FastAPI()
 
@@ -15,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("MAIN WITH MULTILINGUAL KNOWLEDGE + LOGIC LOADED")
+print("MAIN WITH MULTILINGUAL KNOWLEDGE + SINGLE & MULTI AVAILABILITY LOADED")
 
 
 class ChatRequest(BaseModel):
@@ -31,17 +37,12 @@ def is_greeting(user_message: str) -> bool:
     text = user_message.lower().strip()
 
     greetings = {
-        # English
         "hi", "hello", "hey",
         "good morning", "good afternoon", "good evening",
         "hi there", "hello there",
-
-        # Greek
         "γεια", "γειά", "γεια σου", "γειά σου", "γεια σας", "γειά σας",
         "καλημέρα", "καλησπέρα", "καλησπερα", "καληνύχτα", "καληνυχτα",
         "χαίρετε", "χαιρετε",
-
-        # Italian
         "ciao", "salve", "buongiorno", "buonasera"
     }
 
@@ -52,7 +53,6 @@ def is_relevant(user_message: str) -> bool:
     text = user_message.lower()
 
     keywords = [
-        # English
         "cruise", "cruises", "santorini", "price", "prices", "rate", "rates",
         "availability", "available", "private", "shared", "sunset", "morning",
         "pickup", "pick-up", "port", "ports", "catamaran", "booking", "book",
@@ -62,7 +62,6 @@ def is_relevant(user_message: str) -> bool:
         "animal", "animals", "on board", "aboard", "children", "child", "kids",
         "group", "capacity", "people", "guests",
 
-        # Greek
         "κρουαζιέρα", "κρουαζιερα", "κρουαζιέρες", "κρουαζιερες",
         "σαντορίνη", "σαντορινη",
         "τιμή", "τιμη", "τιμές", "τιμες", "κόστος", "κοστος", "κοστίζει", "κοστιζει",
@@ -89,7 +88,6 @@ def is_relevant(user_message: str) -> bool:
         "ομάδα", "ομαδα", "γκρουπ",
         "άτομα", "ατομα", "επισκέπτες", "επισκεπτες",
 
-        # Italian
         "crociera", "crociere", "santorini",
         "prezzo", "prezzi", "costo", "costi", "quanto costa",
         "disponibilità", "disponibilita", "disponibile",
@@ -112,17 +110,28 @@ def is_relevant(user_message: str) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
-GREETING_REPLY = f"""Hello and welcome! 😊
+def detect_period(user_message: str) -> str | None:
+    text = user_message.lower()
 
-I’ll be happy to help you with anything related to our cruises in Santorini.
+    if "morning" in text or "πρωιν" in text or "mattina" in text:
+        return "morning"
 
-You may book directly here: {BOOKING_LINK}
-Or, if you prefer, I can help you choose between a private or a shared cruise."""
+    if "sunset" in text or "afternoon" in text or "ηλιοβασ" in text or "tramonto" in text:
+        return "sunset"
+
+    return None
 
 
-OFF_TOPIC_REPLY = """I am the Sunset Oia digital assistant and I can assist only with questions related to our cruises in Santorini, such as availability, private or shared options, departure points, inclusions and cancellation policy.
+@app.get("/")
+def root():
+    return {"message": "Santorini bot is running"}
 
-I would be happy to help you find the ideal cruise for your stay."""
+
+@app.get("/test-availability")
+def test_availability():
+    data = check_tour_availability("red_morning", "2026-04-06")
+    reply = build_availability_reply(data)
+    return {"reply": reply}
 
 
 @app.post("/chat")
@@ -131,10 +140,31 @@ def chat(request: ChatRequest):
 
     if not user_message:
         return {
-            "reply": f"Hello! I will be happy to help you with our cruises in Santorini. You may check availability and book here: {BOOKING_LINK}"
+            "reply": (
+                f"Hello! I will be happy to help you with our cruises in Santorini. "
+                f"You may check availability and book here: {BOOKING_LINK}"
+            )
         }
 
-    # 1. Greeting handling
+    # 1. Single tour live availability
+    tour_key = detect_tour_key(user_message)
+    date_str = detect_date(user_message)
+
+    if tour_key and date_str:
+        data = check_tour_availability(tour_key, date_str)
+        reply = build_availability_reply(data)
+        return {"reply": reply}
+
+    # 2. Multi-tour live availability
+    period = detect_period(user_message)
+
+    if not tour_key and date_str and period:
+        results = find_available_tours(date_str, period)
+        date_label = date_str
+        reply = build_multi_availability_reply(results, date_label, period)
+        return {"reply": reply}
+
+    # 3. Greeting handling
     if is_greeting(user_message):
         prompt = f"""
 You are the Sunset Oia digital assistant.
@@ -159,7 +189,7 @@ Or, if you prefer, I can help you choose between a private or a shared cruise.
         reply = get_ai_reply(prompt)
         return {"reply": reply}
 
-    # 2. Off-topic handling
+    # 4. Off-topic handling
     if not is_relevant(user_message):
         prompt = f"""
 You are the Sunset Oia digital assistant.
@@ -181,11 +211,11 @@ I would be happy to help you find the ideal cruise for your stay.
         reply = get_ai_reply(prompt)
         return {"reply": reply}
 
-    # 3. Load company knowledge
+    # 5. Load company knowledge
     knowledge = get_company_knowledge()
     print("KNOWLEDGE LENGTH:", len(knowledge))
 
-    # 4. Build grounded prompt
+    # 6. Build grounded prompt
     prompt = f"""
 You are the Sunset Oia digital assistant.
 
@@ -209,7 +239,7 @@ Follow these rules:
 
 {BOOKING_LINK}
 
-- If useful, tell the guest to select the date on the booking page.
+- If useful, tell the guest to select the date at the booking page.
 - You may also mention the website when appropriate:
 
 {WEBSITE_LINK}
@@ -231,7 +261,5 @@ USER QUESTION:
 {user_message}
 """
 
-    # 5. Get AI reply
     reply = get_ai_reply(prompt)
-
     return {"reply": reply}
