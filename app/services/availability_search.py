@@ -2,7 +2,7 @@ from app.services.tour_mapping import TOUR_OPTIONS
 from app.services.availability_lookup import check_tour_availability
 
 
-def find_available_tours(date_str: str, period: str) -> list[dict]:
+def find_available_tours(date_str: str, period: str | None = None) -> list[dict]:
     results = []
     seen_labels = set()
 
@@ -21,10 +21,7 @@ def find_available_tours(date_str: str, period: str) -> list[dict]:
             continue
 
         availability = data.get("availability")
-        if not availability:
-            continue
-
-        if not availability.get("available"):
+        if not availability or not availability.get("available"):
             continue
 
         reply_label = data["reply_label"]

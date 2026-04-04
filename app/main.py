@@ -158,7 +158,7 @@ def chat(request: ChatRequest):
     # 2. Multi-tour live availability
     period = detect_period(user_message)
 
-    if not tour_key and date_str and period:
+    if not tour_key and date_str:
         results = find_available_tours(date_str, period)
         date_label = date_str
         reply = build_multi_availability_reply(results, date_label, period)
