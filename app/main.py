@@ -49,6 +49,23 @@ def is_greeting(user_message: str) -> bool:
     return text in greetings
 
 
+def is_discount_request(user_message: str) -> bool:
+    text = user_message.lower()
+
+    discount_keywords = [
+        "discount", "better price", "best price", "special price", "special offer",
+        "offer", "cheaper", "lower price", "price reduction", "deal",
+        "discounted rate", "can you do better", "can you make a better price",
+        "any discount", "can i get a discount", "better rate", "special rate",
+        "εκπτωση", "έκπτωση", "καλύτερη τιμή", "καλυτερη τιμη",
+        "πιο καλη τιμη", "πιο καλή τιμή", "προσφορά", "προσφορα",
+        "καλύτερη προσφορά", "special discount",
+        "sconto", "miglior prezzo", "offerta", "prezzo migliore", "tariffa speciale"
+    ]
+
+    return any(keyword in text for keyword in discount_keywords)
+
+
 def is_relevant(user_message: str) -> bool:
     text = user_message.lower()
 
@@ -146,25 +163,35 @@ def chat(request: ChatRequest):
             )
         }
 
-    # 1. Single tour live availability
+    # 1. Discount rule
+    if is_discount_request(user_message):
+        return {
+            "reply": (
+                "Thank you very much for your message. "
+                "I am unfortunately not able to offer discounts or make decisions regarding pricing. "
+                f"For any special rate request, please send us a WhatsApp message here: {WHATSAPP_LINK} "
+                "and our team will be happy to assist you further."
+            )
+        }
+
+    # 2. Detect tour / date / period
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
+    period = detect_period(user_message)
 
+    # 3. Single tour live availability
     if tour_key and date_str:
         data = check_tour_availability(tour_key, date_str)
         reply = build_availability_reply(data)
         return {"reply": reply}
 
-    # 2. Multi-tour live availability
-    period = detect_period(user_message)
-
-    if not tour_key and date_str:
+    # 4. Multi-tour live availability
+    if date_str:
         results = find_available_tours(date_str, period)
-        date_label = date_str
-        reply = build_multi_availability_reply(results, date_label, period)
+        reply = build_multi_availability_reply(results, date_str, period)
         return {"reply": reply}
 
-    # 3. Greeting handling
+    # 5. Greeting handling
     if is_greeting(user_message):
         prompt = f"""
 You are the Sunset Oia digital assistant.
@@ -189,7 +216,7 @@ Or, if you prefer, I can help you choose between a private or a shared cruise.
         reply = get_ai_reply(prompt)
         return {"reply": reply}
 
-    # 4. Off-topic handling
+    # 6. Off-topic handling
     if not is_relevant(user_message):
         prompt = f"""
 You are the Sunset Oia digital assistant.
@@ -211,11 +238,11 @@ I would be happy to help you find the ideal cruise for your stay.
         reply = get_ai_reply(prompt)
         return {"reply": reply}
 
-    # 5. Load company knowledge
+    # 7. Load company knowledge
     knowledge = get_company_knowledge()
     print("KNOWLEDGE LENGTH:", len(knowledge))
 
-    # 6. Build grounded prompt
+    # 8. Build grounded prompt
     prompt = f"""
 You are the Sunset Oia digital assistant.
 
@@ -233,6 +260,9 @@ Follow these rules:
 - If the user mixes languages, reply in the main language of the message.
 - Do not give exact prices unless they are clearly provided in the company knowledge.
 - Do not confirm exact availability unless it has been verified by the booking system or the team.
+- Do not offer discounts and do not negotiate prices.
+- If the guest asks for a discount, a better rate or a special offer, politely explain that pricing decisions cannot be made here and direct the guest to WhatsApp:
+  {WHATSAPP_LINK}
 - Minor spelling mistakes from the user should not make you reject a relevant cruise question.
 - Questions about pets or animals on board are relevant to the cruise policy.
 - If the guest wants to book or check live availability, guide them primarily to this booking link:

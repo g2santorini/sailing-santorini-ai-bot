@@ -1,84 +1,45 @@
 import re
 from datetime import datetime, timedelta
 
+from dateparser.search import search_dates
+
 
 def detect_date(user_message: str) -> str | None:
     text = user_message.lower().strip()
-
-    today = datetime.now().date()
+    now = datetime.now()
 
     if "day after tomorrow" in text:
-        return (today + timedelta(days=2)).strftime("%Y-%m-%d")
+        return (now + timedelta(days=2)).strftime("%Y-%m-%d")
 
     if "tomorrow" in text:
-        return (today + timedelta(days=1)).strftime("%Y-%m-%d")
+        return (now + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    month_map = {
-        "january": "01",
-        "february": "02",
-        "march": "03",
-        "april": "04",
-        "may": "05",
-        "june": "06",
-        "july": "07",
-        "august": "08",
-        "september": "09",
-        "october": "10",
-        "november": "11",
-        "december": "12",
-        "ιανουαρίου": "01",
-        "ιανουαριου": "01",
-        "φεβρουαρίου": "02",
-        "φεβρουαριου": "02",
-        "μαρτίου": "03",
-        "μαρτιου": "03",
-        "απριλίου": "04",
-        "απριλιου": "04",
-        "μαΐου": "05",
-        "μαιου": "05",
-        "ιουνίου": "06",
-        "ιουνιου": "06",
-        "ιουλίου": "07",
-        "ιουλιου": "07",
-        "αυγούστου": "08",
-        "αυγουστου": "08",
-        "σεπτεμβρίου": "09",
-        "σεπτεμβριου": "09",
-        "οκτωβρίου": "10",
-        "οκτωβριου": "10",
-        "νοεμβρίου": "11",
-        "νοεμβριου": "11",
-        "δεκεμβρίου": "12",
-        "δεκεμβριου": "12",
-    }
+    if "today" in text:
+        return now.strftime("%Y-%m-%d")
 
-    match = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", text)
-    if match:
-        year, month, day = match.groups()
-        return f"{year}-{month}-{day}"
+    text = re.sub(r"\b(\d{1,2})(st|nd|rd|th)\b", r"\1", text)
+    text = re.sub(r"\bthe\s+(\d{1,2})\s+of\s+([a-zA-Z]+)\b", r"\1 \2", text)
+    text = re.sub(r"\b(\d{1,2})\s+of\s+([a-zA-Z]+)\b", r"\1 \2", text)
 
-    match = re.search(r"\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b", text)
-    if match:
-        day, month, year = match.groups()
-        return f"{year}-{int(month):02d}-{int(day):02d}"
+    results = search_dates(
+        text,
+        languages=["en", "el"],
+        settings={
+            "PREFER_DATES_FROM": "future",
+            "DATE_ORDER": "DMY",
+            "RELATIVE_BASE": now,
+        },
+    )
 
-    match = re.search(r"\b(\d{1,2})[\/\-](\d{1,2})\b", text)
-    if match:
-        day, month = match.groups()
-        return f"{today.year}-{int(month):02d}-{int(day):02d}"
+    if not results:
+        return None
 
-    match = re.search(r"\b(\d{1,2})\s+([a-zA-Zα-ωΑ-Ωΐϊΰάέήίόύώ]+)\b", text)
-    if match:
-        day, month_name = match.groups()
-        month = month_map.get(month_name)
-        if month:
-            return f"{today.year}-{month}-{int(day):02d}"
+    for matched_text, parsed_dt in results:
+        cleaned = matched_text.strip().lower()
 
-    match = re.search(r"\b([a-zA-Z]+)\s+(\d{1,2})\b", text)
-    if match:
-        month_name, day = match.groups()
-        month = month_map.get(month_name)
-        if month:
-            return f"{today.year}-{month}-{int(day):02d}"
+        if len(cleaned) < 2:
+            continue
+
+        return parsed_dt.strftime("%Y-%m-%d")
 
     return None
