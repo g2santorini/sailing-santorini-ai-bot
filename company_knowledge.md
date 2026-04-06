@@ -284,3 +284,10 @@ A: Only Port Authority can cancel.
 - White wine preferred onboard (clean deck)
 - Diamond is the sweet spot between shared and private
 - Gems is safest value option when unsure
+
+### Dietary options
+- Halal meals are not available on board.
+- Kosher meals are not available on board.
+- Vegetarian meals are available on board.
+- Vegan meals are available on board.
+- Gluten-free options are available on Gems, Platinum, Diamond, and private cruises.

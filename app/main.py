@@ -55,9 +55,26 @@ def is_discount_request(user_message: str) -> bool:
 
     keywords = [
         "discount", "better price", "best price", "special price",
-        "offer", "cheaper", "deal",
+        "cheaper", "deal",
         "εκπτωση", "έκπτωση", "καλύτερη τιμή",
         "sconto", "offerta"
+    ]
+
+    return any(k in text for k in keywords)
+
+
+def is_cruise_passenger(user_message: str) -> bool:
+    text = user_message.lower()
+
+    keywords = [
+        "cruise ship", "cruise passenger", "ship",
+        "old port", "tender", "cable car",
+        "from the ship", "coming by cruise",
+        "port of fira", "fira port",
+
+        "κρουαζιερόπλοιο", "παλιό λιμάνι", "τελεφερίκ",
+
+        "crociera", "nave", "porto vecchio"
     ]
 
     return any(k in text for k in keywords)
@@ -67,17 +84,51 @@ def is_relevant(user_message: str) -> bool:
     text = user_message.lower()
 
     keywords = [
-        "cruise", "santorini", "price", "availability", "private", "shared",
-        "sunset", "morning", "pickup", "port", "catamaran", "booking",
-        "reservation", "cancel", "refund", "weather", "food", "drinks",
-        "transfer", "hotel", "itinerary", "red beach", "white beach",
-        "hot springs", "pets", "kids", "group", "guests",
+        "cruise", "cruises", "tour", "tours", "santorini",
+        "price", "availability", "available",
+        "private", "shared",
+        "sunset", "morning",
+        "pickup", "port", "catamaran",
+        "booking", "book", "reservation",
+        "cancel", "refund", "weather",
+        "food", "drinks", "drink", "menu", "meal",
+        "vegetarian", "vegan", "halal", "kosher",
+        "dietary", "allergy", "allergies",
+        "gluten", "gluten free", "gluten-free",
+        "celiac", "coeliac",
+        "transfer", "hotel", "itinerary",
+        "red beach", "white beach", "hot springs",
+        "pets", "kids", "group", "guests",
 
-        "κρουαζιέρα", "τιμή", "διαθεσιμότητα", "ιδιωτική",
-        "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
+        # recommendation / group size intent
+        "people", "persons", "person",
+        "we are", "we have",
+        "recommend", "suggest", "suggestion",
+        "what do you recommend", "what do you suggest",
 
-        "crociera", "prezzo", "disponibilità", "privata",
-        "tramonto", "mattina"
+        "difference", "compare", "comparison",
+        "which one", "which is better", "better", "vs", "or",
+
+        "red", "diamond", "gems", "platinum",
+        "lagoon", "emily", "ferretti",
+
+        "κρουαζιέρα", "κρουαζιερες", "τιμή", "διαθεσιμότητα",
+        "ιδιωτική", "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
+        "φαγητό", "ποτό", "ποτά", "μενού",
+        "χορτοφαγ", "βίγκαν", "χαλάλ", "αλλεργ",
+        "γλουτένη", "χωρίς γλουτένη", "κοιλιοκάκη",
+        "άτομα", "άτομο", "είμαστε", "έχουμε",
+        "προτείνεις", "προτείνετε", "σύσταση",
+        "διαφορά", "σύγκριση",
+
+        "crociera", "crociere", "prezzo", "disponibilità",
+        "privata", "tramonto", "mattina",
+        "cibo", "bevande", "menu",
+        "vegetariano", "vegano", "halal",
+        "allergie", "glutine", "senza glutine",
+        "persone", "persona", "siamo", "abbiamo",
+        "consigli", "raccomandi", "suggerisci",
+        "differenza", "confronto"
     ]
 
     return any(k in text for k in keywords)
@@ -120,16 +171,19 @@ def chat(request: ChatRequest):
 
     if not user_message:
         return {
-            "reply": f"Hello! You may book directly here: {BOOKING_LINK}"
+            "reply": "Hello! I’ll be happy to help you with our cruises in Santorini."
         }
 
-    # Discount handling
     if is_discount_request(user_message):
         return {
             "reply": f"For special rate requests, please contact us via WhatsApp: {WHATSAPP_LINK}"
         }
 
-    # Detect structured queries
+    if is_cruise_passenger(user_message):
+        return {
+            "reply": f"For cruise ship guests, we kindly recommend contacting us directly via WhatsApp so we can assist you based on your ship schedule:\n{WHATSAPP_LINK}"
+        }
+
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
@@ -139,22 +193,19 @@ def chat(request: ChatRequest):
         return {"reply": build_availability_reply(data)}
 
     if date_str:
-        results = find_available_tours(date_str, period)
+        results = find_available_tours(date_str, period, user_message)
         return {"reply": build_multi_availability_reply(results, date_str, period)}
 
-    # Greeting
     if is_greeting(user_message):
         return {
-            "reply": f"Hello and welcome! I’ll be happy to help you with our cruises in Santorini. You may book here: {BOOKING_LINK}"
+            "reply": "Hello and welcome! I’ll be happy to help you with our cruises in Santorini. Feel free to ask me about availability, prices, shared or private options."
         }
 
-    # Off-topic
     if not is_relevant(user_message) and not is_followup(user_message):
         return {
             "reply": "I can assist only with questions related to our cruises in Santorini."
         }
 
-    # Build conversation history
     conversation_history = ""
     if history:
         lines = []
@@ -172,12 +223,31 @@ def chat(request: ChatRequest):
     prompt = f"""
 You are the Sunset Oia digital assistant.
 
-Follow these rules:
-- Be warm, professional and short (3–5 lines).
-- Use only the company knowledge.
-- Use conversation history when needed.
-- If user says "yes", treat it as continuation.
-- Suggest the best cruise based on user needs.
+Your tone:
+- Warm, natural and human — never robotic
+- Friendly and professional
+- Avoid repeating the same phrases in every reply
+- Keep replies short (3–5 lines), but helpful
+
+Conversation style:
+- Vary your phrasing (do not always say "If you'd like")
+- Sound like a real person, not a script
+- Adapt naturally to the user's question
+
+Sales approach:
+- Gently guide the user, do not push
+- Suggest options based on their needs (group size, budget, experience)
+- Only include the booking link when it is useful and relevant
+- When appropriate, make soft recommendations (e.g. “Diamond is a great choice if you prefer fewer guests”)
+
+Knowledge:
+- Use only the company knowledge provided
+- Do not invent information
+- If something is not available (e.g. halal), say it clearly and suggest alternatives
+
+Special handling:
+- Cruise ship guests should be directed to WhatsApp
+- Dietary questions should be answered clearly and confidently
 
 BOOKING LINK:
 {BOOKING_LINK}

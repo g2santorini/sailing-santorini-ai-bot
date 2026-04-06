@@ -33,23 +33,32 @@ def build_multi_availability_reply(
     private = [item for item in results if item.get("tour_type") == "private"]
 
     if period:
-        intro = f"Great news! The following {period} cruises are currently available for {formatted_date}:"
+        intro = f"For {formatted_date}, the following {period} cruises are available:"
+        lines = [intro, ""]
     else:
-        intro = f"Great news! The following cruises are currently available for {formatted_date}:"
+        labels = [item["reply_label"] for item in results]
 
-    lines = [intro, ""]
+        if len(labels) == 1:
+            intro = f"For {formatted_date}, {labels[0]} is available."
+        elif len(labels) == 2:
+            intro = f"For {formatted_date}, {labels[0]} and {labels[1]} are available."
+        else:
+            intro = f"For {formatted_date}, {', '.join(labels[:-1])} and {labels[-1]} are available."
 
-    if shared:
-        lines.append("Shared cruises:")
-        for item in shared:
-            lines.append(f"- {item['reply_label']}")
-        lines.append("")
+        lines = [intro, ""]
 
-    if private:
-        lines.append("Private cruises:")
-        for item in private:
-            lines.append(f"- {item['reply_label']}")
-        lines.append("")
+    if period:
+        if shared:
+            lines.append("Shared cruises:")
+            for item in shared:
+                lines.append(f"- {item['reply_label']}")
+            lines.append("")
+
+        if private:
+            lines.append("Private cruises:")
+            for item in private:
+                lines.append(f"- {item['reply_label']}")
+            lines.append("")
 
     lines.append("You may proceed with your booking here:")
     lines.append(booking_link)

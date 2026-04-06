@@ -20,8 +20,11 @@ def build_availability_reply(data: dict) -> str:
         formatted_date = date_label
 
     if available:
+        # 🔥 NEW LOGIC HERE
         if spots == 1:
             spots_text = "There is currently 1 spot available."
+        elif spots > 20:
+            spots_text = "There are currently 20+ spots available."
         else:
             spots_text = f"There are currently {spots} spots available."
 
