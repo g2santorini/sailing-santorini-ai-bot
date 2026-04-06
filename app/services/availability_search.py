@@ -30,6 +30,47 @@ def detect_requested_tours(user_message: str) -> set[str]:
     return requested
 
 
+def detect_requested_cruise_type(user_message: str) -> str | None:
+    text = user_message.lower()
+
+    private_keywords = [
+        "private",
+        "privately",
+        "just for us",
+        "only for us",
+        "for our group only",
+        "ιδιωτική",
+        "ιδιωτικη",
+        "μόνο για εμάς",
+        "μονο για εμας",
+        "privata",
+        "solo per noi",
+    ]
+
+    shared_keywords = [
+        "shared",
+        "semi private",
+        "semi-private",
+        "join",
+        "group cruise",
+        "κοινή",
+        "κοινη",
+        "condivisa",
+        "di gruppo",
+    ]
+
+    has_private = any(keyword in text for keyword in private_keywords)
+    has_shared = any(keyword in text for keyword in shared_keywords)
+
+    if has_private and not has_shared:
+        return "private"
+
+    if has_shared and not has_private:
+        return "shared"
+
+    return None
+
+
 def tour_matches_requested(tour_key: str, reply_label: str, requested_tours: set[str]) -> bool:
     if not requested_tours:
         return True
@@ -60,10 +101,29 @@ def tour_matches_requested(tour_key: str, reply_label: str, requested_tours: set
     return False
 
 
+def tour_matches_cruise_type(tour: dict, requested_cruise_type: str | None) -> bool:
+    if not requested_cruise_type:
+        return True
+
+    tour_type = str(tour.get("tour_type", "")).lower().strip()
+
+    if not tour_type:
+        return True
+
+    if requested_cruise_type == "private":
+        return tour_type == "private"
+
+    if requested_cruise_type == "shared":
+        return tour_type == "shared"
+
+    return True
+
+
 def find_available_tours(date_str: str, period: str | None = None, user_message: str = "") -> list[dict]:
     results = []
     seen_labels = set()
     requested_tours = detect_requested_tours(user_message)
+    requested_cruise_type = detect_requested_cruise_type(user_message)
 
     for tour_key, tour in TOUR_OPTIONS.items():
         option_name = tour.get("option_name", "").lower()
@@ -72,6 +132,12 @@ def find_available_tours(date_str: str, period: str | None = None, user_message:
             continue
 
         if period == "sunset" and "sunset" not in option_name:
+            continue
+
+        if not tour_matches_cruise_type(tour, requested_cruise_type):
+            continue
+
+        if not tour_matches_requested(tour_key, tour.get("reply_label", ""), requested_tours):
             continue
 
         data = check_tour_availability(tour_key, date_str)

@@ -100,7 +100,6 @@ def is_relevant(user_message: str) -> bool:
         "red beach", "white beach", "hot springs",
         "pets", "kids", "group", "guests",
 
-        # recommendation / group size intent
         "people", "persons", "person",
         "we are", "we have",
         "recommend", "suggest", "suggestion",
@@ -159,6 +158,102 @@ def detect_period(user_message: str) -> str | None:
     return None
 
 
+def detect_cruise_type_intent(user_message: str, history: list[dict] | None = None) -> str | None:
+    text = user_message.lower()
+
+    private_keywords = [
+        "private", "privately", "just for us", "only for us", "for our group only",
+        "ιδιωτική", "ιδιωτικη", "μόνο για εμάς", "μονο για εμας",
+        "privata", "solo per noi"
+    ]
+
+    shared_keywords = [
+        "shared", "semi private", "semi-private", "join", "group cruise",
+        "κοινή", "κοινη",
+        "condivisa", "di gruppo"
+    ]
+
+    has_private = any(k in text for k in private_keywords)
+    has_shared = any(k in text for k in shared_keywords)
+
+    if has_private and not has_shared:
+        return "private"
+
+    if has_shared and not has_private:
+        return "shared"
+
+    if history:
+        for item in reversed(history[-6:]):
+            if item.get("role") != "user":
+                continue
+
+            previous_text = item.get("content", "").lower()
+
+            prev_has_private = any(k in previous_text for k in private_keywords)
+            prev_has_shared = any(k in previous_text for k in shared_keywords)
+
+            if prev_has_private and not prev_has_shared:
+                return "private"
+
+            if prev_has_shared and not prev_has_private:
+                return "shared"
+
+    return None
+
+
+def extract_result_text(item) -> str:
+    if isinstance(item, dict):
+        parts = []
+        for key in [
+            "tour_name",
+            "name",
+            "title",
+            "tour",
+            "product_name",
+            "option_name",
+            "type",
+            "category"
+        ]:
+            value = item.get(key)
+            if value:
+                parts.append(str(value))
+        return " ".join(parts).lower()
+
+    return str(item).lower()
+
+
+def filter_results_by_cruise_type(results, cruise_type: str | None):
+    if not cruise_type or not isinstance(results, list) or not results:
+        return results
+
+    private_matches = []
+    shared_matches = []
+
+    for item in results:
+        searchable_text = extract_result_text(item)
+
+        is_private_result = "private" in searchable_text
+        is_shared_result = (
+            "shared" in searchable_text
+            or "semi private" in searchable_text
+            or "semi-private" in searchable_text
+        )
+
+        if is_private_result:
+            private_matches.append(item)
+
+        elif is_shared_result:
+            shared_matches.append(item)
+
+    if cruise_type == "private":
+        return private_matches if private_matches else results
+
+    if cruise_type == "shared":
+        return shared_matches if shared_matches else results
+
+    return results
+
+
 @app.get("/")
 def root():
     return {"message": "Santorini bot is running"}
@@ -187,6 +282,7 @@ def chat(request: ChatRequest):
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
+    cruise_type_intent = detect_cruise_type_intent(user_message, history)
 
     if tour_key and date_str:
         data = check_tour_availability(tour_key, date_str)
@@ -194,7 +290,14 @@ def chat(request: ChatRequest):
 
     if date_str:
         results = find_available_tours(date_str, period, user_message)
-        return {"reply": build_multi_availability_reply(results, date_str, period)}
+        filtered_results = filter_results_by_cruise_type(results, cruise_type_intent)
+        return {
+            "reply": build_multi_availability_reply(
+                filtered_results,
+                date_str,
+                period
+            )
+        }
 
     if is_greeting(user_message):
         return {

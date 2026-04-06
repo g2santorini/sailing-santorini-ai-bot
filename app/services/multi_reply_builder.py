@@ -13,6 +13,12 @@ def build_multi_availability_reply(
     except:
         formatted_date = date_label
 
+    shared = [item for item in results if item.get("tour_type") == "shared"]
+    private = [item for item in results if item.get("tour_type") == "private"]
+
+    all_private = bool(results) and len(private) == len(results)
+    all_shared = bool(results) and len(shared) == len(results)
+
     if not results:
         if period:
             return (
@@ -29,12 +35,16 @@ def build_multi_availability_reply(
             f"Please select the date on the booking page."
         )
 
-    shared = [item for item in results if item.get("tour_type") == "shared"]
-    private = [item for item in results if item.get("tour_type") == "private"]
-
     if period:
-        intro = f"For {formatted_date}, the following {period} cruises are available:"
+        if all_private:
+            intro = f"For {formatted_date}, the following private {period} cruises are available:"
+        elif all_shared:
+            intro = f"For {formatted_date}, the following shared {period} cruises are available:"
+        else:
+            intro = f"For {formatted_date}, the following {period} cruises are available:"
+
         lines = [intro, ""]
+
     else:
         labels = [item["reply_label"] for item in results]
 
@@ -48,17 +58,28 @@ def build_multi_availability_reply(
         lines = [intro, ""]
 
     if period:
-        if shared:
-            lines.append("Shared cruises:")
+        if all_private:
+            for item in private:
+                lines.append(f"- {item['reply_label']}")
+            lines.append("")
+
+        elif all_shared:
             for item in shared:
                 lines.append(f"- {item['reply_label']}")
             lines.append("")
 
-        if private:
-            lines.append("Private cruises:")
-            for item in private:
-                lines.append(f"- {item['reply_label']}")
-            lines.append("")
+        else:
+            if shared:
+                lines.append("Shared cruises:")
+                for item in shared:
+                    lines.append(f"- {item['reply_label']}")
+                lines.append("")
+
+            if private:
+                lines.append("Private cruises:")
+                for item in private:
+                    lines.append(f"- {item['reply_label']}")
+                lines.append("")
 
     lines.append("You may proceed with your booking here:")
     lines.append(booking_link)
