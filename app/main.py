@@ -21,11 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("MAIN WITH MULTILINGUAL KNOWLEDGE + SINGLE & MULTI AVAILABILITY LOADED")
+print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE LOADED")
 
 
 class ChatRequest(BaseModel):
     message: str
+    history: list[dict] = []
 
 
 BOOKING_LINK = "https://sailingsantorini.link-twist.com/"
@@ -52,79 +53,47 @@ def is_greeting(user_message: str) -> bool:
 def is_discount_request(user_message: str) -> bool:
     text = user_message.lower()
 
-    discount_keywords = [
-        "discount", "better price", "best price", "special price", "special offer",
-        "offer", "cheaper", "lower price", "price reduction", "deal",
-        "discounted rate", "can you do better", "can you make a better price",
-        "any discount", "can i get a discount", "better rate", "special rate",
-        "εκπτωση", "έκπτωση", "καλύτερη τιμή", "καλυτερη τιμη",
-        "πιο καλη τιμη", "πιο καλή τιμή", "προσφορά", "προσφορα",
-        "καλύτερη προσφορά", "special discount",
-        "sconto", "miglior prezzo", "offerta", "prezzo migliore", "tariffa speciale"
+    keywords = [
+        "discount", "better price", "best price", "special price",
+        "offer", "cheaper", "deal",
+        "εκπτωση", "έκπτωση", "καλύτερη τιμή",
+        "sconto", "offerta"
     ]
 
-    return any(keyword in text for keyword in discount_keywords)
+    return any(k in text for k in keywords)
 
 
 def is_relevant(user_message: str) -> bool:
     text = user_message.lower()
 
     keywords = [
-        "cruise", "cruises", "santorini", "price", "prices", "rate", "rates",
-        "availability", "available", "private", "shared", "sunset", "morning",
-        "pickup", "pick-up", "port", "ports", "catamaran", "booking", "book",
-        "reservation", "reserve", "cancellation", "cancel", "refund", "weather",
-        "food", "drinks", "bbq", "transfer", "meeting point", "hotel", "itinerary",
-        "red beach", "white beach", "hot springs", "pet", "pets", "dog", "cat",
-        "animal", "animals", "on board", "aboard", "children", "child", "kids",
-        "group", "capacity", "people", "guests",
+        "cruise", "santorini", "price", "availability", "private", "shared",
+        "sunset", "morning", "pickup", "port", "catamaran", "booking",
+        "reservation", "cancel", "refund", "weather", "food", "drinks",
+        "transfer", "hotel", "itinerary", "red beach", "white beach",
+        "hot springs", "pets", "kids", "group", "guests",
 
-        "κρουαζιέρα", "κρουαζιερα", "κρουαζιέρες", "κρουαζιερες",
-        "σαντορίνη", "σαντορινη",
-        "τιμή", "τιμη", "τιμές", "τιμες", "κόστος", "κοστος", "κοστίζει", "κοστιζει",
-        "διαθεσιμότητα", "διαθεσιμοτητα", "διαθέσιμο", "διαθεσιμο", "διαθέσιμη", "διαθεσιμη",
-        "ιδιωτική", "ιδιωτικη", "ιδιωτικό", "ιδιωτικο",
-        "κοινή", "κοινη", "ομαδική", "ομαδικη",
-        "ηλιοβασίλεμα", "ηλιοβασιλεμα", "πρωινή", "πρωινη",
-        "παραλαβή", "παραλαβη", "μεταφορά", "μεταφορα",
-        "λιμάνι", "λιμανι", "λιμάνια", "λιμανια",
-        "καταμαράν", "καταμαραν",
-        "κράτηση", "κρατηση", "κλείσω", "κλεισω", "κλείσιμο", "κλεισιμο",
-        "ακύρωση", "ακυρωση", "ακυρώσω", "ακυρωσω",
-        "επιστροφή", "επιστροφη", "refund",
-        "καιρός", "καιρος",
-        "φαγητό", "φαγητο", "ποτά", "ποτα",
-        "ξενοδοχείο", "ξενοδοχειο",
-        "δρομολόγιο", "δρομολογιο", "στάσεις", "στασεις",
-        "κόκκινη παραλία", "κοκκινη παραλια",
-        "λευκή παραλία", "λευκη παραλια",
-        "θερμές πηγές", "θερμες πηγες",
-        "κατοικίδιο", "κατοικιδιο", "κατοικίδια", "κατοικιδια",
-        "σκύλος", "σκυλος", "γάτα", "γατα",
-        "παιδί", "παιδι", "παιδιά", "παιδια",
-        "ομάδα", "ομαδα", "γκρουπ",
-        "άτομα", "ατομα", "επισκέπτες", "επισκεπτες",
+        "κρουαζιέρα", "τιμή", "διαθεσιμότητα", "ιδιωτική",
+        "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
 
-        "crociera", "crociere", "santorini",
-        "prezzo", "prezzi", "costo", "costi", "quanto costa",
-        "disponibilità", "disponibilita", "disponibile",
-        "privata", "privato", "condivisa", "condiviso",
-        "tramonto", "mattina",
-        "pick up", "pickup", "trasferimento", "transfer",
-        "porto", "porti",
-        "catamarano",
-        "prenotazione", "prenotare", "prenoto",
-        "cancellazione", "cancellare", "rimborso",
-        "meteo", "tempo",
-        "cibo", "bevande", "bbq",
-        "hotel", "itinerario",
-        "red beach", "white beach", "hot springs",
-        "animale", "animali", "cane", "gatto",
-        "bambino", "bambini", "ragazzi",
-        "gruppo", "persone", "ospiti", "capacità", "capacita"
+        "crociera", "prezzo", "disponibilità", "privata",
+        "tramonto", "mattina"
     ]
 
-    return any(keyword in text for keyword in keywords)
+    return any(k in text for k in keywords)
+
+
+def is_followup(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    followups = {
+        "yes", "yes please", "ok", "okay", "sure", "please",
+        "tell me more", "go ahead", "continue",
+        "ναι", "οκ", "εντάξει", "συνέχισε",
+        "si", "va bene", "continua"
+    }
+
+    return text in followups
 
 
 def detect_period(user_message: str) -> str | None:
@@ -133,7 +102,7 @@ def detect_period(user_message: str) -> str | None:
     if "morning" in text or "πρωιν" in text or "mattina" in text:
         return "morning"
 
-    if "sunset" in text or "afternoon" in text or "ηλιοβασ" in text or "tramonto" in text:
+    if "sunset" in text or "ηλιοβασ" in text or "tramonto" in text:
         return "sunset"
 
     return None
@@ -144,150 +113,82 @@ def root():
     return {"message": "Santorini bot is running"}
 
 
-@app.get("/test-availability")
-def test_availability():
-    data = check_tour_availability("red_morning", "2026-04-06")
-    reply = build_availability_reply(data)
-    return {"reply": reply}
-
-
 @app.post("/chat")
 def chat(request: ChatRequest):
     user_message = request.message.strip()
+    history = request.history or []
 
     if not user_message:
         return {
-            "reply": (
-                f"Hello! I will be happy to help you with our cruises in Santorini. "
-                f"You may check availability and book here: {BOOKING_LINK}"
-            )
+            "reply": f"Hello! You may book directly here: {BOOKING_LINK}"
         }
 
-    # 1. Discount rule
+    # Discount handling
     if is_discount_request(user_message):
         return {
-            "reply": (
-                "Thank you very much for your message. "
-                "I am unfortunately not able to offer discounts or make decisions regarding pricing. "
-                f"For any special rate request, please send us a WhatsApp message here: {WHATSAPP_LINK} "
-                "and our team will be happy to assist you further."
-            )
+            "reply": f"For special rate requests, please contact us via WhatsApp: {WHATSAPP_LINK}"
         }
 
-    # 2. Detect tour / date / period
+    # Detect structured queries
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
 
-    # 3. Single tour live availability
     if tour_key and date_str:
         data = check_tour_availability(tour_key, date_str)
-        reply = build_availability_reply(data)
-        return {"reply": reply}
+        return {"reply": build_availability_reply(data)}
 
-    # 4. Multi-tour live availability
     if date_str:
         results = find_available_tours(date_str, period)
-        reply = build_multi_availability_reply(results, date_str, period)
-        return {"reply": reply}
+        return {"reply": build_multi_availability_reply(results, date_str, period)}
 
-    # 5. Greeting handling
+    # Greeting
     if is_greeting(user_message):
-        prompt = f"""
-You are the Sunset Oia digital assistant.
+        return {
+            "reply": f"Hello and welcome! I’ll be happy to help you with our cruises in Santorini. You may book here: {BOOKING_LINK}"
+        }
 
-Reply in the same language as the user.
-If the user writes in Greek, reply in Greek.
-If the user writes in Italian, reply in Italian.
-If the user writes in English, reply in English.
-Keep the answer short, warm and welcoming.
+    # Off-topic
+    if not is_relevant(user_message) and not is_followup(user_message):
+        return {
+            "reply": "I can assist only with questions related to our cruises in Santorini."
+        }
 
-User message:
-{user_message}
+    # Build conversation history
+    conversation_history = ""
+    if history:
+        lines = []
+        for item in history[-8:]:
+            role = item.get("role", "")
+            content = item.get("content", "")
+            if role == "user":
+                lines.append(f"User: {content}")
+            elif role == "assistant":
+                lines.append(f"Assistant: {content}")
+        conversation_history = "\n".join(lines)
 
-Base message to adapt to the user's language:
-Hello and welcome!
-
-I’ll be happy to help you with anything related to our cruises in Santorini.
-
-You may book directly here: {BOOKING_LINK}
-Or, if you prefer, I can help you choose between a private or a shared cruise.
-"""
-        reply = get_ai_reply(prompt)
-        return {"reply": reply}
-
-    # 6. Off-topic handling
-    if not is_relevant(user_message):
-        prompt = f"""
-You are the Sunset Oia digital assistant.
-
-Reply in the same language as the user.
-If the user writes in Greek, reply in Greek.
-If the user writes in Italian, reply in Italian.
-If the user writes in English, reply in English.
-Keep the answer short, polite and professional.
-
-User message:
-{user_message}
-
-Base message to adapt to the user's language:
-I am the Sunset Oia digital assistant and I can assist only with questions related to our cruises in Santorini, such as availability, private or shared options, departure points, inclusions and cancellation policy.
-
-I would be happy to help you find the ideal cruise for your stay.
-"""
-        reply = get_ai_reply(prompt)
-        return {"reply": reply}
-
-    # 7. Load company knowledge
     knowledge = get_company_knowledge()
-    print("KNOWLEDGE LENGTH:", len(knowledge))
 
-    # 8. Build grounded prompt
     prompt = f"""
 You are the Sunset Oia digital assistant.
 
 Follow these rules:
+- Be warm, professional and short (3–5 lines).
+- Use only the company knowledge.
+- Use conversation history when needed.
+- If user says "yes", treat it as continuation.
+- Suggest the best cruise based on user needs.
 
-- Be warm, polite and professional.
-- Keep answers short, usually 3 to 5 lines.
-- Do not invent information.
-- Use only the company knowledge provided below.
-- The company knowledge is written as Q&A pairs.
-- Reply in the same language as the user message.
-- If the user writes in Greek, reply in Greek.
-- If the user writes in Italian, reply in Italian.
-- If the user writes in English, reply in English.
-- If the user mixes languages, reply in the main language of the message.
-- Do not give exact prices unless they are clearly provided in the company knowledge.
-- Do not confirm exact availability unless it has been verified by the booking system or the team.
-- Do not offer discounts and do not negotiate prices.
-- If the guest asks for a discount, a better rate or a special offer, politely explain that pricing decisions cannot be made here and direct the guest to WhatsApp:
-  {WHATSAPP_LINK}
-- Minor spelling mistakes from the user should not make you reject a relevant cruise question.
-- Questions about pets or animals on board are relevant to the cruise policy.
-- If the guest wants to book or check live availability, guide them primarily to this booking link:
-
+BOOKING LINK:
 {BOOKING_LINK}
 
-- If useful, tell the guest to select the date at the booking page.
-- You may also mention the website when appropriate:
-
-{WEBSITE_LINK}
-
-- If the question cannot be answered with certainty based on the provided company knowledge, say politely that you would not like to provide inaccurate information and direct the guest to WhatsApp:
-
-{WHATSAPP_LINK}
-
-- Do not answer unrelated questions such as sports, politics, coding, or general knowledge.
-- If the guest asks something outside Sunset Oia cruises in Santorini, politely explain that you can assist only with cruise-related questions.
-- Keep the tone natural and helpful.
-
-COMPANY KNOWLEDGE (Q&A):
-
+COMPANY KNOWLEDGE:
 {knowledge}
 
-USER QUESTION:
+CONVERSATION HISTORY:
+{conversation_history}
 
+USER MESSAGE:
 {user_message}
 """
 

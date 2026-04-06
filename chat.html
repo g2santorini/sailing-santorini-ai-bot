@@ -161,6 +161,12 @@
   </div>
 
   <script>
+    const API_URL = "http://127.0.0.1:8000/chat";
+
+    const conversationHistory = [
+      { role: "assistant", content: "Hello! How can I help you today?" }
+    ];
+
     function toggleChat() {
       const widget = document.getElementById("chat-widget");
       widget.style.display = widget.style.display === "flex" ? "none" : "flex";
@@ -178,9 +184,9 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
-    function addBotMessage(htmlText) {
+    function addBotMessage(text) {
       const messages = document.getElementById("chat-messages");
-      messages.innerHTML += `<div class="message bot">${htmlText}</div>`;
+      messages.innerHTML += `<div class="message bot">${escapeHtml(text).replace(/\n/g, "<br>")}</div>`;
       messages.scrollTop = messages.scrollHeight;
     }
 
@@ -216,6 +222,12 @@
       if (!userMessage) return;
 
       addUserMessage(userMessage);
+
+      conversationHistory.push({
+        role: "user",
+        content: userMessage
+      });
+
       input.value = "";
       input.disabled = true;
       sendBtn.disabled = true;
@@ -223,13 +235,14 @@
       addTypingIndicator();
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/chat", {
+        const response = await fetch(API_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            message: userMessage
+            message: userMessage,
+            history: conversationHistory.slice(0, -1)
           })
         });
 
@@ -240,7 +253,12 @@
         const data = await response.json();
 
         removeTypingIndicator();
-        addBotMessage(escapeHtml(data.reply).replace(/\n/g, "<br>"));
+        addBotMessage(data.reply);
+
+        conversationHistory.push({
+          role: "assistant",
+          content: data.reply
+        });
       } catch (error) {
         console.error("Fetch error:", error);
         removeTypingIndicator();

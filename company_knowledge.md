@@ -1,61 +1,286 @@
+# Sunset Oia Company Knowledge
+
+## General Information
+- Sunset Oia offers shared and private catamaran and yacht cruises in Santorini.
+- Cruises include Hot Springs, Red Beach, White Beach, Aspronisi, Lighthouse, Indian Rock.
+- Duration depends on daylight hours (approx. 5 hours, longer in summer, shorter in October).
+- Itinerary may change due to weather conditions.
+
+---
+
+## Booking Links
+Main booking page:
+https://sailingsantorini.link-twist.com/
+
+### Shared Cruises
+- Red Cruise: https://sailingsantorini.link-twist.com/product/redtour
+- Santorini Gems Cruise: https://sailingsantorini.link-twist.com/product/gemstour
+- Platinum Cruise: https://sailingsantorini.link-twist.com/product/platinumtour
+- Diamond Cruise: https://sailingsantorini.link-twist.com/product/diamondtour
+
+### Private Cruises
+- Lagoon 380/400: https://sailingsantorini.link-twist.com/product/privatelagoon400
+- Emily Power Catamaran: https://sailingsantorini.link-twist.com/product/privateemily46
+- Ferretti 731: https://sailingsantorini.link-twist.com/product/privateferretti731
+- Ferretti 55: https://sailingsantorini.link-twist.com/product/privatemyway
+
+---
+
+# SHARED CRUISES
+
+## Red Cruise
+- Large group sailing catamaran (Ocean Voyager 74, Tahiti 80)
+- Max capacity: 55 guests
+- Budget-friendly, lively, social atmosphere
+- Morning and sunset departures
+- Departure: Ammoudi or Athinios
+
+### Inclusions
+- BBQ meal (pork or chicken or vegetarian)
+- Stuffed vine leaves, tzatziki, Greek salad, potato salad, pita bread
+- White wine, soft drinks, water
+- Transfers
+- Snorkeling equipment
+- Blankets
+
+### Exclusions
+- Beer not included
+- Towels not included
+
+### Best for
+- Budget travelers
+- Groups
+- Social experience
+
+### Not ideal for
+- Luxury
+- Quiet experience
+
+---
+
+## Santorini Gems Cruise
+- Small group catamaran (Lagoon 500 / 520)
+- Max capacity: 20 guests
+- Value-for-money option
+
+### Route
+- One-way (Ammoudi → Vlychada or reverse)
+
+### Inclusions
+- BBQ meal
+- Seafood (shrimps saganaki)
+- Pasta, salads, tzatziki, vine leaves
+- White wine, beers, soft drinks, water
+- Transfers
+- Towels, snorkeling equipment
+
+### Best for
+- Couples
+- Families
+- Balanced experience
+
+### Not ideal for
+- Same port requirement
+- Premium expectation
+
+---
+
+## Platinum Cruise
+- Small group (Lagoon 450)
+- Max capacity: 14 guests
+- Fewer people onboard
+
+### Route
+- One-way
+
+### Inclusions
+- Same food and drinks as Gems
+- Towels, snorkeling equipment
+
+### Best for
+- Less crowded experience
+- Couples
+
+---
+
+## Diamond Cruise
+- Premium small group (Lagoon 560 / Ipanema 58)
+- Max capacity: 20 guests
+- Departure & return: Ammoudi
+
+### Inclusions
+- Upgraded BBQ (including fish option)
+- Shrimps saganaki
+- Pasta, salads, tzatziki
+- White wine, beers, soft drinks, water
+- One cocktail per guest
+- Towels, snorkeling equipment
+
+### Best for
+- Oia guests
+- Couples / honeymoon
+- Premium shared experience
+
+---
+
+# PRIVATE CRUISES
+
+## Lagoon 380 / 400
+- Entry-level private catamaran
+- Capacity: up to 8 (Lagoon 380) / 14 (Lagoon 400)
+- Ideal for small groups and families
+
+---
+
+## Lagoon 42 / Elba 45
+- Mid-level private catamaran
+- Better comfort and space
+
+---
+
+## Emily Power Catamaran
+- Power catamaran (less motion)
+- Smooth ride
+
+### Best for
+- Seasickness
+- Relaxed experience
+
+---
+
+## Pardo 43
+- Premium motor yacht
+- Fast, stylish, luxury
+
+### Best for
+- Couples
+- Small groups with budget
+- Special occasions
+
+---
+
+## Ferretti 550 / 731
+- Ultra luxury yachts
+- VIP experience
+
+### Important rule
+- Prefer up to 6 guests (not 8)
+- Not ideal for large groups
+
+---
+
+# CRUISE COMPARISON LOGIC
+
+- Red → budget / party
+- Gems → balanced / value
+- Platinum → fewer guests
+- Diamond → premium
+
+### Direct logic
+- Cheap → Red
+- Cheap but good → Gems
+- Less people → Platinum
+- Best shared → Diamond
+- Luxury → Diamond or Pardo
+
+---
+
+# OPERATIONAL RULES
+
+- Oia → prioritize Diamond
+- Same port request → avoid Gems & Platinum
+- Seasickness → suggest Emily
+- Captain has final decision
+- Ammoudi best for Oia
+
+---
+
+# FOOD & DRINK RULES
+
+- Use: “complimentary drinks”
+- Never say unlimited alcohol
+- Alcohol is monitored onboard
+- Port Authority regulations apply
+- Prefer white wine (avoid stains)
+
+---
+
+# TRANSFER RULES
+
+- Transfers included in all cruises except no-transfer options
+- Closest pickup point if hotel not accessible
+- Red Cruise has no-transfer option
+
+---
+
+# WEATHER & SAFETY
+
+- Cancellation only by Port Authority
+- Itinerary may change
+- Boats cannot dock on beaches
+
+---
+
+# HOT SPRINGS
+
+- Stop ~50 meters away
+- Water +4°C warmer
+- Guests swim to springs
+- Light swimwear may stain
+
+---
+
+# CANCELLATION POLICY
+
+## Private
+- 72+ hours → full refund
+- Changes free
+- <72 → 100%
+
+## Shared
+- 24+ hours → full refund
+- Changes free
+- <24 → 100%
+
+---
+
+# FAQ
+
 Q: What kind of cruises do you offer?
-A: We offer private and shared catamaran cruises in Santorini.
-
-Q: What is the difference between private and shared cruises?
-A: Private cruises offer a more exclusive experience for your group, while shared cruises are more budget-friendly and follow a set itinerary.
-
-Q: Are private cruises suitable for small groups?
-A: Yes, private cruises are ideal for small groups, couples, families, or guests seeking a more exclusive experience.
-
-Q: What is the best option for 4 to 10 guests?
-A: For groups of 4 to 10 guests, private catamarans are usually the most suitable option.
-
-Q: What is included in most cruises?
-A: Most cruises include food, drinks, and stops at key locations such as Red Beach, White Beach, and Hot Springs.
+A: Private and shared catamaran cruises.
 
 Q: Can I book online?
-A: Yes, you can book directly through our website:
-https://sailingsantorini.link-twist.com/
+A: Yes: https://sailingsantorini.link-twist.com/
 
-Q: Where can I check availability?
-A: You can check availability and book directly through our website:
-https://sailingsantorini.link-twist.com/
-
-Q: Do you allow pets on board?
-A: No, pets are not allowed on board for safety and hygiene reasons.
-
-Q: Do you offer hotel pickup?
-A: Pickups are usually arranged from central meeting points, depending on the area.
-
-Q: Can you confirm availability?
-A: Availability should always be checked through our booking system or confirmed by our team.
-
-Q: What is your cancellation policy for private cruises?
-A: For private cruises, cancellations made at least 72 hours prior to departure receive a full refund. Changes made at least 72 hours in advance are free of charge and subject to availability. If the requested alternative is not available, a full refund is provided. Cancellations or changes made within 71 hours prior to departure are subject to a 100% cancellation fee.
-
-Q: Can I cancel a private cruise?
-A: Yes, cancellations made at least 72 hours prior to departure receive a full refund. Changes within this time frame are also free of charge and subject to availability. Later cancellations are subject to a 100% fee.
-
-Q: What is your cancellation policy for shared cruises?
-A: For shared cruises, cancellations made at least 24 hours prior to departure receive a full refund. Changes made at least 24 hours in advance are free of charge and subject to availability. If the requested alternative is not available, a full refund is provided. Cancellations or changes made within 24 hours prior to departure are subject to a 100% cancellation fee.
-
-Q: Can I cancel a shared cruise?
-A: Yes, cancellations made at least 24 hours prior to departure receive a full refund. Later cancellations are subject to a 100% fee.
-
-Q: What happens in case of bad weather?
-A: Cruises are cancelled only in case of official restrictions by the Thira Port Authority. Cloudy weather or mild wind conditions are not valid reasons for cancellation. If a cruise is cancelled due to weather, guests may reschedule or receive a full refund if rescheduling is not possible.
-
-Q: Can I change my booking?
-A: Yes, changes are possible free of charge within the allowed time frame and are always subject to availability.
-
-Q: How late can I change a private cruise booking?
-A: Changes for private cruises must be requested at least 72 hours before departure.
-
-Q: How late can I change a shared cruise booking?
-A: Changes for shared cruises must be requested at least 24 hours before departure.
-
-Q: What happens if my requested new date is not available?
-A: If the requested alternative is not available, a full refund is provided according to the applicable policy.
+Q: Do you allow pets?
+A: No.
 
 Q: Do you offer gluten-free options?
-A: Yes, we can accommodate dietary requirements upon request. Guests should inform us in advance.
+A: Yes, on Gems, Platinum, Diamond and private cruises.
+
+Q: Do you offer halal options?
+A: No, halal meals are not available.
+
+Q: Do you offer Kosher options?
+A: No, Kosher meals are not available.
+
+Q: What happens in bad weather?
+A: Only Port Authority can cancel.
+
+---
+
+# SPECIAL REQUESTS
+
+- Fireworks are not standard
+- Must be checked with team
+- Subject to safety and regulations
+
+---
+
+# REAL SALES INSIGHTS
+
+- Morning cruises have fewer boats and better light for photos
+- Better swimming conditions in the morning
+- White wine preferred onboard (clean deck)
+- Diamond is the sweet spot between shared and private
+- Gems is safest value option when unsure
