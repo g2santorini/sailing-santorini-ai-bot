@@ -102,6 +102,12 @@ def get_text(key: str, language: str) -> str:
             "it": f"Il modo migliore per controllare la disponibilità più aggiornata è tramite la nostra pagina di prenotazione:\n{BOOKING_LINK}\n\nTi basta selezionare la data che preferisci e vedrai subito tutte le opzioni disponibili.",
             "pt": f"A melhor forma de verificar a disponibilidade mais atualizada é através da nossa página de reservas:\n{BOOKING_LINK}\n\nBasta selecionar a data pretendida e verá imediatamente todas as opções disponíveis.",
         },
+        "spots_fallback": {
+            "en": "I’m sorry, I could not identify the exact cruise from the previous message. Please tell me the cruise name and date, and I’ll gladly check the number of available spots for you.",
+            "el": "Λυπάμαι, δεν μπόρεσα να εντοπίσω ακριβώς ποια κρουαζιέρα εννοείτε από το προηγούμενο μήνυμα. Πείτε μου το όνομα της κρουαζιέρας και την ημερομηνία και θα ελέγξω ευχαρίστως τις διαθέσιμες θέσεις.",
+            "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere i posti disponibili.",
+            "pt": "Lamento, não consegui identificar exatamente o cruzeiro a partir da mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto os lugares disponíveis.",
+        },
     }
 
     return translations.get(key, {}).get(language, translations.get(key, {}).get("en", ""))
@@ -291,6 +297,8 @@ def is_relevant(user_message: str) -> bool:
         "red", "diamond", "gems", "platinum",
         "lagoon", "emily", "ferretti",
 
+        "spot", "spots", "seat", "seats", "place", "places", "left", "vessel", "vessels", "all available",
+
         "κρουαζιέρα", "κρουαζιερες", "τιμή", "διαθεσιμότητα",
         "ιδιωτική", "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
         "φαγητό", "ποτό", "ποτά", "μενού",
@@ -299,6 +307,7 @@ def is_relevant(user_message: str) -> bool:
         "άτομα", "άτομο", "είμαστε", "έχουμε",
         "προτείνεις", "προτείνετε", "σύσταση",
         "διαφορά", "σύγκριση",
+        "θέσεις", "θέση", "πόσες θέσεις", "πόσα άτομα μένουν", "όλα τα σκάφη", "όλα τα διαθέσιμα",
 
         "crociera", "crociere", "prezzo", "disponibilità",
         "privata", "tramonto", "mattina",
@@ -308,6 +317,7 @@ def is_relevant(user_message: str) -> bool:
         "persone", "persona", "siamo", "abbiamo",
         "consigli", "raccomandi", "suggerisci",
         "differenza", "confronto",
+        "posti", "posto", "quanti posti", "tutte le barche",
 
         "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
         "privado", "partilhado", "compartilhado",
@@ -315,7 +325,8 @@ def is_relevant(user_message: str) -> bool:
         "vegetariano", "vegano", "alergia", "alergias",
         "glúten", "gluten", "sem glúten", "sem gluten",
         "pessoas", "pessoa", "somos", "temos",
-        "recomenda", "sugere", "diferença", "comparação", "comparacao"
+        "recomenda", "sugere", "diferença", "comparação", "comparacao",
+        "lugares", "quantos lugares", "vagas", "todos os barcos"
     ]
 
     return any(k in text for k in keywords)
@@ -333,6 +344,64 @@ def is_followup(user_message: str) -> bool:
     }
 
     return text in followups
+
+
+def is_capacity_request(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    keywords = [
+        "how many spots",
+        "how many seats",
+        "how many places",
+        "how many left",
+        "spots left",
+        "seats left",
+        "places left",
+        "available spots",
+        "available seats",
+        "availability left",
+
+        "πόσες θέσεις",
+        "πόση διαθεσιμότητα",
+        "πόσα άτομα μένουν",
+
+        "quanti posti",
+        "posti disponibili",
+
+        "quantos lugares",
+        "lugares disponíveis",
+        "vagas disponíveis"
+    ]
+
+    return any(k in text for k in keywords)
+
+
+def is_multi_capacity_request(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    keywords = [
+        "all available vessel",
+        "all available vessels",
+        "all vessels",
+        "all available cruises",
+        "all available tours",
+        "all available options",
+        "all available boats",
+
+        "όλα τα σκάφη",
+        "όλα τα διαθέσιμα σκάφη",
+        "όλες οι διαθέσιμες επιλογές",
+
+        "tutte le barche",
+        "tutte le crociere disponibili",
+        "tutte le opzioni disponibili",
+
+        "todos os barcos",
+        "todos os cruzeiros disponíveis",
+        "todas as opções disponíveis"
+    ]
+
+    return any(k in text for k in keywords)
 
 
 def detect_period(user_message: str) -> str | None:
@@ -475,7 +544,8 @@ def extract_result_text(item) -> str:
             "product_name",
             "option_name",
             "type",
-            "category"
+            "category",
+            "reply_label"
         ]:
             value = item.get(key)
             if value:
@@ -517,6 +587,259 @@ def filter_results_by_cruise_type(results, cruise_type: str | None):
     return results
 
 
+def detect_tour_key_from_history_text(text: str) -> str | None:
+    detected = detect_tour_key(text)
+    if detected:
+        return detected
+
+    lowered = text.lower()
+
+    if "diamond sunset" in lowered:
+        return "diamondsunset"
+    if "diamond morning" in lowered:
+        return "diamondmorning"
+    if "gems sunset" in lowered:
+        return "gemssunset"
+    if "gems morning" in lowered:
+        return "gemsmorning"
+    if "platinum sunset" in lowered:
+        return "platinumsunset"
+    if "platinum morning" in lowered:
+        return "platinummorning"
+    if "red sunset" in lowered:
+        return "redsunset"
+    if "red morning" in lowered:
+        return "redmorning"
+
+    return None
+
+
+def get_last_tour_and_date_from_history(
+    user_message: str,
+    history: list[dict]
+) -> tuple[str | None, str | None]:
+    current_tour = detect_tour_key_from_history_text(user_message)
+    current_date = detect_date(user_message)
+
+    if current_tour and current_date:
+        return current_tour, current_date
+
+    if history:
+        for item in reversed(history[-10:]):
+            content = item.get("content", "").strip()
+            if not content:
+                continue
+
+            if not current_tour:
+                current_tour = detect_tour_key_from_history_text(content)
+
+            if not current_date:
+                current_date = detect_date(content)
+
+            if current_tour and current_date:
+                return current_tour, current_date
+
+    return current_tour, current_date
+
+
+def get_capacity_number(data) -> int | None:
+    if not isinstance(data, dict):
+        return None
+
+    availability = data.get("availability")
+
+    if isinstance(availability, dict):
+        for key in ["available_spots", "spots", "vacancies", "available", "capacity_left"]:
+            value = availability.get(key)
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str) and value.isdigit():
+                return int(value)
+
+    return None
+
+
+def build_capacity_reply(data, language: str) -> str:
+    spots = get_capacity_number(data)
+    cruise_name = data.get("reply_label", "this cruise")
+    booking_url = data.get("booking_url", BOOKING_LINK)
+
+    if language == "el":
+        if spots == 1:
+            return (
+                f"Για το {cruise_name} υπάρχει μόνο 1 διαθέσιμη θέση.\n\n"
+                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
+                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
+            )
+        if isinstance(spots, int):
+            return (
+                f"Για το {cruise_name} υπάρχουν {spots} διαθέσιμες θέσεις.\n\n"
+                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
+                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
+            )
+        return (
+            f"Το {cruise_name} είναι διαθέσιμο για την ημερομηνία που ζητήσατε.\n\n"
+            f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
+            "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
+        )
+
+    if language == "it":
+        if spots == 1:
+            return (
+                f"Per {cruise_name} è disponibile solo 1 posto.\n\n"
+                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+            )
+        if isinstance(spots, int):
+            return (
+                f"Per {cruise_name} ci sono {spots} posti disponibili.\n\n"
+                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+            )
+        return (
+            f"{cruise_name} è disponibile per la data richiesta.\n\n"
+            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+        )
+
+    if language == "pt":
+        if spots == 1:
+            return (
+                f"Para {cruise_name} há apenas 1 lugar disponível.\n\n"
+                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+                "Por favor selecione a data na página de reservas."
+            )
+        if isinstance(spots, int):
+            return (
+                f"Para {cruise_name} há {spots} lugares disponíveis.\n\n"
+                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+                "Por favor selecione a data na página de reservas."
+            )
+        return (
+            f"{cruise_name} está disponível para a data solicitada.\n\n"
+            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+            "Por favor selecione a data na página de reservas."
+        )
+
+    if spots == 1:
+        return (
+            f"For {cruise_name}, there is only 1 spot available.\n\n"
+            f"You can proceed with your booking here:\n{booking_url}\n\n"
+            "Please select the date on the booking page."
+        )
+
+    if isinstance(spots, int):
+        return (
+            f"For {cruise_name}, there are {spots} spots available.\n\n"
+            f"You can proceed with your booking here:\n{booking_url}\n\n"
+            "Please select the date on the booking page."
+        )
+
+    return (
+        f"{cruise_name} is available for the requested date.\n\n"
+        f"You can proceed with your booking here:\n{booking_url}\n\n"
+        "Please select the date on the booking page."
+    )
+
+
+def format_shared_vacancies(vacancies) -> str:
+    try:
+        value = int(vacancies)
+        if value > 20:
+            return "20+"
+        return str(value)
+    except (TypeError, ValueError):
+        return str(vacancies)
+
+
+def is_private_result(item: dict) -> bool:
+    tour_type = str(item.get("tour_type", "")).lower().strip()
+    label = str(item.get("reply_label", "")).lower()
+
+    return tour_type == "private" or "private" in label
+
+
+def build_multi_capacity_reply(results: list[dict], language: str) -> str:
+    if language == "el":
+        lines = ["Οι διαθέσιμες επιλογές για το ζητούμενο χρονικό διάστημα είναι:"]
+        for item in results:
+            label = item.get("reply_label", "Κρουαζιέρα")
+
+            if is_private_result(item):
+                lines.append(f"- {label}: διαθέσιμη")
+            else:
+                vacancies_text = format_shared_vacancies(item.get("vacancies"))
+                if vacancies_text == "1":
+                    lines.append(f"- {label}: 1 διαθέσιμη θέση")
+                else:
+                    lines.append(f"- {label}: {vacancies_text} διαθέσιμες θέσεις")
+        lines.append("")
+        lines.append("Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:")
+        lines.append(BOOKING_LINK)
+        lines.append("")
+        lines.append("Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης.")
+        return "\n".join(lines)
+
+    if language == "it":
+        lines = ["Ecco le opzioni disponibili per l’orario richiesto:"]
+        for item in results:
+            label = item.get("reply_label", "Crociera")
+
+            if is_private_result(item):
+                lines.append(f"- {label}: disponibile")
+            else:
+                vacancies_text = format_shared_vacancies(item.get("vacancies"))
+                if vacancies_text == "1":
+                    lines.append(f"- {label}: 1 posto disponibile")
+                else:
+                    lines.append(f"- {label}: {vacancies_text} posti disponibili")
+        lines.append("")
+        lines.append("Puoi procedere con la prenotazione qui:")
+        lines.append(BOOKING_LINK)
+        lines.append("")
+        lines.append("Ti preghiamo di selezionare la data nella pagina di prenotazione.")
+        return "\n".join(lines)
+
+    if language == "pt":
+        lines = ["Aqui estão as opções disponíveis para o horário solicitado:"]
+        for item in results:
+            label = item.get("reply_label", "Cruzeiro")
+
+            if is_private_result(item):
+                lines.append(f"- {label}: disponível")
+            else:
+                vacancies_text = format_shared_vacancies(item.get("vacancies"))
+                if vacancies_text == "1":
+                    lines.append(f"- {label}: 1 lugar disponível")
+                else:
+                    lines.append(f"- {label}: {vacancies_text} lugares disponíveis")
+        lines.append("")
+        lines.append("Pode avançar com a sua reserva aqui:")
+        lines.append(BOOKING_LINK)
+        lines.append("")
+        lines.append("Por favor selecione a data na página de reservas.")
+        return "\n".join(lines)
+
+    lines = ["Here are the available options for the requested time:"]
+    for item in results:
+        label = item.get("reply_label", "Cruise")
+
+        if is_private_result(item):
+            lines.append(f"- {label}: available")
+        else:
+            vacancies_text = format_shared_vacancies(item.get("vacancies"))
+            if vacancies_text == "1":
+                lines.append(f"- {label}: 1 spot available")
+            else:
+                lines.append(f"- {label}: {vacancies_text} spots available")
+    lines.append("")
+    lines.append("You can proceed with your booking here:")
+    lines.append(BOOKING_LINK)
+    lines.append("")
+    lines.append("Please select the date on the booking page.")
+    return "\n".join(lines)
+
+
 @app.get("/")
 def root():
     return {"message": "Santorini bot is running"}
@@ -542,6 +865,35 @@ def chat(request: ChatRequest):
         return {
             "reply": get_text("cruise_passenger_reply", language)
         }
+
+    if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
+        date_str = detect_date(user_message)
+        period = detect_period(user_message)
+        passenger_count = detect_passenger_count(user_message, history)
+        effective_date = date_str or detect_date("today")
+
+        results = find_available_tours(
+            effective_date,
+            period,
+            user_message,
+            passenger_count
+        )
+
+        if results:
+            reply_text = build_multi_capacity_reply(results, language)
+            return {"reply": reply_text}
+
+        return {"reply": get_text("availability_fallback", language)}
+
+    if is_capacity_request(user_message):
+        last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
+
+        if last_tour_key and last_date_str:
+            data = check_tour_availability(last_tour_key, last_date_str)
+            reply_text = build_capacity_reply(data, language)
+            return {"reply": reply_text}
+
+        return {"reply": get_text("spots_fallback", language)}
 
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
