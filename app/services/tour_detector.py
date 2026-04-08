@@ -1,52 +1,64 @@
+def is_sunset(text: str) -> bool:
+    return (
+        "sunset" in text
+        or "afternoon" in text
+        or "evening" in text
+        or "tonight" in text
+    )
+
+def is_morning(text: str) -> bool:
+    return "morning" in text
+
+
 def detect_tour_key(user_message: str) -> str | None:
     text = user_message.lower()
 
-    if "red" in text and "morning" in text:
+    if "red" in text and is_morning(text):
         return "red_morning"
 
-    if "red" in text and "sunset" in text:
+    if "red" in text and is_sunset(text):
         return "red_sunset"
 
-    if "gems" in text and "morning" in text:
+    if "gems" in text and is_morning(text):
         return "gems_morning"
 
-    if "gems" in text and "sunset" in text:
+    if "gems" in text and is_sunset(text):
         return "gems_sunset"
 
-    if "platinum" in text and "morning" in text:
+    if "platinum" in text and is_morning(text):
         return "platinum_morning"
 
-    if "platinum" in text and "sunset" in text:
+    if "platinum" in text and is_sunset(text):
         return "platinum_sunset"
 
-    if "diamond" in text and "morning" in text:
+    if "diamond" in text and is_morning(text):
         return "diamond_morning"
 
-    if "diamond" in text and "sunset" in text:
+    if "diamond" in text and is_sunset(text):
         return "diamond_sunset"
 
-    if "lagoon" in text and "morning" in text:
+    if "lagoon" in text and is_morning(text):
         return "lagoon_380_400_morning"
 
-    if "lagoon" in text and "sunset" in text:
+    if "lagoon" in text and is_sunset(text):
         return "lagoon_380_400_sunset"
 
-    if "emily" in text and "morning" in text:
+    if "emily" in text and is_morning(text):
         return "emily_morning"
 
-    if "emily" in text and "sunset" in text:
+    if "emily" in text and is_sunset(text):
         return "emily_sunset"
 
-    if "ferretti 731" in text and "morning" in text:
+    if "ferretti 731" in text and is_morning(text):
         return "ferretti_731_morning"
 
-    if "ferretti 731" in text and "sunset" in text:
+    if "ferretti 731" in text and is_sunset(text):
         return "ferretti_731_sunset"
 
-    if "ferretti 55" in text and "morning" in text:
+    if "ferretti 55" in text and is_morning(text):
         return "ferretti_55_morning"
 
-    if "ferretti 55" in text and "sunset" in text:
+    if "ferretti 55" in text and is_sunset(text):
         return "ferretti_55_sunset"
 
     return None

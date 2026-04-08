@@ -119,7 +119,27 @@ def tour_matches_cruise_type(tour: dict, requested_cruise_type: str | None) -> b
     return True
 
 
-def find_available_tours(date_str: str, period: str | None = None, user_message: str = "") -> list[dict]:
+def has_enough_vacancies(availability: dict, passenger_count: int | None) -> bool:
+    if passenger_count is None:
+        return True
+
+    vacancies = availability.get("vacancies")
+
+    if vacancies is None:
+        return False
+
+    try:
+        return int(vacancies) >= int(passenger_count)
+    except (TypeError, ValueError):
+        return False
+
+
+def find_available_tours(
+    date_str: str,
+    period: str | None = None,
+    user_message: str = "",
+    passenger_count: int | None = None
+) -> list[dict]:
     results = []
     seen_labels = set()
     requested_tours = detect_requested_tours(user_message)
@@ -147,6 +167,9 @@ def find_available_tours(date_str: str, period: str | None = None, user_message:
 
         availability = data.get("availability")
         if not availability or not availability.get("available"):
+            continue
+
+        if not has_enough_vacancies(availability, passenger_count):
             continue
 
         reply_label = data["reply_label"]

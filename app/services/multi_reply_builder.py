@@ -1,17 +1,52 @@
 from datetime import datetime
 
 
+def format_date_by_language(date_label: str, language: str) -> str:
+    month_names = {
+        "en": {
+            1: "January", 2: "February", 3: "March", 4: "April",
+            5: "May", 6: "June", 7: "July", 8: "August",
+            9: "September", 10: "October", 11: "November", 12: "December"
+        },
+        "el": {
+            1: "Ιανουαρίου", 2: "Φεβρουαρίου", 3: "Μαρτίου", 4: "Απριλίου",
+            5: "Μαΐου", 6: "Ιουνίου", 7: "Ιουλίου", 8: "Αυγούστου",
+            9: "Σεπτεμβρίου", 10: "Οκτωβρίου", 11: "Νοεμβρίου", 12: "Δεκεμβρίου"
+        },
+        "it": {
+            1: "gennaio", 2: "febbraio", 3: "marzo", 4: "aprile",
+            5: "maggio", 6: "giugno", 7: "luglio", 8: "agosto",
+            9: "settembre", 10: "ottobre", 11: "novembre", 12: "dicembre"
+        },
+        "pt": {
+            1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril",
+            5: "maio", 6: "junho", 7: "julho", 8: "agosto",
+            9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro"
+        }
+    }
+
+    try:
+        dt = datetime.strptime(date_label, "%Y-%m-%d")
+        day = dt.day
+        month = month_names.get(language, month_names["en"])[dt.month]
+        year = dt.year
+
+        if language == "el":
+            return f"{day} {month} {year}"
+
+        return f"{day} {month} {year}"
+    except:
+        return date_label
+
+
 def build_multi_availability_reply(
     results: list[dict],
     date_label: str,
-    period: str | None = None
+    period: str | None = None,
+    language: str = "en"
 ) -> str:
     booking_link = "https://sailingsantorini.link-twist.com/"
-
-    try:
-        formatted_date = datetime.strptime(date_label, "%Y-%m-%d").strftime("%d %B %Y").lstrip("0")
-    except:
-        formatted_date = date_label
+    formatted_date = format_date_by_language(date_label, language)
 
     shared = [item for item in results if item.get("tour_type") == "shared"]
     private = [item for item in results if item.get("tour_type") == "private"]
@@ -35,6 +70,24 @@ def build_multi_availability_reply(
             f"Please select the date on the booking page."
         )
 
+    if len(results) == 1:
+        item = results[0]
+        direct_link = item.get("booking_url") or booking_link
+        label = item.get("reply_label", "This cruise")
+
+        intro = f"For {formatted_date}, {label} is available."
+
+        lines = [
+            intro,
+            "",
+            "You can proceed directly with your booking here:",
+            direct_link,
+            "",
+            "Please select the date on the booking page."
+        ]
+
+        return "\n".join(lines)
+
     if period:
         if all_private:
             intro = f"For {formatted_date}, the following private {period} cruises are available:"
@@ -48,9 +101,7 @@ def build_multi_availability_reply(
     else:
         labels = [item["reply_label"] for item in results]
 
-        if len(labels) == 1:
-            intro = f"For {formatted_date}, {labels[0]} is available."
-        elif len(labels) == 2:
+        if len(labels) == 2:
             intro = f"For {formatted_date}, {labels[0]} and {labels[1]} are available."
         else:
             intro = f"For {formatted_date}, {', '.join(labels[:-1])} and {labels[-1]} are available."

@@ -1,3 +1,5 @@
+import re
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -34,6 +36,156 @@ WEBSITE_LINK = "https://sailing-santorini.com/"
 WHATSAPP_LINK = "https://wa.me/306972805193"
 
 
+def detect_language(user_message: str) -> str:
+    text = user_message.lower()
+
+    greek_chars = any(
+        ("α" <= c <= "ω") or ("ά" <= c <= "ώ") for c in text
+    )
+    if greek_chars:
+        return "el"
+
+    italian_keywords = [
+        "ciao", "salve", "buongiorno", "buonasera", "grazie",
+        "disponibilità", "disponibile", "privata", "tramonto",
+        "mattina", "persone", "crociera", "crociere", "oggi", "domani"
+    ]
+    if any(word in text for word in italian_keywords):
+        return "it"
+
+    portuguese_keywords = [
+        "olá", "ola", "bom dia", "boa tarde", "boa noite", "obrigado",
+        "obrigada", "disponibilidade", "privado", "partilhado",
+        "pessoas", "hoje", "amanhã", "amanha", "passeio", "cruzeiro"
+    ]
+    if any(word in text for word in portuguese_keywords):
+        return "pt"
+
+    return "en"
+
+
+def get_text(key: str, language: str) -> str:
+    translations = {
+        "empty_reply": {
+            "en": "Hello! I’ll be happy to help you with our cruises in Santorini.",
+            "el": "Γεια σας! Θα χαρώ να σας βοηθήσω με τις κρουαζιέρες μας στη Σαντορίνη.",
+            "it": "Ciao! Sarò felice di aiutarti con le nostre crociere a Santorini.",
+            "pt": "Olá! Terei todo o gosto em ajudar com os nossos cruzeiros em Santorini.",
+        },
+        "greeting_reply": {
+            "en": "Hello and welcome! I’ll be happy to help you with our cruises in Santorini. Feel free to ask me about availability, prices, shared or private options.",
+            "el": "Γεια σας και καλώς ήρθατε! Θα χαρώ να σας βοηθήσω με τις κρουαζιέρες μας στη Σαντορίνη. Μπορείτε να με ρωτήσετε για διαθεσιμότητα, τιμές, κοινές ή ιδιωτικές επιλογές.",
+            "it": "Ciao e benvenuto! Sarò felice di aiutarti con le nostre crociere a Santorini. Puoi chiedermi disponibilità, prezzi e opzioni condivise o private.",
+            "pt": "Olá e bem-vindo! Terei todo o gosto em ajudar com os nossos cruzeiros em Santorini. Pode perguntar sobre disponibilidade, preços e opções partilhadas ou privadas.",
+        },
+        "discount_reply": {
+            "en": f"For special rate requests, please contact us via WhatsApp: {WHATSAPP_LINK}",
+            "el": f"Για ειδικά αιτήματα τιμών, παρακαλούμε επικοινωνήστε μαζί μας μέσω WhatsApp: {WHATSAPP_LINK}",
+            "it": f"Per richieste di tariffe speciali, ti preghiamo di contattarci via WhatsApp: {WHATSAPP_LINK}",
+            "pt": f"Para pedidos de tarifas especiais, por favor contacte-nos via WhatsApp: {WHATSAPP_LINK}",
+        },
+        "cruise_passenger_reply": {
+            "en": f"For cruise ship guests, we kindly recommend contacting us directly via WhatsApp so we can assist you based on your ship schedule:\n{WHATSAPP_LINK}",
+            "el": f"Για επισκέπτες κρουαζιερόπλοιου, σας προτείνουμε να επικοινωνήσετε απευθείας μαζί μας μέσω WhatsApp, ώστε να σας βοηθήσουμε βάσει του προγράμματος του πλοίου σας:\n{WHATSAPP_LINK}",
+            "it": f"Per gli ospiti delle navi da crociera, consigliamo gentilmente di contattarci direttamente via WhatsApp così potremo assistervi in base all’orario della vostra nave:\n{WHATSAPP_LINK}",
+            "pt": f"Para passageiros de cruzeiro, recomendamos gentilmente que nos contacte diretamente via WhatsApp para que possamos ajudar de acordo com o horário do seu navio:\n{WHATSAPP_LINK}",
+        },
+        "irrelevant_reply": {
+            "en": "I can assist only with questions related to our cruises in Santorini.",
+            "el": "Μπορώ να βοηθήσω μόνο με ερωτήσεις που σχετίζονται με τις κρουαζιέρες μας στη Σαντορίνη.",
+            "it": "Posso aiutare solo con domande relative alle nostre crociere a Santorini.",
+            "pt": "Só posso ajudar com questões relacionadas com os nossos cruzeiros em Santorini.",
+        },
+        "availability_fallback": {
+            "en": f"The best way to check the latest availability is through our booking page:\n{BOOKING_LINK}\n\nSimply select your preferred date and you’ll see all available options instantly.",
+            "el": f"Ο καλύτερος τρόπος για να δείτε την πιο πρόσφατη διαθεσιμότητα είναι μέσω της σελίδας κρατήσεών μας:\n{BOOKING_LINK}\n\nΑπλώς επιλέξτε την ημερομηνία που προτιμάτε και θα δείτε άμεσα όλες τις διαθέσιμες επιλογές.",
+            "it": f"Il modo migliore per controllare la disponibilità più aggiornata è tramite la nostra pagina di prenotazione:\n{BOOKING_LINK}\n\nTi basta selezionare la data che preferisci e vedrai subito tutte le opzioni disponibili.",
+            "pt": f"A melhor forma de verificar a disponibilidade mais atualizada é através da nossa página de reservas:\n{BOOKING_LINK}\n\nBasta selecionar a data pretendida e verá imediatamente todas as opções disponíveis.",
+        },
+    }
+
+    return translations.get(key, {}).get(language, translations.get(key, {}).get("en", ""))
+
+
+def translate_availability_reply(reply_text: str, language: str) -> str:
+    if language == "en":
+        return reply_text
+
+    replacements = {
+        "el": [
+            ("Thank you for your message.", "Σας ευχαριστούμε για το μήνυμά σας."),
+            ("Unfortunately, we do not currently have any", "Δυστυχώς, δεν έχουμε αυτή τη στιγμή"),
+            ("cruises available for", "διαθέσιμες κρουαζιέρες για"),
+            ("available for", "διαθέσιμες για"),
+            ("You may check other dates here:", "Μπορείτε να δείτε άλλες ημερομηνίες εδώ:"),
+            ("For ", "Για "),
+            ("the following private", "τις παρακάτω ιδιωτικές"),
+            ("the following shared", "τις παρακάτω κοινές"),
+            ("the following", "τις παρακάτω"),
+            ("private cruises are available:", "ιδιωτικές κρουαζιέρες είναι διαθέσιμες:"),
+            ("shared cruises are available:", "κοινές κρουαζιέρες είναι διαθέσιμες:"),
+            ("cruises are available:", "κρουαζιέρες είναι διαθέσιμες:"),
+            (" is available.", " είναι διαθέσιμη."),
+            (" are available.", " είναι διαθέσιμες."),
+            ("Shared cruises:", "Κοινές κρουαζιέρες:"),
+            ("Private cruises:", "Ιδιωτικές κρουαζιέρες:"),
+            ("You can proceed directly with your booking here:", "Μπορείτε να προχωρήσετε απευθείας στην κράτησή σας εδώ:"),
+            ("You may proceed with your booking here:", "Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:"),
+            ("Please select the date on the booking page.", "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."),
+            ("morning", "πρωινές"),
+            ("sunset", "απογευματινές"),
+        ],
+        "it": [
+            ("Thank you for your message.", "Grazie per il tuo messaggio."),
+            ("Unfortunately, we do not currently have any", "Purtroppo al momento non abbiamo"),
+            ("cruises available for", "crociere disponibili per"),
+            ("available for", "disponibili per"),
+            ("You may check other dates here:", "Puoi controllare altre date qui:"),
+            ("For ", "Per il "),
+            ("the following private", "le seguenti private"),
+            ("the following shared", "le seguenti condivise"),
+            ("the following", "le seguenti"),
+            ("private cruises are available:", "crociere private disponibili:"),
+            ("shared cruises are available:", "crociere condivise disponibili:"),
+            ("cruises are available:", "crociere disponibili:"),
+            (" is available.", " è disponibile."),
+            (" are available.", " sono disponibili."),
+            ("Shared cruises:", "Crociere condivise:"),
+            ("Private cruises:", "Crociere private:"),
+            ("You can proceed directly with your booking here:", "Puoi procedere direttamente con la prenotazione qui:"),
+            ("You may proceed with your booking here:", "Puoi procedere con la prenotazione qui:"),
+            ("Please select the date on the booking page.", "Ti preghiamo di selezionare la data nella pagina di prenotazione."),
+        ],
+        "pt": [
+            ("Thank you for your message.", "Obrigado pela sua mensagem."),
+            ("Unfortunately, we do not currently have any", "Infelizmente, neste momento não temos"),
+            ("cruises available for", "cruzeiros disponíveis para"),
+            ("available for", "disponíveis para"),
+            ("You may check other dates here:", "Pode verificar outras datas aqui:"),
+            ("For ", "Para "),
+            ("the following private", "os seguintes privados"),
+            ("the following shared", "os seguintes partilhados"),
+            ("the following", "os seguintes"),
+            ("private cruises are available:", "cruzeiros privados disponíveis:"),
+            ("shared cruises are available:", "cruzeiros partilhados disponíveis:"),
+            ("cruises are available:", "cruzeiros disponíveis:"),
+            (" is available.", " está disponível."),
+            (" are available.", " estão disponíveis."),
+            ("Shared cruises:", "Cruzeiros partilhados:"),
+            ("Private cruises:", "Cruzeiros privados:"),
+            ("You can proceed directly with your booking here:", "Pode avançar diretamente com a sua reserva aqui:"),
+            ("You may proceed with your booking here:", "Pode avançar com a sua reserva aqui:"),
+            ("Please select the date on the booking page.", "Por favor selecione a data na página de reservas."),
+        ],
+    }
+
+    translated = reply_text
+    for source, target in replacements.get(language, []):
+        translated = translated.replace(source, target)
+
+    return translated
+
+
 def is_greeting(user_message: str) -> bool:
     text = user_message.lower().strip()
 
@@ -44,7 +196,8 @@ def is_greeting(user_message: str) -> bool:
         "γεια", "γειά", "γεια σου", "γειά σου", "γεια σας", "γειά σας",
         "καλημέρα", "καλησπέρα", "καλησπερα", "καληνύχτα", "καληνυχτα",
         "χαίρετε", "χαιρετε",
-        "ciao", "salve", "buongiorno", "buonasera"
+        "ciao", "salve", "buongiorno", "buonasera",
+        "olá", "ola", "bom dia", "boa tarde", "boa noite"
     }
 
     return text in greetings
@@ -57,7 +210,8 @@ def is_discount_request(user_message: str) -> bool:
         "discount", "better price", "best price", "special price",
         "cheaper", "deal",
         "εκπτωση", "έκπτωση", "καλύτερη τιμή",
-        "sconto", "offerta"
+        "sconto", "offerta",
+        "desconto", "melhor preço", "preço especial"
     ]
 
     return any(k in text for k in keywords)
@@ -74,7 +228,33 @@ def is_cruise_passenger(user_message: str) -> bool:
 
         "κρουαζιερόπλοιο", "παλιό λιμάνι", "τελεφερίκ",
 
-        "crociera", "nave", "porto vecchio"
+        "crociera", "nave", "porto vecchio",
+
+        "navio de cruzeiro", "passageiro de cruzeiro", "porto antigo"
+    ]
+
+    return any(k in text for k in keywords)
+
+
+def is_availability_request(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    keywords = [
+        "availability", "available", "availabile", "disponibilità",
+        "do you have availability", "is there availability", "any availability",
+        "what is available", "what tours are available",
+        "today", "tomorrow", "tonight", "this afternoon", "this evening", "this morning",
+        "for today", "for tomorrow",
+
+        "διαθεσιμότητα", "διαθεσιμοτητα", "διαθέσιμο", "διαθεσιμο",
+        "σήμερα", "σημερα", "αύριο", "αυριο", "απόψε", "αποψε",
+        "σήμερα το απόγευμα", "σημερα το απογευμα", "σήμερα το πρωί", "σημερα το πρωι",
+
+        "disponibile", "disponibili", "oggi", "domani", "stasera",
+        "questo pomeriggio", "questa mattina",
+
+        "disponibilidade", "disponível", "disponivel", "hoje", "amanhã", "amanha",
+        "esta tarde", "esta manhã", "esta manha"
     ]
 
     return any(k in text for k in keywords)
@@ -127,7 +307,15 @@ def is_relevant(user_message: str) -> bool:
         "allergie", "glutine", "senza glutine",
         "persone", "persona", "siamo", "abbiamo",
         "consigli", "raccomandi", "suggerisci",
-        "differenza", "confronto"
+        "differenza", "confronto",
+
+        "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
+        "privado", "partilhado", "compartilhado",
+        "comida", "bebidas", "menu",
+        "vegetariano", "vegano", "alergia", "alergias",
+        "glúten", "gluten", "sem glúten", "sem gluten",
+        "pessoas", "pessoa", "somos", "temos",
+        "recomenda", "sugere", "diferença", "comparação", "comparacao"
     ]
 
     return any(k in text for k in keywords)
@@ -140,7 +328,8 @@ def is_followup(user_message: str) -> bool:
         "yes", "yes please", "ok", "okay", "sure", "please",
         "tell me more", "go ahead", "continue",
         "ναι", "οκ", "εντάξει", "συνέχισε",
-        "si", "va bene", "continua"
+        "si", "va bene", "continua",
+        "sim", "claro", "continue"
     }
 
     return text in followups
@@ -149,10 +338,35 @@ def is_followup(user_message: str) -> bool:
 def detect_period(user_message: str) -> str | None:
     text = user_message.lower()
 
-    if "morning" in text or "πρωιν" in text or "mattina" in text:
+    if (
+        "morning" in text
+        or "this morning" in text
+        or "πρωιν" in text
+        or "mattina" in text
+        or "questa mattina" in text
+        or "manhã" in text
+        or "manha" in text
+    ):
         return "morning"
 
-    if "sunset" in text or "ηλιοβασ" in text or "tramonto" in text:
+    if (
+        "sunset" in text
+        or "this afternoon" in text
+        or "this evening" in text
+        or "tonight" in text
+        or "afternoon" in text
+        or "evening" in text
+        or "ηλιοβασ" in text
+        or "απόγευμα" in text
+        or "απογευμα" in text
+        or "απόψε" in text
+        or "αποψε" in text
+        or "tramonto" in text
+        or "pomeriggio" in text
+        or "stasera" in text
+        or "tarde" in text
+        or "fim do dia" in text
+    ):
         return "sunset"
 
     return None
@@ -164,13 +378,15 @@ def detect_cruise_type_intent(user_message: str, history: list[dict] | None = No
     private_keywords = [
         "private", "privately", "just for us", "only for us", "for our group only",
         "ιδιωτική", "ιδιωτικη", "μόνο για εμάς", "μονο για εμας",
-        "privata", "solo per noi"
+        "privata", "solo per noi",
+        "privado", "privada", "só para nós", "so para nos"
     ]
 
     shared_keywords = [
         "shared", "semi private", "semi-private", "join", "group cruise",
         "κοινή", "κοινη",
-        "condivisa", "di gruppo"
+        "condivisa", "di gruppo",
+        "partilhado", "compartilhado", "grupo"
     ]
 
     has_private = any(k in text for k in private_keywords)
@@ -197,6 +413,53 @@ def detect_cruise_type_intent(user_message: str, history: list[dict] | None = No
 
             if prev_has_shared and not prev_has_private:
                 return "shared"
+
+    return None
+
+
+def detect_passenger_count(user_message: str, history: list[dict] | None = None) -> int | None:
+    texts_to_check = [user_message.lower()]
+
+    if history:
+        for item in reversed(history[-8:]):
+            if item.get("role") == "user":
+                previous_text = item.get("content", "").lower()
+                if previous_text:
+                    texts_to_check.append(previous_text)
+
+    patterns = [
+        r"\bwe are (\d+)\b",
+        r"\bwe have (\d+)\b",
+        r"\bfor (\d+) people\b",
+        r"\bfor (\d+) persons\b",
+        r"\b(\d+) people\b",
+        r"\b(\d+) persons\b",
+        r"\b(\d+) guests\b",
+        r"\b(\d+) pax\b",
+        r"\bparty of (\d+)\b",
+
+        r"\bείμαστε (\d+)\b",
+        r"\bειμαστε (\d+)\b",
+        r"\bγια (\d+) άτομα\b",
+        r"\bγια (\d+) ατομα\b",
+        r"\b(\d+) άτομα\b",
+        r"\b(\d+) ατομα\b",
+
+        r"\bsiamo (\d+)\b",
+        r"\bper (\d+) persone\b",
+        r"\b(\d+) persone\b",
+
+        r"\bsomos (\d+)\b",
+        r"\bpara (\d+) pessoas\b",
+        r"\b(\d+) pessoas\b",
+        r"\b(\d+) pessoa(s)?\b"
+    ]
+
+    for text in texts_to_check:
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                return int(match.group(1))
 
     return None
 
@@ -263,50 +526,66 @@ def root():
 def chat(request: ChatRequest):
     user_message = request.message.strip()
     history = request.history or []
+    language = detect_language(user_message)
 
     if not user_message:
         return {
-            "reply": "Hello! I’ll be happy to help you with our cruises in Santorini."
+            "reply": get_text("empty_reply", language)
         }
 
     if is_discount_request(user_message):
         return {
-            "reply": f"For special rate requests, please contact us via WhatsApp: {WHATSAPP_LINK}"
+            "reply": get_text("discount_reply", language)
         }
 
     if is_cruise_passenger(user_message):
         return {
-            "reply": f"For cruise ship guests, we kindly recommend contacting us directly via WhatsApp so we can assist you based on your ship schedule:\n{WHATSAPP_LINK}"
+            "reply": get_text("cruise_passenger_reply", language)
         }
 
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
+    availability_intent = is_availability_request(user_message)
+    passenger_count = detect_passenger_count(user_message, history)
 
     if tour_key and date_str:
         data = check_tour_availability(tour_key, date_str)
-        return {"reply": build_availability_reply(data)}
+        reply_text = build_availability_reply(data)
+        reply_text = translate_availability_reply(reply_text, language)
+        return {"reply": reply_text}
 
-    if date_str:
-        results = find_available_tours(date_str, period, user_message)
+    if date_str or availability_intent:
+        effective_date = date_str or detect_date("today")
+        results = find_available_tours(
+            effective_date,
+            period,
+            user_message,
+            passenger_count
+        )
         filtered_results = filter_results_by_cruise_type(results, cruise_type_intent)
-        return {
-            "reply": build_multi_availability_reply(
+
+        if filtered_results:
+            reply_text = build_multi_availability_reply(
                 filtered_results,
-                date_str,
-                period
+                effective_date,
+                period,
+                language
             )
-        }
+            reply_text = translate_availability_reply(reply_text, language)
+            return {"reply": reply_text}
+
+        return {"reply": get_text("availability_fallback", language)}
 
     if is_greeting(user_message):
         return {
-            "reply": "Hello and welcome! I’ll be happy to help you with our cruises in Santorini. Feel free to ask me about availability, prices, shared or private options."
+            "reply": get_text("greeting_reply", language)
         }
 
     if not is_relevant(user_message) and not is_followup(user_message):
         return {
-            "reply": "I can assist only with questions related to our cruises in Santorini."
+            "reply": get_text("irrelevant_reply", language)
         }
 
     conversation_history = ""
@@ -325,6 +604,13 @@ def chat(request: ChatRequest):
 
     prompt = f"""
 You are the Sunset Oia digital assistant.
+
+IMPORTANT LANGUAGE RULE:
+- Always reply in the same language as the user's latest message.
+- If the user writes in Greek, reply in Greek.
+- If the user writes in English, reply in English.
+- If the user writes in Italian, reply in Italian.
+- If the user writes in Portuguese, reply in Portuguese.
 
 Your tone:
 - Warm, natural and human — never robotic
