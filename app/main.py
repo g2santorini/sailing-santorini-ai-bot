@@ -2,6 +2,7 @@ import re
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.services.openai_service import get_ai_reply
@@ -14,6 +15,7 @@ from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
