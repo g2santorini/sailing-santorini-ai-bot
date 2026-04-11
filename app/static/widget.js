@@ -19,6 +19,8 @@
       cursor: pointer;
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
       z-index: 999999;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     #ss-widget-container {
@@ -35,6 +37,9 @@
       overflow: hidden;
       z-index: 999999;
       font-family: Arial, sans-serif;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: auto;
+      touch-action: none;
     }
 
     #ss-header {
@@ -54,6 +59,8 @@
       width: 42px;
       height: 42px;
       object-fit: contain;
+      -webkit-user-drag: none;
+      user-select: none;
     }
 
     #ss-close {
@@ -62,6 +69,8 @@
       font-size: 22px;
       cursor: pointer;
       color: #4b5563;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     #ss-body {
@@ -69,11 +78,14 @@
       min-height: 0;
       padding: 16px;
       overflow-y: auto;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
       background: #eef2f5;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      touch-action: pan-y;
     }
 
     #ss-welcome {
@@ -142,6 +154,7 @@
       border-top: 1px solid #e6e6e6;
       padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
       flex-shrink: 0;
+      touch-action: manipulation;
     }
 
     #ss-input-row {
@@ -159,6 +172,7 @@
       font-size: 15px;
       outline: none;
       min-width: 0;
+      touch-action: manipulation;
     }
 
     #ss-send {
@@ -170,6 +184,8 @@
       color: white;
       cursor: pointer;
       flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     #ss-send:disabled,
@@ -186,6 +202,14 @@
     }
 
     @media (max-width: 640px) {
+      html.ss-widget-open,
+      body.ss-widget-open {
+        overflow: hidden !important;
+        height: 100% !important;
+        overscroll-behavior: none !important;
+        touch-action: none !important;
+      }
+
       #ss-widget-container {
         top: 0;
         left: 0;
@@ -194,6 +218,7 @@
         width: 100%;
         height: 100dvh;
         border-radius: 0;
+        max-height: 100dvh;
       }
 
       #ss-widget-bubble {
@@ -247,6 +272,7 @@
   const sendBtn = container.querySelector("#ss-send");
 
   let chatHistory = [];
+  let lastViewportHeight = window.innerHeight;
 
   function escapeHtml(text) {
     const div = document.createElement("div");
@@ -306,20 +332,50 @@
     }
   }
 
+  function lockPageScroll() {
+    if (window.innerWidth <= 640) {
+      document.documentElement.classList.add("ss-widget-open");
+      document.body.classList.add("ss-widget-open");
+    }
+  }
+
+  function unlockPageScroll() {
+    document.documentElement.classList.remove("ss-widget-open");
+    document.body.classList.remove("ss-widget-open");
+  }
+
   function adjustMobileViewport() {
     if (window.innerWidth > 640) {
       container.style.height = "560px";
       return;
     }
 
+    let vh = window.innerHeight;
+
     if (window.visualViewport) {
-      const vh = window.visualViewport.height;
-      container.style.height = `${vh}px`;
-    } else {
-      container.style.height = `${window.innerHeight}px`;
+      vh = Math.round(window.visualViewport.height);
     }
 
+    lastViewportHeight = vh;
+    container.style.height = `${vh}px`;
+    container.style.maxHeight = `${vh}px`;
     scrollToBottom();
+  }
+
+  function preventPageBounce(event) {
+    if (window.innerWidth > 640) return;
+    if (container.style.display !== "flex") return;
+
+    const isInsideBody = body.contains(event.target);
+    const isInsideInput = input === event.target;
+    const isInsideSend = sendBtn === event.target;
+    const isInsideClose = closeBtn === event.target;
+
+    if (isInsideBody || isInsideInput || isInsideSend || isInsideClose) {
+      return;
+    }
+
+    event.preventDefault();
   }
 
   async function sendMessage() {
@@ -366,7 +422,9 @@
   bubble.onclick = () => {
     container.style.display = "flex";
     bubble.style.display = "none";
+    lockPageScroll();
     adjustMobileViewport();
+
     setTimeout(() => {
       input.focus();
       scrollToBottom();
@@ -376,6 +434,7 @@
   closeBtn.onclick = () => {
     container.style.display = "none";
     bubble.style.display = "flex";
+    unlockPageScroll();
   };
 
   sendBtn.onclick = sendMessage;
@@ -406,4 +465,6 @@
     window.visualViewport.addEventListener("resize", adjustMobileViewport);
     window.visualViewport.addEventListener("scroll", adjustMobileViewport);
   }
+
+  document.addEventListener("touchmove", preventPageBounce, { passive: false });
 })();
