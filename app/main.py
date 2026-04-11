@@ -899,16 +899,23 @@ def build_capacity_reply(data, language: str) -> str:
     cruise_name = data.get("reply_label", "this cruise")
     booking_url = data.get("booking_url", BOOKING_LINK)
 
+    is_private = is_private_result(data)
+
+    if isinstance(spots, int) and not is_private and spots > 20:
+        spots_display = "20+"
+    else:
+        spots_display = str(spots) if isinstance(spots, int) else None
+
     if language == "el":
-        if spots == 1:
+        if spots_display == "1":
             return (
                 f"Για το {cruise_name} υπάρχει μόνο 1 διαθέσιμη θέση.\n\n"
                 f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
                 "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
             )
-        if isinstance(spots, int):
+        if spots_display:
             return (
-                f"Για το {cruise_name} υπάρχουν {spots} διαθέσιμες θέσεις.\n\n"
+                f"Για το {cruise_name} υπάρχουν {spots_display} διαθέσιμες θέσεις.\n\n"
                 f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
                 "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
             )
@@ -917,6 +924,64 @@ def build_capacity_reply(data, language: str) -> str:
             f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
             "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
         )
+
+    if language == "it":
+        if spots_display == "1":
+            return (
+                f"Per {cruise_name} è disponibile solo 1 posto.\n\n"
+                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+            )
+        if spots_display:
+            return (
+                f"Per {cruise_name} ci sono {spots_display} posti disponibili.\n\n"
+                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+            )
+        return (
+            f"{cruise_name} è disponibile per la data richiesta.\n\n"
+            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+        )
+
+    if language == "pt":
+        if spots_display == "1":
+            return (
+                f"Para {cruise_name} há apenas 1 lugar disponível.\n\n"
+                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+                "Por favor selecione a data na página de reservas."
+            )
+        if spots_display:
+            return (
+                f"Para {cruise_name} há {spots_display} lugares disponíveis.\n\n"
+                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+                "Por favor selecione a data na página de reservas."
+            )
+        return (
+            f"{cruise_name} está disponível para a data solicitada.\n\n"
+            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+            "Por favor selecione a data na página de reservas."
+        )
+
+    if spots_display == "1":
+        return (
+            f"For {cruise_name}, there is only 1 spot available.\n\n"
+            f"You can proceed with your booking here:\n{booking_url}\n\n"
+            "Please select the date on the booking page."
+        )
+
+    if spots_display:
+        return (
+            f"For {cruise_name}, there are {spots_display} spots available.\n\n"
+            f"You can proceed with your booking here:\n{booking_url}\n\n"
+            "Please select the date on the booking page."
+        )
+
+    return (
+        f"{cruise_name} is available for the requested date.\n\n"
+        f"You can proceed with your booking here:\n{booking_url}\n\n"
+        "Please select the date on the booking page."
+    )
 
     if language == "it":
         if spots == 1:
