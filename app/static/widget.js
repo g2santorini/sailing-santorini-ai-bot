@@ -1,6 +1,11 @@
 (function () {
   const API_URL = "/chat";
 
+  const AUTO_OPEN_ENABLED = true;
+  const AUTO_OPEN_DELAY = 5000;
+  const AUTO_OPEN_SESSION_KEY = "ss_widget_auto_opened";
+  const AUTO_OPEN_CLOSED_KEY = "ss_widget_closed";
+
   const style = document.createElement("style");
   style.innerHTML = `
     #ss-widget-bubble {
@@ -272,7 +277,7 @@
   const sendBtn = container.querySelector("#ss-send");
 
   let chatHistory = [];
-  let lastViewportHeight = window.innerHeight;
+  let autoOpenTimer = null;
 
   function escapeHtml(text) {
     const div = document.createElement("div");
@@ -356,7 +361,6 @@
       vh = Math.round(window.visualViewport.height);
     }
 
-    lastViewportHeight = vh;
     container.style.height = `${vh}px`;
     container.style.maxHeight = `${vh}px`;
     scrollToBottom();
@@ -376,6 +380,45 @@
     }
 
     event.preventDefault();
+  }
+
+  function openWidget() {
+    container.style.display = "flex";
+    bubble.style.display = "none";
+    lockPageScroll();
+    adjustMobileViewport();
+
+    setTimeout(() => {
+      input.focus();
+      scrollToBottom();
+    }, 50);
+  }
+
+  function closeWidget(markClosed = true) {
+    container.style.display = "none";
+    bubble.style.display = "flex";
+    unlockPageScroll();
+
+    if (markClosed) {
+      sessionStorage.setItem(AUTO_OPEN_CLOSED_KEY, "true");
+    }
+  }
+
+  function shouldAutoOpen() {
+    if (!AUTO_OPEN_ENABLED) return false;
+    if (sessionStorage.getItem(AUTO_OPEN_SESSION_KEY) === "true") return false;
+    if (sessionStorage.getItem(AUTO_OPEN_CLOSED_KEY) === "true") return false;
+    return true;
+  }
+
+  function scheduleAutoOpen() {
+    if (!shouldAutoOpen()) return;
+
+    autoOpenTimer = setTimeout(() => {
+      if (!shouldAutoOpen()) return;
+      sessionStorage.setItem(AUTO_OPEN_SESSION_KEY, "true");
+      openWidget();
+    }, AUTO_OPEN_DELAY);
   }
 
   async function sendMessage() {
@@ -420,21 +463,17 @@
   }
 
   bubble.onclick = () => {
-    container.style.display = "flex";
-    bubble.style.display = "none";
-    lockPageScroll();
-    adjustMobileViewport();
+    if (autoOpenTimer) {
+      clearTimeout(autoOpenTimer);
+    }
 
-    setTimeout(() => {
-      input.focus();
-      scrollToBottom();
-    }, 50);
+    sessionStorage.setItem(AUTO_OPEN_SESSION_KEY, "true");
+    sessionStorage.removeItem(AUTO_OPEN_CLOSED_KEY);
+    openWidget();
   };
 
   closeBtn.onclick = () => {
-    container.style.display = "none";
-    bubble.style.display = "flex";
-    unlockPageScroll();
+    closeWidget(true);
   };
 
   sendBtn.onclick = sendMessage;
@@ -467,4 +506,6 @@
   }
 
   document.addEventListener("touchmove", preventPageBounce, { passive: false });
+
+  scheduleAutoOpen();
 })();

@@ -268,6 +268,33 @@ def is_availability_request(user_message: str) -> bool:
     return any(k in text for k in keywords)
 
 
+def has_recent_availability_context(history: list[dict] | None = None) -> bool:
+    if not history:
+        return False
+
+    for item in reversed(history[-8:]):
+        if item.get("role") != "user":
+            continue
+
+        content = item.get("content", "").strip()
+        if not content:
+            continue
+
+        if is_availability_request(content):
+            return True
+
+        if detect_date(content):
+            return True
+
+        if detect_tour_key(content):
+            return True
+
+        if detect_period(content):
+            return True
+
+    return False
+
+
 def is_relevant(user_message: str) -> bool:
     text = user_message.lower()
 
@@ -294,7 +321,8 @@ def is_relevant(user_message: str) -> bool:
         "what do you recommend", "what do you suggest",
 
         "difference", "compare", "comparison",
-        "which one", "which is better", "better", "vs", "or",
+        "which one", "which is better", "which is the best",
+        "best", "best option", "better", "vs", "or",
 
         "red", "diamond", "gems", "platinum",
         "lagoon", "emily", "ferretti",
@@ -308,7 +336,8 @@ def is_relevant(user_message: str) -> bool:
         "γλουτένη", "χωρίς γλουτένη", "κοιλιοκάκη",
         "άτομα", "άτομο", "είμαστε", "έχουμε",
         "προτείνεις", "προτείνετε", "σύσταση",
-        "διαφορά", "σύγκριση",
+        "διαφορά", "σύγκριση", "ποιο είναι καλύτερο", "ποιο ειναι καλυτερο",
+        "ποιο είναι το καλύτερο", "ποιο ειναι το καλυτερο", "καλύτερο", "καλυτερο",
         "θέσεις", "θέση", "πόσες θέσεις", "πόσα άτομα μένουν", "όλα τα σκάφη", "όλα τα διαθέσιμα",
 
         "crociera", "crociere", "prezzo", "disponibilità",
@@ -318,7 +347,8 @@ def is_relevant(user_message: str) -> bool:
         "allergie", "glutine", "senza glutine",
         "persone", "persona", "siamo", "abbiamo",
         "consigli", "raccomandi", "suggerisci",
-        "differenza", "confronto",
+        "differenza", "confronto", "qual è meglio", "qual e meglio",
+        "qual è il migliore", "qual e il migliore", "migliore",
         "posti", "posto", "quanti posti", "tutte le barche",
 
         "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
@@ -327,7 +357,10 @@ def is_relevant(user_message: str) -> bool:
         "vegetariano", "vegano", "alergia", "alergias",
         "glúten", "gluten", "sem glúten", "sem gluten",
         "pessoas", "pessoa", "somos", "temos",
-        "recomenda", "sugere", "diferença", "comparação", "comparacao",
+        "recomenda", "sugere",
+        "diferença", "comparação", "comparacao",
+        "qual é melhor", "qual e melhor",
+        "qual é o melhor", "qual e o melhor", "melhor",
         "lugares", "quantos lugares", "vagas", "todos os barcos"
     ]
 
@@ -337,7 +370,7 @@ def is_relevant(user_message: str) -> bool:
 def is_followup(user_message: str) -> bool:
     text = user_message.lower().strip()
 
-    followups = {
+    exact_followups = {
         "yes", "yes please", "ok", "okay", "sure", "please",
         "tell me more", "go ahead", "continue",
         "ναι", "οκ", "εντάξει", "συνέχισε",
@@ -345,7 +378,73 @@ def is_followup(user_message: str) -> bool:
         "sim", "claro", "continue"
     }
 
-    return text in followups
+    if text in exact_followups:
+        return True
+
+    followup_patterns = [
+        r"^and\b",
+        r"^and for\b",
+        r"^what about\b",
+        r"^how about\b",
+        r"^for the\b",
+        r"^what about the\b",
+
+        r"^και\b",
+        r"^και για\b",
+        r"^τι γίνεται με\b",
+        r"^τι γινεται με\b",
+
+        r"^e per\b",
+        r"^e per il\b",
+        r"^e per la\b",
+        r"^che mi dici di\b",
+
+        r"^e para\b",
+        r"^e quanto a\b",
+        r"^e sobre\b"
+    ]
+
+    return any(re.search(pattern, text) for pattern in followup_patterns)
+
+
+def is_best_choice_question(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    keywords = [
+        "which is the best",
+        "which one is the best",
+        "which is better",
+        "which one is better",
+        "what do you recommend",
+        "what would you recommend",
+        "best option",
+        "best for us",
+
+        "ποιο είναι το καλύτερο",
+        "ποιο ειναι το καλυτερο",
+        "ποιο είναι καλύτερο",
+        "ποιο ειναι καλυτερο",
+        "τι προτείνεις",
+        "τι προτεινεις",
+        "τι προτείνετε",
+        "τι προτεινετε",
+
+        "qual è il migliore",
+        "qual e il migliore",
+        "qual è meglio",
+        "qual e meglio",
+        "cosa consigli",
+
+        "qual é o melhor",
+        "qual e o melhor",
+        "qual é melhor",
+        "qual e melhor",
+        "o que recomenda",
+        "o que você recomenda",
+        "o que voce recomenda"
+    ]
+
+    return any(k in text for k in keywords)
 
 
 def is_capacity_request(user_message: str) -> bool:
@@ -576,7 +675,6 @@ def filter_results_by_cruise_type(results, cruise_type: str | None):
 
         if is_private_result:
             private_matches.append(item)
-
         elif is_shared_result:
             shared_matches.append(item)
 
@@ -642,6 +740,27 @@ def get_last_tour_and_date_from_history(
                 return current_tour, current_date
 
     return current_tour, current_date
+
+
+def get_effective_date(user_message: str, history: list[dict] | None = None) -> str | None:
+    current_date = detect_date(user_message)
+    if current_date:
+        return current_date
+
+    if history:
+        for item in reversed(history[-10:]):
+            if item.get("role") != "user":
+                continue
+
+            content = item.get("content", "").strip()
+            if not content:
+                continue
+
+            previous_date = detect_date(content)
+            if previous_date:
+                return previous_date
+
+    return detect_date("today")
 
 
 def get_capacity_number(data) -> int | None:
@@ -842,6 +961,149 @@ def build_multi_capacity_reply(results: list[dict], language: str) -> str:
     return "\n".join(lines)
 
 
+def build_best_choice_reply(
+    history: list[dict],
+    language: str,
+    passenger_count: int | None = None
+) -> str:
+    recent_text = " ".join(
+        item.get("content", "")
+        for item in history[-10:]
+        if item.get("role") in {"user", "assistant"}
+    ).lower()
+
+    mentions_red = "red" in recent_text
+    mentions_diamond = "diamond" in recent_text
+    mentions_gems = "gems" in recent_text
+    group_large = isinstance(passenger_count, int) and passenger_count >= 10
+
+    if language == "el":
+        if mentions_red and mentions_diamond:
+            if group_large:
+                return (
+                    f"Για {passenger_count} άτομα, το Red Cruise είναι συνήθως η καλύτερη επιλογή "
+                    "αν προτιμάτε πιο ζωντανή ατμόσφαιρα και πολύ καλή σχέση αξίας.\n\n"
+                    "Αν προτιμάτε κάτι πιο premium και πιο χαλαρό, τότε το Diamond είναι η καλύτερη επιλογή.\n\n"
+                    "Με απλά λόγια:\n"
+                    "Red = καλύτερη αξία για μεγαλύτερη παρέα\n"
+                    "Diamond = πιο premium συνολική εμπειρία"
+                )
+            return (
+                "Το Red Cruise είναι συνήθως η καλύτερη επιλογή αν προτιμάτε πιο ζωντανή ατμόσφαιρα και πολύ καλή σχέση αξίας.\n\n"
+                "Αν προτιμάτε κάτι πιο premium και πιο χαλαρό, τότε το Diamond είναι η καλύτερη επιλογή.\n\n"
+                "Με απλά λόγια:\n"
+                "Red = καλύτερη αξία\n"
+                "Diamond = πιο premium εμπειρία"
+            )
+
+        if mentions_red and mentions_gems:
+            return (
+                "Το Red Cruise είναι συνήθως η καλύτερη επιλογή αν θέλετε πιο ζωντανή ατμόσφαιρα και καλύτερη αξία.\n\n"
+                "Το Gems είναι καλύτερο αν προτιμάτε πιο άνετη και πιο refined εμπειρία.\n\n"
+                "Με απλά λόγια:\n"
+                "Red = καλύτερη αξία\n"
+                "Gems = πιο ισορροπημένη και πιο άνετη εμπειρία"
+            )
+
+        if mentions_diamond:
+            return (
+                "Το Diamond είναι η καλύτερη επιλογή αν προτεραιότητά σας είναι μια πιο premium και πιο ξεχωριστή εμπειρία."
+            )
+
+        return (
+            "Εξαρτάται από το τι προτιμάτε περισσότερο.\n\n"
+            "Για καλύτερη αξία και πιο ζωντανή ατμόσφαιρα, το Red είναι συνήθως η πιο δυνατή επιλογή.\n"
+            "Για πιο premium και πιο χαλαρή εμπειρία, το Diamond ή το Gems είναι συνήθως καλύτερα."
+        )
+
+    if language == "it":
+        if mentions_red and mentions_diamond:
+            if group_large:
+                return (
+                    f"Per {passenger_count} persone, la Red Cruise è di solito la scelta migliore "
+                    "se preferite un’atmosfera più vivace e un ottimo rapporto qualità-prezzo.\n\n"
+                    "Se invece desiderate qualcosa di più premium e più rilassato, allora Diamond è la scelta migliore.\n\n"
+                    "In breve:\n"
+                    "Red = migliore valore per un gruppo più grande\n"
+                    "Diamond = esperienza complessiva più premium"
+                )
+            return (
+                "La Red Cruise è di solito la scelta migliore se preferite un’atmosfera più vivace e un ottimo rapporto qualità-prezzo.\n\n"
+                "Se invece desiderate qualcosa di più premium e più rilassato, allora Diamond è la scelta migliore.\n\n"
+                "In breve:\n"
+                "Red = migliore valore\n"
+                "Diamond = esperienza più premium"
+            )
+
+        return (
+            "Dipende dal tipo di esperienza che preferite.\n\n"
+            "Per un’atmosfera più vivace e un ottimo rapporto qualità-prezzo, Red è di solito la scelta migliore.\n"
+            "Per un’esperienza più premium e rilassata, Diamond o Gems sono generalmente opzioni migliori."
+        )
+
+    if language == "pt":
+        if mentions_red and mentions_diamond:
+            if group_large:
+                return (
+                    f"Para {passenger_count} pessoas, o Red Cruise costuma ser a melhor opção "
+                    "se preferirem um ambiente mais animado e uma excelente relação qualidade-preço.\n\n"
+                    "Se preferirem algo mais premium e mais tranquilo, então o Diamond é a melhor escolha.\n\n"
+                    "Em resumo:\n"
+                    "Red = melhor valor para um grupo maior\n"
+                    "Diamond = experiência geral mais premium"
+                )
+            return (
+                "O Red Cruise costuma ser a melhor opção se preferirem um ambiente mais animado e uma excelente relação qualidade-preço.\n\n"
+                "Se preferirem algo mais premium e mais tranquilo, então o Diamond é a melhor escolha.\n\n"
+                "Em resumo:\n"
+                "Red = melhor valor\n"
+                "Diamond = experiência mais premium"
+            )
+
+        return (
+            "Depende do tipo de experiência que preferem.\n\n"
+            "Para um ambiente mais animado e melhor valor, o Red costuma ser a melhor opção.\n"
+            "Para uma experiência mais premium e mais tranquila, Diamond ou Gems costumam ser melhores escolhas."
+        )
+
+    if mentions_red and mentions_diamond:
+        if group_large:
+            return (
+                f"For {passenger_count} people, Red Cruise is usually the best choice if you prefer a more lively atmosphere and very good value.\n\n"
+                "If you prefer a more premium and more relaxed experience, Diamond is the stronger option.\n\n"
+                "In simple terms:\n"
+                "Red = best value for a larger group\n"
+                "Diamond = more premium overall experience"
+            )
+        return (
+            "Red Cruise is usually the best choice if you prefer a more lively atmosphere and very good value.\n\n"
+            "If you prefer a more premium and more relaxed experience, Diamond is the stronger option.\n\n"
+            "In simple terms:\n"
+            "Red = best value\n"
+            "Diamond = more premium overall experience"
+        )
+
+    if mentions_red and mentions_gems:
+        return (
+            "Red Cruise is usually the best choice if you prefer a more lively atmosphere and better value.\n\n"
+            "Gems is the stronger option if you prefer a more comfortable and more refined experience.\n\n"
+            "In simple terms:\n"
+            "Red = best value\n"
+            "Gems = more balanced and more comfortable experience"
+        )
+
+    if mentions_diamond:
+        return (
+            "Diamond is the best choice if your priority is a more premium and more distinctive experience."
+        )
+
+    return (
+        "It depends on the kind of experience you prefer.\n\n"
+        "For better value and a more lively atmosphere, Red is usually the strongest choice.\n"
+        "For a more premium and more relaxed experience, Diamond or Gems are usually better options."
+    )
+
+
 @app.get("/")
 def root():
     return {"message": "Santorini bot is running"}
@@ -872,7 +1134,7 @@ def chat(request: ChatRequest):
         date_str = detect_date(user_message)
         period = detect_period(user_message)
         passenger_count = detect_passenger_count(user_message, history)
-        effective_date = date_str or detect_date("today")
+        effective_date = date_str or get_effective_date(user_message, history)
 
         results = find_available_tours(
             effective_date,
@@ -901,7 +1163,14 @@ def chat(request: ChatRequest):
     date_str = detect_date(user_message)
     period = detect_period(user_message)
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
-    availability_intent = is_availability_request(user_message)
+    availability_intent = (
+        is_availability_request(user_message)
+        or (is_followup(user_message) and has_recent_availability_context(history))
+        or (
+            detect_period(user_message) is not None
+            and has_recent_availability_context(history)
+        )
+    )
     passenger_count = detect_passenger_count(user_message, history)
 
     if tour_key and date_str:
@@ -911,7 +1180,7 @@ def chat(request: ChatRequest):
         return {"reply": reply_text}
 
     if date_str or availability_intent:
-        effective_date = date_str or detect_date("today")
+        effective_date = get_effective_date(user_message, history)
         results = find_available_tours(
             effective_date,
             period,
@@ -931,6 +1200,14 @@ def chat(request: ChatRequest):
             return {"reply": reply_text}
 
         return {"reply": get_text("availability_fallback", language)}
+
+    if is_best_choice_question(user_message) and history:
+        reply = build_best_choice_reply(
+            history=history,
+            language=language,
+            passenger_count=detect_passenger_count(user_message, history)
+        )
+        return {"reply": reply}
 
     if is_greeting(user_message):
         return {
@@ -987,6 +1264,10 @@ Knowledge:
 - Use only the company knowledge provided
 - Do not invent information
 - If something is not available (e.g. halal), say it clearly and suggest alternatives
+- Never say that you cannot check live availability if the bot can route the request to the booking or availability flow
+- For follow-up questions such as "and for sunset?" or "what about the morning one?", treat them as a continuation of the previous cruise/availability context when relevant
+- Do not use markdown bold with asterisks in your replies
+- Do not use words like cheap or cheaper for cruise recommendations; prefer phrases such as better value, very good value, more premium, more relaxed, or more lively
 
 Special handling:
 - Cruise ship guests should be directed to WhatsApp
