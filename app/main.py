@@ -1,4 +1,5 @@
 import re
+from datetime import date, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE LOADED")
+print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE + SMARTER WHATSAPP LOADED")
 
 
 class ChatRequest(BaseModel):
@@ -92,6 +93,12 @@ def get_text(key: str, language: str) -> str:
             "it": f"Per gli ospiti delle navi da crociera, consigliamo gentilmente di contattarci direttamente via WhatsApp così potremo assistervi in base all’orario della vostra nave:\n{WHATSAPP_LINK}",
             "pt": f"Para passageiros de cruzeiro, recomendamos gentilmente que nos contacte diretamente via WhatsApp para que possamos ajudar de acordo com o horário do seu navio:\n{WHATSAPP_LINK}",
         },
+        "contact_reply": {
+            "en": f"You can contact our reservations team directly on WhatsApp and we’ll be happy to assist you:\n{WHATSAPP_LINK}",
+            "el": f"Μπορείτε να επικοινωνήσετε απευθείας με το τμήμα κρατήσεων μέσω WhatsApp και θα χαρούμε να σας εξυπηρετήσουμε:\n{WHATSAPP_LINK}",
+            "it": f"Puoi contattare direttamente il nostro team prenotazioni su WhatsApp e saremo felici di aiutarti:\n{WHATSAPP_LINK}",
+            "pt": f"Pode contactar diretamente a nossa equipa de reservas via WhatsApp e teremos todo o gosto em ajudar:\n{WHATSAPP_LINK}",
+        },
         "irrelevant_reply": {
             "en": "I can assist only with questions related to our cruises in Santorini.",
             "el": "Μπορώ να βοηθήσω μόνο με ερωτήσεις που σχετίζονται με τις κρουαζιέρες μας στη Σαντορίνη.",
@@ -99,16 +106,46 @@ def get_text(key: str, language: str) -> str:
             "pt": "Só posso ajudar com questões relacionadas com os nossos cruzeiros em Santorini.",
         },
         "availability_fallback": {
-            "en": f"The best way to check the latest availability is through our booking page:\n{BOOKING_LINK}\n\nSimply select your preferred date and you’ll see all available options instantly.",
-            "el": f"Ο καλύτερος τρόπος για να δείτε την πιο πρόσφατη διαθεσιμότητα είναι μέσω της σελίδας κρατήσεών μας:\n{BOOKING_LINK}\n\nΑπλώς επιλέξτε την ημερομηνία που προτιμάτε και θα δείτε άμεσα όλες τις διαθέσιμες επιλογές.",
-            "it": f"Il modo migliore per controllare la disponibilità più aggiornata è tramite la nostra pagina di prenotazione:\n{BOOKING_LINK}\n\nTi basta selezionare la data che preferisci e vedrai subito tutte le opzioni disponibili.",
-            "pt": f"A melhor forma de verificar a disponibilidade mais atualizada é através da nossa página de reservas:\n{BOOKING_LINK}\n\nBasta selecionar a data pretendida e verá imediatamente todas as opções disponíveis.",
+            "en": f"The best way to check the latest availability is through our booking page:\n{BOOKING_LINK}\n\nSimply select your preferred date and you’ll see all available options instantly.\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
+            "el": f"Ο καλύτερος τρόπος για να δείτε την πιο πρόσφατη διαθεσιμότητα είναι μέσω της σελίδας κρατήσεών μας:\n{BOOKING_LINK}\n\nΑπλώς επιλέξτε την ημερομηνία που προτιμάτε και θα δείτε άμεσα όλες τις διαθέσιμες επιλογές.\n\nΓια οποιαδήποτε διευκρίνιση, μπορείτε να επικοινωνήσετε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
+            "it": f"Il modo migliore per controllare la disponibilità più aggiornata è tramite la nostra pagina di prenotazione:\n{BOOKING_LINK}\n\nTi basta selezionare la data che preferisci e vedrai subito tutte le opzioni disponibili.\n\nPer qualsiasi chiarimento, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
+            "pt": f"A melhor forma de verificar a disponibilidade mais atualizada é através da nossa página de reservas:\n{BOOKING_LINK}\n\nBasta selecionar a data pretendida e verá imediatamente todas as opções disponíveis.\n\nPara qualquer esclarecimento, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
         },
         "spots_fallback": {
             "en": "I’m sorry, I could not identify the exact cruise from the previous message. Please tell me the cruise name and date, and I’ll gladly check the number of available spots for you.",
             "el": "Λυπάμαι, δεν μπόρεσα να εντοπίσω ακριβώς ποια κρουαζιέρα εννοείτε από το προηγούμενο μήνυμα. Πείτε μου το όνομα της κρουαζιέρας και την ημερομηνία και θα ελέγξω ευχαρίστως τις διαθέσιμες θέσεις.",
             "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere i posti disponibili.",
-            "pt": "Lamento, não consegui identificar exatamente o cruzeiro a partir da mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto os lugares disponíveis.",
+            "pt": "Lamento, não consegui identificar exatamente o cruzeiro a partir do mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto os lugares disponíveis.",
+        },
+        "booking_details_reply": {
+            "en": f"I can’t see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp and we’ll gladly assist you directly:\n{WHATSAPP_LINK}",
+            "el": f"Δεν μπορώ να δω προσωπικά στοιχεία κράτησης εδώ. Παρακαλούμε ελέγξτε την επιβεβαίωση της κράτησής σας ή επικοινωνήστε μαζί μας στο WhatsApp και θα χαρούμε να σας εξυπηρετήσουμε:\n{WHATSAPP_LINK}",
+            "it": f"Non posso vedere qui i dettagli personali della prenotazione. Ti preghiamo di controllare la conferma della prenotazione oppure di contattarci su WhatsApp e saremo lieti di aiutarti:\n{WHATSAPP_LINK}",
+            "pt": f"Não consigo ver aqui os dados pessoais da reserva. Por favor consulte a confirmação da sua reserva ou contacte-nos via WhatsApp e teremos todo o gosto em ajudar:\n{WHATSAPP_LINK}",
+        },
+        "whatsapp_uncertain_reply": {
+            "en": f"I don’t have that exact detail here, but our team can assist you directly on WhatsApp:\n{WHATSAPP_LINK}",
+            "el": f"Δεν έχω αυτή την ακριβή πληροφορία εδώ, αλλά η ομάδα μας μπορεί να σας βοηθήσει απευθείας στο WhatsApp:\n{WHATSAPP_LINK}",
+            "it": f"Non ho qui questo dettaglio preciso, ma il nostro team può aiutarti direttamente su WhatsApp:\n{WHATSAPP_LINK}",
+            "pt": f"Não tenho aqui esse detalhe exato, mas a nossa equipa pode ajudar diretamente via WhatsApp:\n{WHATSAPP_LINK}",
+        },
+        "morning_unavailable_reply": {
+            "en": f"Morning cruises are available only until 24 October 2026, so the requested morning cruise is not available on that date.\n\nDuring that period, only sunset cruises are operating.\n\nYou can check availability here:\n{BOOKING_LINK}\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
+            "el": f"Οι πρωινές κρουαζιέρες είναι διαθέσιμες μόνο έως τις 24 Οκτωβρίου 2026, επομένως η ζητούμενη πρωινή κρουαζιέρα δεν είναι διαθέσιμη για εκείνη την ημερομηνία.\n\nΚατά την περίοδο αυτή πραγματοποιούνται μόνο απογευματινές κρουαζιέρες ηλιοβασιλέματος.\n\nΜπορείτε να δείτε τη διαθεσιμότητα εδώ:\n{BOOKING_LINK}\n\nΓια οποιαδήποτε διευκρίνιση, επικοινωνήστε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
+            "it": f"Le crociere mattutine sono disponibili solo fino al 24 ottobre 2026, quindi la crociera mattutina richiesta non è disponibile in quella data.\n\nDurante quel periodo operano solo le crociere al tramonto.\n\nPuoi controllare la disponibilità qui:\n{BOOKING_LINK}\n\nPer qualsiasi chiarimento, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
+            "pt": f"Os cruzeiros da manhã estão disponíveis apenas até 24 de outubro de 2026, por isso o cruzeiro da manhã solicitado não está disponível nessa data.\n\nDurante esse período operam apenas os cruzeiros ao pôr do sol.\n\nPode verificar a disponibilidade aqui:\n{BOOKING_LINK}\n\nPara qualquer esclarecimento, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
+        },
+        "sunset_only_reply": {
+            "en": f"During that period, we operate sunset cruises only.\n\nThe sunset cruise is a beautiful experience, as you can enjoy the famous Santorini sunset from the sea.\n\nYou can check availability here:\n{BOOKING_LINK}\n\nIf you need help choosing, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
+            "el": f"Κατά την περίοδο αυτή πραγματοποιούνται μόνο απογευματινές κρουαζιέρες ηλιοβασιλέματος.\n\nΗ απογευματινή κρουαζιέρα είναι μια όμορφη εμπειρία, καθώς μπορείτε να απολαύσετε το διάσημο ηλιοβασίλεμα της Σαντορίνης από τη θάλασσα.\n\nΜπορείτε να δείτε τη διαθεσιμότητα εδώ:\n{BOOKING_LINK}\n\nΑν χρειάζεστε βοήθεια για να επιλέξετε, επικοινωνήστε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
+            "it": f"Durante quel periodo operano solo le crociere al tramonto.\n\nLa crociera al tramonto è una bellissima esperienza, perché permette di ammirare il famoso tramonto di Santorini dal mare.\n\nPuoi controllare la disponibilità qui:\n{BOOKING_LINK}\n\nSe hai bisogno di aiuto nella scelta, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
+            "pt": f"Durante esse período operam apenas os cruzeiros ao pôr do sol.\n\nO cruzeiro ao pôr do sol é uma experiência muito bonita, pois permite apreciar o famoso pôr do sol de Santorini a partir do mar.\n\nPode verificar a disponibilidade aqui:\n{BOOKING_LINK}\n\nSe precisar de ajuda para escolher, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
+        },
+        "off_season_reply": {
+            "en": f"Our cruises are not operating during that period, as the season is closed.\n\nWe resume from 15 March 2027.\n\nYou can check available dates here:\n{BOOKING_LINK}\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
+            "el": f"Οι κρουαζιέρες μας δεν πραγματοποιούνται κατά την περίοδο αυτή, καθώς η σεζόν είναι κλειστή.\n\nΞεκινάμε ξανά από τις 15 Μαρτίου 2027.\n\nΜπορείτε να δείτε τις διαθέσιμες ημερομηνίες εδώ:\n{BOOKING_LINK}\n\nΓια οποιαδήποτε διευκρίνιση, επικοινωνήστε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
+            "it": f"Le nostre crociere non operano in quel periodo, poiché la stagione è chiusa.\n\nRiprendiamo dal 15 marzo 2027.\n\nPuoi controllare le date disponibili qui:\n{BOOKING_LINK}\n\nPer qualsiasi chiarimento, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
+            "pt": f"Os nossos cruzeiros não operam durante esse período, pois a temporada está encerrada.\n\nRetomamos a partir de 15 de março de 2027.\n\nPode verificar as datas disponíveis aqui:\n{BOOKING_LINK}\n\nPara qualquer esclarecimento, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
         },
     }
 
@@ -244,6 +281,68 @@ def is_cruise_passenger(user_message: str) -> bool:
     return any(k in text for k in keywords)
 
 
+def is_contact_request(user_message: str) -> bool:
+    text = user_message.lower()
+
+    keywords = [
+        "contact", "contact you", "how can i contact",
+        "reservation department", "reservations",
+        "phone", "call you", "email", "reach you",
+        "whatsapp", "do you have whatsapp",
+
+        "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "πως να επικοινωνησω", "πώς να επικοινωνήσω",
+        "τηλέφωνο", "τηλεφωνο", "κρατήσεις", "κρατησεων", "whatsapp",
+
+        "contattare", "contatto", "telefono", "whatsapp",
+
+        "contactar", "contacto", "telefone", "whatsapp"
+    ]
+
+    return any(k in text for k in keywords)
+
+
+def is_personal_booking_request(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    keywords = [
+        "my pickup", "my pick-up", "pick up time", "pickup time", "pick-up time",
+        "my booking", "my reservation", "my transfer", "my ticket",
+        "can you check my booking", "can you see my booking", "can you confirm my booking",
+        "can you check my reservation", "can you see my reservation",
+        "booking number", "reservation number", "confirm my transfer",
+
+        "η κράτησή μου", "η κρατηση μου", "το booking μου", "η παραλαβή μου", "η παραλαβη μου",
+        "ώρα παραλαβής", "ωρα παραλαβης", "επιβεβαίωση κράτησης", "επιβεβαιωση κρατησης",
+
+        "la mia prenotazione", "il mio transfer", "orario di pick-up", "numero di prenotazione",
+
+        "a minha reserva", "o meu transfer", "hora do pickup", "número da reserva", "numero da reserva"
+    ]
+
+    return any(k in text for k in keywords)
+
+
+def is_uncertain_whatsapp_case(user_message: str) -> bool:
+    text = user_message.lower()
+
+    keywords = [
+        "wheelchair", "accessible", "accessibility", "mobility",
+        "bring beverages", "bring drinks", "bring alcohol", "bring wine", "bring beer",
+        "what beer do you have", "which beer do you have", "beer brand", "beer brands",
+        "special request", "special arrangement", "custom request",
+        "proposal", "fireworks",
+
+        "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
+        "να φέρω ποτά", "να φερω ποτα", "τι μπίρα έχετε", "τι μπυρα εχετε", "ειδικό αίτημα", "ειδικο αιτημα",
+
+        "sedia a rotelle", "accessibile", "portare bevande", "quale birra avete", "richiesta speciale",
+
+        "cadeira de rodas", "acessível", "acessivel", "trazer bebidas", "que cerveja têm", "pedido especial"
+    ]
+
+    return any(k in text for k in keywords)
+
+
 def is_availability_request(user_message: str) -> bool:
     text = user_message.lower().strip()
 
@@ -303,10 +402,10 @@ def is_relevant(user_message: str) -> bool:
         "price", "availability", "available",
         "private", "shared",
         "sunset", "morning",
-        "pickup", "port", "catamaran",
+        "pickup", "pick-up", "port", "catamaran",
         "booking", "book", "reservation",
         "cancel", "refund", "weather",
-        "food", "drinks", "drink", "menu", "meal",
+        "food", "drinks", "drink", "beverage", "beverages", "beer", "menu", "meal",
         "vegetarian", "vegan", "halal", "kosher",
         "dietary", "allergy", "allergies",
         "gluten", "gluten free", "gluten-free",
@@ -315,24 +414,24 @@ def is_relevant(user_message: str) -> bool:
         "red beach", "white beach", "hot springs",
         "pets", "pet", "dog", "dogs", "animal", "animals",
         "kids", "group", "guests",
-
         "people", "persons", "person",
         "we are", "we have",
         "recommend", "suggest", "suggestion",
         "what do you recommend", "what do you suggest",
-
         "difference", "compare", "comparison",
         "which one", "which is better", "which is the best",
         "best", "best option", "better", "vs", "or",
-
         "red", "diamond", "gems", "platinum",
         "lagoon", "emily", "ferretti",
-
         "spot", "spots", "seat", "seats", "place", "places", "left", "vessel", "vessels", "all available",
+        "onboard", "on board", "bring", "wear", "clothes", "clothing", "shoes", "swimwear",
+        "towel", "towels", "snorkeling", "snorkel",
+        "wheelchair", "accessible", "accessibility", "mobility",
+        "contact", "whatsapp", "phone", "email", "reservation department",
 
         "κρουαζιέρα", "κρουαζιερες", "τιμή", "διαθεσιμότητα",
         "ιδιωτική", "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
-        "φαγητό", "ποτό", "ποτά", "μενού",
+        "φαγητό", "ποτό", "ποτά", "μενού", "μπίρα", "μπυρα", "αναψυκτικά", "αναψυκτικα",
         "χορτοφαγ", "βίγκαν", "χαλάλ", "αλλεργ",
         "γλουτένη", "χωρίς γλουτένη", "κοιλιοκάκη",
         "άτομα", "άτομο", "είμαστε", "έχουμε",
@@ -342,10 +441,13 @@ def is_relevant(user_message: str) -> bool:
         "θέσεις", "θέση", "πόσες θέσεις", "πόσα άτομα μένουν", "όλα τα σκάφη", "όλα τα διαθέσιμα",
         "κατοικίδιο", "κατοικιδιο", "κατοικίδια", "κατοικιδια",
         "σκύλος", "σκυλος", "σκυλιά", "σκυλια", "ζώο", "ζωο", "ζώα", "ζωα",
+        "να φέρω", "να φερω", "τι να φορέσω", "τι να φορεσω", "πετσέτα", "πετσετα",
+        "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
+        "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "τηλέφωνο", "τηλεφωνο", "whatsapp",
 
         "crociera", "crociere", "prezzo", "disponibilità",
         "privata", "tramonto", "mattina",
-        "cibo", "bevande", "menu",
+        "cibo", "bevande", "birra", "menu",
         "vegetariano", "vegano", "halal",
         "allergie", "glutine", "senza glutine",
         "persone", "persona", "siamo", "abbiamo",
@@ -354,10 +456,12 @@ def is_relevant(user_message: str) -> bool:
         "qual è il migliore", "qual e il migliore", "migliore",
         "posti", "posto", "quanti posti", "tutte le barche",
         "cane", "cani", "animale", "animali",
+        "portare", "indossare", "asciugamano", "sedia a rotelle", "accessibile",
+        "contattare", "contatto", "telefono", "whatsapp",
 
         "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
         "privado", "partilhado", "compartilhado",
-        "comida", "bebidas", "menu",
+        "comida", "bebidas", "cerveja", "menu",
         "vegetariano", "vegano", "alergia", "alergias",
         "glúten", "gluten", "sem glúten", "sem gluten",
         "pessoas", "pessoa", "somos", "temos",
@@ -366,7 +470,9 @@ def is_relevant(user_message: str) -> bool:
         "qual é melhor", "qual e melhor",
         "qual é o melhor", "qual e o melhor", "melhor",
         "lugares", "quantos lugares", "vagas", "todos os barcos",
-        "cão", "cao", "cães", "caes", "animal", "animais"
+        "cão", "cao", "cães", "caes", "animal", "animais",
+        "trazer", "vestir", "toalha", "cadeira de rodas", "acessível", "acessivel",
+        "contactar", "contacto", "telefone", "whatsapp"
     ]
 
     return any(k in text for k in keywords)
@@ -786,6 +892,9 @@ def get_capacity_number(data) -> int | None:
 
 
 def build_capacity_reply(data, language: str) -> str:
+    if not isinstance(data, dict):
+        return get_text("availability_fallback", language)
+
     spots = get_capacity_number(data)
     cruise_name = data.get("reply_label", "this cruise")
     booking_url = data.get("booking_url", BOOKING_LINK)
@@ -1109,6 +1218,83 @@ def build_best_choice_reply(
     )
 
 
+def parse_iso_date(value: str | None) -> date | None:
+    if not value:
+        return None
+
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+def get_requested_period(tour_key: str | None, period: str | None) -> str | None:
+    if tour_key:
+        lowered = tour_key.lower()
+        if "morning" in lowered:
+            return "morning"
+        if "sunset" in lowered:
+            return "sunset"
+    return period
+
+
+def get_seasonal_reply(
+    date_str: str | None,
+    language: str,
+    tour_key: str | None = None,
+    period: str | None = None,
+    generic_availability: bool = False,
+) -> str | None:
+    requested_date = parse_iso_date(date_str)
+    if not requested_date:
+        return None
+
+    requested_period = get_requested_period(tour_key, period)
+
+    sunset_only_start = date(2026, 10, 25)
+    sunset_only_end = date(2026, 11, 15)
+    off_season_start = date(2026, 11, 16)
+    season_resume = date(2027, 3, 15)
+
+    if off_season_start <= requested_date < season_resume:
+        return get_text("off_season_reply", language)
+
+    if sunset_only_start <= requested_date <= sunset_only_end:
+        if requested_period == "morning":
+            return get_text("morning_unavailable_reply", language)
+
+        if generic_availability and requested_period is None and tour_key is None:
+            return get_text("sunset_only_reply", language)
+
+    return None
+
+
+def safe_check_tour_availability(tour_key: str, date_str: str):
+    try:
+        return check_tour_availability(tour_key, date_str)
+    except Exception as exc:
+        print(f"Availability lookup error for {tour_key} on {date_str}: {exc}")
+        return None
+
+
+def safe_find_available_tours(
+    effective_date: str,
+    period: str | None,
+    user_message: str,
+    passenger_count: int | None,
+):
+    try:
+        return find_available_tours(
+            effective_date,
+            period,
+            user_message,
+            passenger_count
+        )
+    except Exception as exc:
+        print(f"Availability search error for {effective_date}: {exc}")
+        return None
+
+
 @app.get("/")
 def root():
     return {"message": "Santorini bot is running"}
@@ -1121,19 +1307,71 @@ def chat(request: ChatRequest):
     language = detect_language(user_message)
 
     if not user_message:
-        return {
-            "reply": get_text("empty_reply", language)
-        }
+        return {"reply": get_text("empty_reply", language)}
 
     if is_discount_request(user_message):
-        return {
-            "reply": get_text("discount_reply", language)
-        }
+        return {"reply": get_text("discount_reply", language)}
 
     if is_cruise_passenger(user_message):
-        return {
-            "reply": get_text("cruise_passenger_reply", language)
-        }
+        return {"reply": get_text("cruise_passenger_reply", language)}
+
+    if is_contact_request(user_message):
+        return {"reply": get_text("contact_reply", language)}
+
+    if is_personal_booking_request(user_message):
+        return {"reply": get_text("booking_details_reply", language)}
+
+    if is_uncertain_whatsapp_case(user_message):
+        conversation_history = ""
+        if history:
+            lines = []
+            for item in history[-8:]:
+                role = item.get("role", "")
+                content = item.get("content", "")
+                if role == "user":
+                    lines.append(f"User: {content}")
+                elif role == "assistant":
+                    lines.append(f"Assistant: {content}")
+            conversation_history = "\n".join(lines)
+
+        knowledge = get_company_knowledge()
+
+        prompt = f"""
+You are the Sunset Oia digital assistant.
+
+IMPORTANT LANGUAGE RULE:
+- Always reply in the same language as the user's latest message.
+
+Your tone:
+- Warm, natural and human
+- Friendly and professional
+- Keep replies short (3–5 lines)
+
+Knowledge:
+- Use only the company knowledge provided
+- Do not invent information
+- If the detail is sensitive, uncertain, or case-specific, give the best safe guidance and suggest WhatsApp
+- For wheelchair / accessibility questions, explain carefully and suggest WhatsApp
+- For bringing specific beverages or exact beer brands, explain briefly and suggest WhatsApp
+- Never say the question is irrelevant if it logically relates to the cruise experience
+
+WHATSAPP:
+{WHATSAPP_LINK}
+
+COMPANY KNOWLEDGE:
+{knowledge}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+USER MESSAGE:
+{user_message}
+"""
+        try:
+            reply = get_ai_reply(prompt)
+            return {"reply": reply}
+        except Exception:
+            return {"reply": get_text("whatsapp_uncertain_reply", language)}
 
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
         date_str = detect_date(user_message)
@@ -1141,7 +1379,16 @@ def chat(request: ChatRequest):
         passenger_count = detect_passenger_count(user_message, history)
         effective_date = date_str or get_effective_date(user_message, history)
 
-        results = find_available_tours(
+        seasonal_reply = get_seasonal_reply(
+            date_str=effective_date,
+            language=language,
+            period=period,
+            generic_availability=True,
+        )
+        if seasonal_reply:
+            return {"reply": seasonal_reply}
+
+        results = safe_find_available_tours(
             effective_date,
             period,
             user_message,
@@ -1157,10 +1404,20 @@ def chat(request: ChatRequest):
     if is_capacity_request(user_message):
         last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
 
+        seasonal_reply = get_seasonal_reply(
+            date_str=last_date_str,
+            language=language,
+            tour_key=last_tour_key,
+        )
+        if seasonal_reply:
+            return {"reply": seasonal_reply}
+
         if last_tour_key and last_date_str:
-            data = check_tour_availability(last_tour_key, last_date_str)
-            reply_text = build_capacity_reply(data, language)
-            return {"reply": reply_text}
+            data = safe_check_tour_availability(last_tour_key, last_date_str)
+            if data:
+                reply_text = build_capacity_reply(data, language)
+                return {"reply": reply_text}
+            return {"reply": get_text("availability_fallback", language)}
 
         return {"reply": get_text("spots_fallback", language)}
 
@@ -1178,20 +1435,46 @@ def chat(request: ChatRequest):
     )
     passenger_count = detect_passenger_count(user_message, history)
 
+    seasonal_reply = get_seasonal_reply(
+        date_str=date_str,
+        language=language,
+        tour_key=tour_key,
+        period=period,
+        generic_availability=availability_intent,
+    )
+    if seasonal_reply:
+        return {"reply": seasonal_reply}
+
     if tour_key and date_str:
-        data = check_tour_availability(tour_key, date_str)
-        reply_text = build_availability_reply(data)
-        reply_text = translate_availability_reply(reply_text, language)
-        return {"reply": reply_text}
+        data = safe_check_tour_availability(tour_key, date_str)
+        if data:
+            reply_text = build_availability_reply(data)
+            reply_text = translate_availability_reply(reply_text, language)
+            return {"reply": reply_text}
+        return {"reply": get_text("availability_fallback", language)}
 
     if date_str or availability_intent:
         effective_date = get_effective_date(user_message, history)
-        results = find_available_tours(
+
+        seasonal_reply = get_seasonal_reply(
+            date_str=effective_date,
+            language=language,
+            tour_key=tour_key,
+            period=period,
+            generic_availability=True,
+        )
+        if seasonal_reply:
+            return {"reply": seasonal_reply}
+
+        results = safe_find_available_tours(
             effective_date,
             period,
             user_message,
             passenger_count
         )
+        if results is None:
+            return {"reply": get_text("availability_fallback", language)}
+
         filtered_results = filter_results_by_cruise_type(results, cruise_type_intent)
 
         if filtered_results:
@@ -1215,14 +1498,10 @@ def chat(request: ChatRequest):
         return {"reply": reply}
 
     if is_greeting(user_message):
-        return {
-            "reply": get_text("greeting_reply", language)
-        }
+        return {"reply": get_text("greeting_reply", language)}
 
     if not is_relevant(user_message) and not is_followup(user_message):
-        return {
-            "reply": get_text("irrelevant_reply", language)
-        }
+        return {"reply": get_text("irrelevant_reply", language)}
 
     conversation_history = ""
     if history:
@@ -1255,7 +1534,7 @@ Your tone:
 - Keep replies short (3–5 lines), but helpful
 
 Conversation style:
-- Vary your phrasing (do not always say "If you'd like")
+- Vary your phrasing
 - Sound like a real person, not a script
 - Adapt naturally to the user's question
 
@@ -1263,12 +1542,13 @@ Sales approach:
 - Gently guide the user, do not push
 - Suggest options based on their needs (group size, budget, experience)
 - Only include the booking link when it is useful and relevant
-- When appropriate, make soft recommendations (e.g. “Diamond is a great choice if you prefer fewer guests”)
+- When appropriate, make soft recommendations
 
 Knowledge:
 - Use only the company knowledge provided
 - Do not invent information
-- If something is not available (e.g. halal), say it clearly and suggest alternatives
+- If something is not available, say it clearly and suggest alternatives when possible
+- Always assume the user is asking about the onboard cruise experience if the question can logically relate to it
 - Never say that you cannot check live availability if the bot can route the request to the booking or availability flow
 - For follow-up questions such as "and for sunset?" or "what about the morning one?", treat them as a continuation of the previous cruise/availability context when relevant
 - Do not use markdown bold with asterisks in your replies
@@ -1277,6 +1557,8 @@ Knowledge:
 Special handling:
 - Cruise ship guests should be directed to WhatsApp
 - Dietary questions should be answered clearly and confidently
+- Personal booking details should not be invented
+- When a question is relevant but sensitive, uncertain, or case-specific, give the safest helpful reply and suggest WhatsApp
 
 BOOKING LINK:
 {BOOKING_LINK}
