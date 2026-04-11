@@ -313,7 +313,8 @@ def is_relevant(user_message: str) -> bool:
         "celiac", "coeliac",
         "transfer", "hotel", "itinerary",
         "red beach", "white beach", "hot springs",
-        "pets", "kids", "group", "guests",
+        "pets", "pet", "dog", "dogs", "animal", "animals",
+        "kids", "group", "guests",
 
         "people", "persons", "person",
         "we are", "we have",
@@ -339,6 +340,8 @@ def is_relevant(user_message: str) -> bool:
         "διαφορά", "σύγκριση", "ποιο είναι καλύτερο", "ποιο ειναι καλυτερο",
         "ποιο είναι το καλύτερο", "ποιο ειναι το καλυτερο", "καλύτερο", "καλυτερο",
         "θέσεις", "θέση", "πόσες θέσεις", "πόσα άτομα μένουν", "όλα τα σκάφη", "όλα τα διαθέσιμα",
+        "κατοικίδιο", "κατοικιδιο", "κατοικίδια", "κατοικιδια",
+        "σκύλος", "σκυλος", "σκυλιά", "σκυλια", "ζώο", "ζωο", "ζώα", "ζωα",
 
         "crociera", "crociere", "prezzo", "disponibilità",
         "privata", "tramonto", "mattina",
@@ -350,6 +353,7 @@ def is_relevant(user_message: str) -> bool:
         "differenza", "confronto", "qual è meglio", "qual e meglio",
         "qual è il migliore", "qual e il migliore", "migliore",
         "posti", "posto", "quanti posti", "tutte le barche",
+        "cane", "cani", "animale", "animali",
 
         "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
         "privado", "partilhado", "compartilhado",
@@ -361,7 +365,8 @@ def is_relevant(user_message: str) -> bool:
         "diferença", "comparação", "comparacao",
         "qual é melhor", "qual e melhor",
         "qual é o melhor", "qual e o melhor", "melhor",
-        "lugares", "quantos lugares", "vagas", "todos os barcos"
+        "lugares", "quantos lugares", "vagas", "todos os barcos",
+        "cão", "cao", "cães", "caes", "animal", "animais"
     ]
 
     return any(k in text for k in keywords)

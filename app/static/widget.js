@@ -279,6 +279,10 @@
   let chatHistory = [];
   let autoOpenTimer = null;
 
+  function isMobile() {
+    return window.innerWidth <= 640;
+  }
+
   function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
@@ -338,7 +342,7 @@
   }
 
   function lockPageScroll() {
-    if (window.innerWidth <= 640) {
+    if (isMobile()) {
       document.documentElement.classList.add("ss-widget-open");
       document.body.classList.add("ss-widget-open");
     }
@@ -350,8 +354,9 @@
   }
 
   function adjustMobileViewport() {
-    if (window.innerWidth > 640) {
+    if (!isMobile()) {
       container.style.height = "560px";
+      container.style.maxHeight = "560px";
       return;
     }
 
@@ -367,7 +372,7 @@
   }
 
   function preventPageBounce(event) {
-    if (window.innerWidth > 640) return;
+    if (!isMobile()) return;
     if (container.style.display !== "flex") return;
 
     const isInsideBody = body.contains(event.target);
@@ -389,7 +394,6 @@
     adjustMobileViewport();
 
     setTimeout(() => {
-      input.focus();
       scrollToBottom();
     }, 50);
   }
@@ -432,6 +436,10 @@
     input.disabled = true;
     sendBtn.disabled = true;
 
+    if (document.activeElement === input) {
+      input.blur();
+    }
+
     addTypingMessage();
 
     try {
@@ -458,7 +466,7 @@
       input.disabled = false;
       sendBtn.disabled = false;
       adjustMobileViewport();
-      input.focus();
+      scrollToBottom();
     }
   }
 
