@@ -243,9 +243,10 @@
       #ss-widget-container {
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
+        right: auto;
+        bottom: auto;
+        width: 100vw;
+        max-width: 100vw;
         height: 100dvh;
         max-height: 100dvh;
         border-radius: 0;
@@ -405,6 +406,7 @@
       container.style.right = "20px";
       container.style.bottom = "90px";
       container.style.width = "360px";
+      container.style.maxWidth = "360px";
       container.style.height = "560px";
       container.style.maxHeight = "560px";
       return;
@@ -413,22 +415,28 @@
     if (window.visualViewport) {
       const vv = window.visualViewport;
       const height = Math.round(vv.height);
+      const width = Math.round(vv.width);
       const offsetTop = Math.round(vv.offsetTop);
+      const offsetLeft = Math.round(vv.offsetLeft);
 
       container.style.top = `${offsetTop}px`;
-      container.style.left = "0";
-      container.style.right = "0";
+      container.style.left = `${offsetLeft}px`;
+      container.style.right = "auto";
       container.style.bottom = "auto";
-      container.style.width = "100%";
+      container.style.width = `${width}px`;
+      container.style.maxWidth = `${width}px`;
       container.style.height = `${height}px`;
       container.style.maxHeight = `${height}px`;
     } else {
       const vh = window.innerHeight;
+      const vw = window.innerWidth;
+
       container.style.top = "0";
       container.style.left = "0";
-      container.style.right = "0";
+      container.style.right = "auto";
       container.style.bottom = "auto";
-      container.style.width = "100%";
+      container.style.width = `${vw}px`;
+      container.style.maxWidth = `${vw}px`;
       container.style.height = `${vh}px`;
       container.style.maxHeight = `${vh}px`;
     }
@@ -581,4 +589,4 @@
   document.addEventListener("touchmove", preventPageBounce, { passive: false });
 
   scheduleAutoOpen();
-})();
+})(); 
