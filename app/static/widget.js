@@ -41,6 +41,7 @@
       background: #ffffff;
       border-bottom: 1px solid #e6e6e6;
       padding: 10px 14px;
+      flex-shrink: 0;
     }
 
     #ss-header-top {
@@ -65,8 +66,10 @@
 
     #ss-body {
       flex: 1;
+      min-height: 0;
       padding: 16px;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       background: #eef2f5;
       display: flex;
       flex-direction: column;
@@ -137,12 +140,14 @@
     #ss-footer {
       background: #ffffff;
       border-top: 1px solid #e6e6e6;
-      padding: 12px 14px;
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      flex-shrink: 0;
     }
 
     #ss-input-row {
       display: flex;
       gap: 10px;
+      align-items: center;
     }
 
     #ss-input {
@@ -152,6 +157,8 @@
       border-radius: 14px;
       padding: 0 14px;
       font-size: 15px;
+      outline: none;
+      min-width: 0;
     }
 
     #ss-send {
@@ -162,6 +169,7 @@
       background: #0b3b66;
       color: white;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     #ss-send:disabled,
@@ -184,8 +192,13 @@
         right: 0;
         bottom: 0;
         width: 100%;
-        height: 100%;
+        height: 100dvh;
         border-radius: 0;
+      }
+
+      #ss-widget-bubble {
+        bottom: 16px;
+        right: 16px;
       }
     }
   `;
@@ -293,12 +306,27 @@
     }
   }
 
+  function adjustMobileViewport() {
+    if (window.innerWidth > 640) {
+      container.style.height = "560px";
+      return;
+    }
+
+    if (window.visualViewport) {
+      const vh = window.visualViewport.height;
+      container.style.height = `${vh}px`;
+    } else {
+      container.style.height = `${window.innerHeight}px`;
+    }
+
+    scrollToBottom();
+  }
+
   async function sendMessage() {
     const message = input.value.trim();
     if (!message) return;
 
     addMessage(message, "user");
-
     chatHistory.push({ role: "user", content: message });
 
     input.value = "";
@@ -330,6 +358,7 @@
     } finally {
       input.disabled = false;
       sendBtn.disabled = false;
+      adjustMobileViewport();
       input.focus();
     }
   }
@@ -337,7 +366,11 @@
   bubble.onclick = () => {
     container.style.display = "flex";
     bubble.style.display = "none";
-    input.focus();
+    adjustMobileViewport();
+    setTimeout(() => {
+      input.focus();
+      scrollToBottom();
+    }, 50);
   };
 
   closeBtn.onclick = () => {
@@ -353,4 +386,24 @@
       sendMessage();
     }
   });
+
+  input.addEventListener("focus", () => {
+    setTimeout(() => {
+      adjustMobileViewport();
+      scrollToBottom();
+    }, 250);
+  });
+
+  input.addEventListener("blur", () => {
+    setTimeout(() => {
+      adjustMobileViewport();
+    }, 250);
+  });
+
+  window.addEventListener("resize", adjustMobileViewport);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", adjustMobileViewport);
+    window.visualViewport.addEventListener("scroll", adjustMobileViewport);
+  }
 })();
