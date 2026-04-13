@@ -1442,9 +1442,16 @@ USER MESSAGE:
         or is_best_choice_question(user_message)
     )
 
+    price_intent = (
+    "price" in user_message_lower
+    or "rate" in user_message_lower
+    or "cost" in user_message_lower
+    or "how much" in user_message_lower
+)
     availability_intent = (
-        not comparison_intent
-        and (
+    not comparison_intent
+    and not price_intent
+    and (
             is_availability_request(user_message)
             or (is_followup(user_message) and has_recent_availability_context(history))
             or (
