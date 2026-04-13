@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+# ✅ NEW IMPORT
+from app.routes.availability_routes import router as availability_router
+
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
 from app.services.availability_lookup import check_tour_availability
@@ -44,6 +47,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ✅ NEW LINE
+app.include_router(availability_router)
 
 print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE + SMARTER WHATSAPP LOADED")
 
