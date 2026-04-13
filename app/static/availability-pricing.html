@@ -48,6 +48,7 @@
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       padding: 24px;
+      overflow: hidden;
     }
 
     h1 {
@@ -132,16 +133,17 @@
     }
 
     .status-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: inline-block;
       padding: 7px 12px;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
-      white-space: nowrap;
-      line-height: 1;
-      min-height: 36px;
+      white-space: normal;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      text-align: center;
+      line-height: 1.25;
     }
 
     .status-available {
@@ -183,6 +185,7 @@
       padding: 16px;
       margin-bottom: 14px;
       background: #fff;
+      overflow: hidden;
     }
 
     .mobile-tour-title {
@@ -195,8 +198,8 @@
     .mobile-tour-row {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
-      padding: 10px 0;
+      gap: 10px;
+      padding: 8px 0;
       border-bottom: 1px solid #f0f2f5;
       font-size: 14px;
       align-items: center;
@@ -218,43 +221,16 @@
       text-align: right;
       font-weight: 600;
       color: var(--text);
-      flex: 1;
+      max-width: 60%;
       min-width: 0;
       display: flex;
       justify-content: flex-end;
-      align-items: center;
-    }
-
-    .mobile-value.text-wrap {
-      white-space: normal;
-      word-break: break-word;
-      line-height: 1.2;
-    }
-
-    .mobile-status-row {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 10px 0;
-      border-bottom: none;
-    }
-
-    .mobile-status-row .mobile-label {
-      min-width: 0;
-      flex: none;
-    }
-
-    .mobile-status-row .mobile-value {
-      justify-content: flex-start;
-      text-align: left;
-      width: 100%;
+      flex-wrap: wrap;
+      overflow: hidden;
     }
 
     .mobile-value .status-badge {
-      font-size: 12px;
-      padding: 6px 10px;
-      min-height: 32px;
+      max-width: 100%;
     }
 
     @media (max-width: 768px) {
@@ -317,13 +293,12 @@
         font-size: 13px;
       }
 
-      .mobile-tour-title {
-        font-size: 16px;
+      .mobile-tour-row {
+        align-items: flex-start;
       }
 
-      .mobile-label {
-        flex: 0 0 100px;
-        min-width: 100px;
+      .mobile-value {
+        max-width: 58%;
       }
     }
   </style>
@@ -372,10 +347,6 @@
     const resultsBody = document.getElementById("resultsBody");
     const mobileList = document.getElementById("mobileList");
 
-    function isMobileView() {
-      return window.innerWidth <= 640;
-    }
-
     function formatPrice(price) {
       if (price === null || price === undefined) {
         return "—";
@@ -397,31 +368,24 @@
     }
 
     function getStatusLabel(status, spots) {
-      const mobile = isMobileView();
-
       if (status === "available") {
         if (typeof spots === "number" && spots <= 10) {
-          return mobile ? "Low" : "Low availability";
+          return "Low availability";
         }
         return "Available";
       }
-
       if (status === "low") {
-        return mobile ? "Low" : "Low availability";
+        return "Low availability";
       }
-
       if (status === "contact_us") {
-        return mobile ? "Contact" : "Please contact us";
+        return "Please contact us";
       }
-
       if (status === "missing_ids") {
-        return mobile ? "Pending" : "Not connected yet";
+        return "Not connected yet";
       }
-
       if (status === "error") {
         return "Error";
       }
-
       return "Unknown";
     }
 
@@ -482,8 +446,6 @@
       mobileList.innerHTML = tours.map((tour) => {
         const statusLabel = getStatusLabel(tour.status, tour.available_spots);
         const statusClass = getStatusClass(tour.status, tour.available_spots);
-        const spotsValue = formatSpots(tour.available_spots);
-        const spotsClass = spotsValue.length > 12 ? "mobile-value text-wrap" : "mobile-value";
 
         return `
           <div class="mobile-tour-card">
@@ -496,10 +458,10 @@
 
             <div class="mobile-tour-row">
               <div class="mobile-label">Available Spots</div>
-              <div class="${spotsClass}">${spotsValue}</div>
+              <div class="mobile-value">${formatSpots(tour.available_spots)}</div>
             </div>
 
-            <div class="mobile-tour-row mobile-status-row">
+            <div class="mobile-tour-row">
               <div class="mobile-label">Status</div>
               <div class="mobile-value">
                 <span class="status-badge ${statusClass}">
@@ -557,13 +519,6 @@
     }
 
     loadBtn.addEventListener("click", loadAvailability);
-
-    window.addEventListener("resize", () => {
-      const existingRows = resultsBody.querySelectorAll("tr").length;
-      if (existingRows > 0 && !resultsBody.innerText.includes("No data loaded yet")) {
-        loadAvailability();
-      }
-    });
 
     const today = new Date();
     const yyyy = today.getFullYear();
