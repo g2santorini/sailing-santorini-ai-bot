@@ -1,6 +1,28 @@
 from datetime import datetime
 
 
+def format_price_line(availability: dict) -> str:
+    adult_price = availability.get("adult_price")
+    child_price = availability.get("child_price")
+    infant_price = availability.get("infant_price")
+
+    price_lines = []
+
+    if adult_price is not None:
+        price_lines.append(f"Adult price: €{adult_price:.0f}")
+
+    if child_price is not None:
+        price_lines.append(f"Child price: €{child_price:.0f}")
+
+    if infant_price is not None:
+        price_lines.append(f"Infant price: €{infant_price:.0f}")
+
+    if not price_lines:
+        return ""
+
+    return "\n".join(price_lines)
+
+
 def build_availability_reply(data: dict) -> str:
     if not data.get("success"):
         return "Thank you for your message. I am sorry, but I could not identify this cruise."
@@ -19,14 +41,24 @@ def build_availability_reply(data: dict) -> str:
     except:
         formatted_date = date_label
 
+    pricing_text = format_price_line(availability)
+
     if available:
-        # 🔥 NEW LOGIC HERE
         if spots == 1:
             spots_text = "There is currently 1 spot available."
         elif spots > 20:
             spots_text = "There are currently 20+ spots available."
         else:
             spots_text = f"There are currently {spots} spots available."
+
+        if pricing_text:
+            return (
+                f"Great news! The {label} is available for {formatted_date}.\n\n"
+                f"{spots_text}\n\n"
+                f"{pricing_text}\n\n"
+                f"You can proceed with your booking using the following link:\n{url}\n\n"
+                f"Please select the date on the booking page."
+            )
 
         return (
             f"Great news! The {label} is available for {formatted_date}.\n\n"
