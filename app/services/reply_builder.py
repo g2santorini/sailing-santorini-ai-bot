@@ -3,24 +3,11 @@ from datetime import datetime
 
 def format_price_line(availability: dict) -> str:
     adult_price = availability.get("adult_price")
-    child_price = availability.get("child_price")
-    infant_price = availability.get("infant_price")
 
-    price_lines = []
-
-    if adult_price is not None:
-        price_lines.append(f"Adult price: €{adult_price:.0f}")
-
-    if child_price is not None:
-        price_lines.append(f"Child price: €{child_price:.0f}")
-
-    if infant_price is not None:
-        price_lines.append(f"Infant price: €{infant_price:.0f}")
-
-    if not price_lines:
+    if adult_price is None:
         return ""
 
-    return "\n".join(price_lines)
+    return f"Adult price: €{adult_price:.0f}"
 
 
 def build_availability_reply(data: dict) -> str:
