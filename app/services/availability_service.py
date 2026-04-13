@@ -18,8 +18,13 @@ def test_connection():
     }
 
     response = requests.get(url, headers=headers, params=params)
+    data = response.json()
 
-    return response.json()
+    print("========== LINKTWIST RAW (TEST) ==========")
+    print(data)
+    print("==========================================")
+
+    return data
 
 
 def get_day_availability(product_id, product_option_id, date_str):
@@ -38,6 +43,10 @@ def get_day_availability(product_id, product_option_id, date_str):
 
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
+
+    print("========== LINKTWIST RAW ==========")
+    print(data)
+    print("===================================")
 
     if not data:
         return None
