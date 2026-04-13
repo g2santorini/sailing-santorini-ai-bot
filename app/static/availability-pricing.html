@@ -48,7 +48,6 @@
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       padding: 24px;
-      overflow: hidden;
     }
 
     h1 {
@@ -133,17 +132,16 @@
     }
 
     .status-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 7px 12px;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
-      white-space: normal;
-      max-width: 100%;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      text-align: center;
-      line-height: 1.25;
+      white-space: nowrap;
+      line-height: 1;
+      min-height: 36px;
     }
 
     .status-available {
@@ -185,7 +183,6 @@
       padding: 16px;
       margin-bottom: 14px;
       background: #fff;
-      overflow: hidden;
     }
 
     .mobile-tour-title {
@@ -198,8 +195,8 @@
     .mobile-tour-row {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
-      padding: 8px 0;
+      gap: 12px;
+      padding: 10px 0;
       border-bottom: 1px solid #f0f2f5;
       font-size: 14px;
       align-items: center;
@@ -221,16 +218,44 @@
       text-align: right;
       font-weight: 600;
       color: var(--text);
-      max-width: 60%;
+      flex: 1;
       min-width: 0;
       display: flex;
       justify-content: flex-end;
-      flex-wrap: wrap;
-      overflow: hidden;
+      align-items: center;
+    }
+
+    .mobile-value.text-wrap {
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    .mobile-status-row {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: none;
+    }
+
+    .mobile-status-row .mobile-label {
+      min-width: 0;
+      flex: none;
+    }
+
+    .mobile-status-row .mobile-value {
+      justify-content: flex-start;
+      text-align: left;
+      width: 100%;
+      align-items: flex-start;
     }
 
     .mobile-value .status-badge {
-      max-width: 100%;
+      font-size: 12px;
+      padding: 6px 10px;
+      min-height: 32px;
     }
 
     @media (max-width: 768px) {
@@ -293,12 +318,13 @@
         font-size: 13px;
       }
 
-      .mobile-tour-row {
-        align-items: flex-start;
+      .mobile-tour-title {
+        font-size: 16px;
       }
 
-      .mobile-value {
-        max-width: 58%;
+      .mobile-label {
+        flex: 0 0 100px;
+        min-width: 100px;
       }
     }
   </style>
@@ -374,18 +400,23 @@
         }
         return "Available";
       }
+
       if (status === "low") {
         return "Low availability";
       }
+
       if (status === "contact_us") {
         return "Please contact us";
       }
+
       if (status === "missing_ids") {
         return "Not connected yet";
       }
+
       if (status === "error") {
         return "Error";
       }
+
       return "Unknown";
     }
 
@@ -446,6 +477,8 @@
       mobileList.innerHTML = tours.map((tour) => {
         const statusLabel = getStatusLabel(tour.status, tour.available_spots);
         const statusClass = getStatusClass(tour.status, tour.available_spots);
+        const spotsValue = formatSpots(tour.available_spots);
+        const spotsClass = spotsValue.length > 12 ? "mobile-value text-wrap" : "mobile-value";
 
         return `
           <div class="mobile-tour-card">
@@ -458,10 +491,10 @@
 
             <div class="mobile-tour-row">
               <div class="mobile-label">Available Spots</div>
-              <div class="mobile-value">${formatSpots(tour.available_spots)}</div>
+              <div class="${spotsClass}">${spotsValue}</div>
             </div>
 
-            <div class="mobile-tour-row">
+            <div class="mobile-tour-row mobile-status-row">
               <div class="mobile-label">Status</div>
               <div class="mobile-value">
                 <span class="status-badge ${statusClass}">
