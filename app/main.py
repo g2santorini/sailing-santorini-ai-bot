@@ -118,12 +118,6 @@ def get_text(key: str, language: str) -> str:
             "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere i posti disponibili.",
             "pt": "Lamento, não consegui identificar exatamente o cruzeiro a partir do mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto os lugares disponíveis.",
         },
-        "price_fallback": {
-            "en": "I’m sorry, I could not identify the exact cruise and date from the previous message. Please tell me the cruise name and date, and I’ll gladly check the price for you.",
-            "el": "Λυπάμαι, δεν μπόρεσα να εντοπίσω ακριβώς ποια κρουαζιέρα και ποια ημερομηνία εννοείτε από το προηγούμενο μήνυμα. Πείτε μου το όνομα της κρουαζιέρας και την ημερομηνία και θα ελέγξω ευχαρίστως την τιμή για εσάς.",
-            "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera e la data dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere il prezzo per te.",
-            "pt": "Lamento, não consegui identificar exatamente o cruzeiro e a data a partir do mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto o preço para si.",
-        },
         "booking_details_reply": {
             "en": f"I can’t see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp and we’ll gladly assist you directly:\n{WHATSAPP_LINK}",
             "el": f"Δεν μπορώ να δω προσωπικά στοιχεία κράτησης εδώ. Παρακαλούμε ελέγξτε την επιβεβαίωση της κράτησής σας ή επικοινωνήστε μαζί μας στο WhatsApp και θα χαρούμε να σας εξυπηρετήσουμε:\n{WHATSAPP_LINK}",
@@ -277,11 +271,8 @@ def is_cruise_passenger(user_message: str) -> bool:
         "old port", "tender", "cable car",
         "from the ship", "coming by cruise",
         "port of fira", "fira port",
-
         "κρουαζιερόπλοιο", "παλιό λιμάνι", "τελεφερίκ",
-
         "crociera", "nave", "porto vecchio",
-
         "navio de cruzeiro", "passageiro de cruzeiro", "porto antigo"
     ]
 
@@ -296,12 +287,9 @@ def is_contact_request(user_message: str) -> bool:
         "reservation department", "reservations",
         "phone", "call you", "email", "reach you",
         "whatsapp", "do you have whatsapp",
-
         "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "πως να επικοινωνησω", "πώς να επικοινωνήσω",
         "τηλέφωνο", "τηλεφωνο", "κρατήσεις", "κρατησεων", "whatsapp",
-
         "contattare", "contatto", "telefono", "whatsapp",
-
         "contactar", "contacto", "telefone", "whatsapp"
     ]
 
@@ -317,12 +305,9 @@ def is_personal_booking_request(user_message: str) -> bool:
         "can you check my booking", "can you see my booking", "can you confirm my booking",
         "can you check my reservation", "can you see my reservation",
         "booking number", "reservation number", "confirm my transfer",
-
         "η κράτησή μου", "η κρατηση μου", "το booking μου", "η παραλαβή μου", "η παραλαβη μου",
         "ώρα παραλαβής", "ωρα παραλαβης", "επιβεβαίωση κράτησης", "επιβεβαιωση κρατησης",
-
         "la mia prenotazione", "il mio transfer", "orario di pick-up", "numero di prenotazione",
-
         "a minha reserva", "o meu transfer", "hora do pickup", "número da reserva", "numero da reserva"
     ]
 
@@ -338,12 +323,9 @@ def is_uncertain_whatsapp_case(user_message: str) -> bool:
         "what beer do you have", "which beer do you have", "beer brand", "beer brands",
         "special request", "special arrangement", "custom request",
         "proposal", "fireworks",
-
         "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
         "να φέρω ποτά", "να φερω ποτα", "τι μπίρα έχετε", "τι μπυρα εχετε", "ειδικό αίτημα", "ειδικο αιτημα",
-
         "sedia a rotelle", "accessibile", "portare bevande", "quale birra avete", "richiesta speciale",
-
         "cadeira de rodas", "acessível", "acessivel", "trazer bebidas", "que cerveja têm", "pedido especial"
     ]
 
@@ -359,58 +341,13 @@ def is_availability_request(user_message: str) -> bool:
         "what is available", "what tours are available",
         "today", "tomorrow", "tonight", "this afternoon", "this evening", "this morning",
         "for today", "for tomorrow",
-
         "διαθεσιμότητα", "διαθεσιμοτητα", "διαθέσιμο", "διαθεσιμο",
         "σήμερα", "σημερα", "αύριο", "αυριο", "απόψε", "αποψε",
         "σήμερα το απόγευμα", "σημερα το απογευμα", "σήμερα το πρωί", "σημερα το πρωι",
-
         "disponibile", "disponibili", "oggi", "domani", "stasera",
         "questo pomeriggio", "questa mattina",
-
         "disponibilidade", "disponível", "disponivel", "hoje", "amanhã", "amanha",
         "esta tarde", "esta manhã", "esta manha"
-    ]
-
-    return any(k in text for k in keywords)
-
-
-def is_price_request(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    keywords = [
-        "price",
-        "prices",
-        "what is the price",
-        "what's the price",
-        "how much",
-        "cost",
-        "what does it cost",
-        "rate",
-        "rates",
-
-        "τιμή",
-        "τιμες",
-        "πόσο",
-        "ποσο",
-        "κόστος",
-        "κοστος",
-        "πόσο κοστίζει",
-        "ποσο κοστιζει",
-
-        "prezzo",
-        "prezzi",
-        "quanto costa",
-        "costo",
-        "tariffa",
-        "tariffe",
-
-        "preço",
-        "precos",
-        "preços",
-        "quanto custa",
-        "custo",
-        "tarifa",
-        "tarifas"
     ]
 
     return any(k in text for k in keywords)
@@ -448,7 +385,7 @@ def is_relevant(user_message: str) -> bool:
 
     keywords = [
         "cruise", "cruises", "tour", "tours", "santorini",
-        "price", "prices", "availability", "available",
+        "price", "availability", "available",
         "private", "shared",
         "sunset", "morning",
         "pickup", "pick-up", "port", "catamaran",
@@ -477,8 +414,7 @@ def is_relevant(user_message: str) -> bool:
         "towel", "towels", "snorkeling", "snorkel",
         "wheelchair", "accessible", "accessibility", "mobility",
         "contact", "whatsapp", "phone", "email", "reservation department",
-
-        "κρουαζιέρα", "κρουαζιερες", "τιμή", "τιμες", "διαθεσιμότητα",
+        "κρουαζιέρα", "κρουαζιερες", "τιμή", "διαθεσιμότητα",
         "ιδιωτική", "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
         "φαγητό", "ποτό", "ποτά", "μενού", "μπίρα", "μπυρα", "αναψυκτικά", "αναψυκτικα",
         "χορτοφαγ", "βίγκαν", "χαλάλ", "αλλεργ",
@@ -493,8 +429,7 @@ def is_relevant(user_message: str) -> bool:
         "να φέρω", "να φερω", "τι να φορέσω", "τι να φορεσω", "πετσέτα", "πετσετα",
         "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
         "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "τηλέφωνο", "τηλεφωνο", "whatsapp",
-
-        "crociera", "crociere", "prezzo", "prezzi", "disponibilità",
+        "crociera", "crociere", "prezzo", "disponibilità",
         "privata", "tramonto", "mattina",
         "cibo", "bevande", "birra", "menu",
         "vegetariano", "vegano", "halal",
@@ -507,8 +442,7 @@ def is_relevant(user_message: str) -> bool:
         "cane", "cani", "animale", "animali",
         "portare", "indossare", "asciugamano", "sedia a rotelle", "accessibile",
         "contattare", "contatto", "telefono", "whatsapp",
-
-        "cruzeiro", "cruzeiros", "preço", "precos", "preços", "disponibilidade",
+        "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
         "privado", "partilhado", "compartilhado",
         "comida", "bebidas", "cerveja", "menu",
         "vegetariano", "vegano", "alergia", "alergias",
@@ -548,17 +482,14 @@ def is_followup(user_message: str) -> bool:
         r"^how about\b",
         r"^for the\b",
         r"^what about the\b",
-
         r"^και\b",
         r"^και για\b",
         r"^τι γίνεται με\b",
         r"^τι γινεται με\b",
-
         r"^e per\b",
         r"^e per il\b",
         r"^e per la\b",
         r"^che mi dici di\b",
-
         r"^e para\b",
         r"^e quanto a\b",
         r"^e sobre\b"
@@ -579,7 +510,6 @@ def is_best_choice_question(user_message: str) -> bool:
         "what would you recommend",
         "best option",
         "best for us",
-
         "ποιο είναι το καλύτερο",
         "ποιο ειναι το καλυτερο",
         "ποιο είναι καλύτερο",
@@ -588,13 +518,11 @@ def is_best_choice_question(user_message: str) -> bool:
         "τι προτεινεις",
         "τι προτείνετε",
         "τι προτεινετε",
-
         "qual è il migliore",
         "qual e il migliore",
         "qual è meglio",
         "qual e meglio",
         "cosa consigli",
-
         "qual é o melhor",
         "qual e o melhor",
         "qual é melhor",
@@ -621,7 +549,6 @@ def is_capacity_request(user_message: str) -> bool:
         "available spots",
         "available seats",
         "availability left",
-
         "how many guests",
         "how many people",
         "max guests",
@@ -634,7 +561,6 @@ def is_capacity_request(user_message: str) -> bool:
         "up to how many",
         "how many can join",
         "how many passengers",
-
         "πόσες θέσεις",
         "πόση διαθεσιμότητα",
         "πόσα άτομα μένουν",
@@ -642,7 +568,6 @@ def is_capacity_request(user_message: str) -> bool:
         "μέγιστη χωρητικότητα",
         "χωρητικότητα",
         "μέχρι πόσα άτομα",
-
         "quanti posti",
         "posti disponibili",
         "quanti ospiti",
@@ -651,7 +576,6 @@ def is_capacity_request(user_message: str) -> bool:
         "capacita",
         "capienza massima",
         "massimo numero di persone",
-
         "quantos lugares",
         "lugares disponíveis",
         "vagas disponíveis",
@@ -677,15 +601,12 @@ def is_multi_capacity_request(user_message: str) -> bool:
         "all available tours",
         "all available options",
         "all available boats",
-
         "όλα τα σκάφη",
         "όλα τα διαθέσιμα σκάφη",
         "όλες οι διαθέσιμες επιλογές",
-
         "tutte le barche",
         "tutte le crociere disponibili",
         "tutte le opzioni disponibili",
-
         "todos os barcos",
         "todos os cruzeiros disponíveis",
         "todas as opções disponíveis"
@@ -796,18 +717,15 @@ def detect_passenger_count(user_message: str, history: list[dict] | None = None)
         r"\b(\d+) guests\b",
         r"\b(\d+) pax\b",
         r"\bparty of (\d+)\b",
-
         r"\bείμαστε (\d+)\b",
         r"\bειμαστε (\d+)\b",
         r"\bγια (\d+) άτομα\b",
         r"\bγια (\d+) ατομα\b",
         r"\b(\d+) άτομα\b",
         r"\b(\d+) ατομα\b",
-
         r"\bsiamo (\d+)\b",
         r"\bper (\d+) persone\b",
         r"\b(\d+) persone\b",
-
         r"\bsomos (\d+)\b",
         r"\bpara (\d+) pessoas\b",
         r"\b(\d+) pessoas\b",
@@ -884,21 +802,21 @@ def detect_tour_key_from_history_text(text: str) -> str | None:
     lowered = text.lower()
 
     if "diamond sunset" in lowered:
-        return "diamond_sunset"
+        return "diamondsunset"
     if "diamond morning" in lowered:
-        return "diamond_morning"
+        return "diamondmorning"
     if "gems sunset" in lowered:
-        return "gems_sunset"
+        return "gemssunset"
     if "gems morning" in lowered:
-        return "gems_morning"
+        return "gemsmorning"
     if "platinum sunset" in lowered:
-        return "platinum_sunset"
+        return "platinumsunset"
     if "platinum morning" in lowered:
-        return "platinum_morning"
+        return "platinummorning"
     if "red sunset" in lowered:
-        return "red_sunset"
+        return "redsunset"
     if "red morning" in lowered:
-        return "red_morning"
+        return "redmorning"
 
     return None
 
@@ -967,6 +885,13 @@ def get_capacity_number(data) -> int | None:
                 return int(value)
 
     return None
+
+
+def is_private_result(item: dict) -> bool:
+    tour_type = str(item.get("tour_type", "")).lower().strip()
+    label = str(item.get("reply_label", "")).lower()
+
+    return tour_type == "private" or "private" in label
 
 
 def build_capacity_reply(data, language: str) -> str:
@@ -1070,13 +995,6 @@ def format_shared_vacancies(vacancies) -> str:
         return str(value)
     except (TypeError, ValueError):
         return str(vacancies)
-
-
-def is_private_result(item: dict) -> bool:
-    tour_type = str(item.get("tour_type", "")).lower().strip()
-    label = str(item.get("reply_label", "")).lower()
-
-    return tour_type == "private" or "private" in label
 
 
 def build_multi_capacity_reply(results: list[dict], language: str) -> str:
@@ -1458,27 +1376,6 @@ USER MESSAGE:
         except Exception:
             return {"reply": get_text("whatsapp_uncertain_reply", language)}
 
-    if is_price_request(user_message):
-        last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
-
-        seasonal_reply = get_seasonal_reply(
-            date_str=last_date_str,
-            language=language,
-            tour_key=last_tour_key,
-        )
-        if seasonal_reply:
-            return {"reply": seasonal_reply}
-
-        if last_tour_key and last_date_str:
-            data = safe_check_tour_availability(last_tour_key, last_date_str)
-            if data:
-                reply_text = build_availability_reply(data)
-                reply_text = translate_availability_reply(reply_text, language)
-                return {"reply": reply_text}
-            return {"reply": get_text("availability_fallback", language)}
-
-        return {"reply": get_text("price_fallback", language)}
-
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
         date_str = detect_date(user_message)
         period = detect_period(user_message)
@@ -1532,14 +1429,31 @@ USER MESSAGE:
     period = detect_period(user_message)
     tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
+
+    user_message_lower = user_message.lower()
+
+    comparison_intent = (
+        "difference" in user_message_lower
+        or "compare" in user_message_lower
+        or "comparison" in user_message_lower
+        or "which is better" in user_message_lower
+        or "best option" in user_message_lower
+        or "recommend" in user_message_lower
+        or is_best_choice_question(user_message)
+    )
+
     availability_intent = (
-        is_availability_request(user_message)
-        or (is_followup(user_message) and has_recent_availability_context(history))
-        or (
-            detect_period(user_message) is not None
-            and has_recent_availability_context(history)
+        not comparison_intent
+        and (
+            is_availability_request(user_message)
+            or (is_followup(user_message) and has_recent_availability_context(history))
+            or (
+                period is not None
+                and has_recent_availability_context(history)
+            )
         )
     )
+
     passenger_count = detect_passenger_count(user_message, history)
 
     seasonal_reply = get_seasonal_reply(
