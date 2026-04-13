@@ -15,6 +15,22 @@ from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
 from app.services.tour_mapping import build_tour_facts_block
+from app.services.intent_service import (
+    is_greeting,
+    is_discount_request,
+    is_contact_request,
+    is_availability_request,
+    is_followup,
+    is_best_choice_question,
+    is_capacity_request,
+    is_multi_capacity_request,
+)
+from app.services.context_service import (
+    detect_tour_key_from_history_text,
+    has_recent_availability_context,
+    get_last_tour_and_date_from_history,
+    get_effective_date,
+)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -232,37 +248,6 @@ def translate_availability_reply(reply_text: str, language: str) -> str:
     return translated
 
 
-def is_greeting(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    greetings = {
-        "hi", "hello", "hey",
-        "good morning", "good afternoon", "good evening",
-        "hi there", "hello there",
-        "γεια", "γειά", "γεια σου", "γειά σου", "γεια σας", "γειά σας",
-        "καλημέρα", "καλησπέρα", "καλησπερα", "καληνύχτα", "καληνυχτα",
-        "χαίρετε", "χαιρετε",
-        "ciao", "salve", "buongiorno", "buonasera",
-        "olá", "ola", "bom dia", "boa tarde", "boa noite"
-    }
-
-    return text in greetings
-
-
-def is_discount_request(user_message: str) -> bool:
-    text = user_message.lower()
-
-    keywords = [
-        "discount", "better price", "best price", "special price",
-        "cheaper", "deal",
-        "εκπτωση", "έκπτωση", "καλύτερη τιμή",
-        "sconto", "offerta",
-        "desconto", "melhor preço", "preço especial"
-    ]
-
-    return any(k in text for k in keywords)
-
-
 def is_cruise_passenger(user_message: str) -> bool:
     text = user_message.lower()
 
@@ -274,23 +259,6 @@ def is_cruise_passenger(user_message: str) -> bool:
         "κρουαζιερόπλοιο", "παλιό λιμάνι", "τελεφερίκ",
         "crociera", "nave", "porto vecchio",
         "navio de cruzeiro", "passageiro de cruzeiro", "porto antigo"
-    ]
-
-    return any(k in text for k in keywords)
-
-
-def is_contact_request(user_message: str) -> bool:
-    text = user_message.lower()
-
-    keywords = [
-        "contact", "contact you", "how can i contact",
-        "reservation department", "reservations",
-        "phone", "call you", "email", "reach you",
-        "whatsapp", "do you have whatsapp",
-        "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "πως να επικοινωνησω", "πώς να επικοινωνήσω",
-        "τηλέφωνο", "τηλεφωνο", "κρατήσεις", "κρατησεων", "whatsapp",
-        "contattare", "contatto", "telefono", "whatsapp",
-        "contactar", "contacto", "telefone", "whatsapp"
     ]
 
     return any(k in text for k in keywords)
@@ -330,54 +298,6 @@ def is_uncertain_whatsapp_case(user_message: str) -> bool:
     ]
 
     return any(k in text for k in keywords)
-
-
-def is_availability_request(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    keywords = [
-        "availability", "available", "availabile", "disponibilità",
-        "do you have availability", "is there availability", "any availability",
-        "what is available", "what tours are available",
-        "today", "tomorrow", "tonight", "this afternoon", "this evening", "this morning",
-        "for today", "for tomorrow",
-        "διαθεσιμότητα", "διαθεσιμοτητα", "διαθέσιμο", "διαθεσιμο",
-        "σήμερα", "σημερα", "αύριο", "αυριο", "απόψε", "αποψε",
-        "σήμερα το απόγευμα", "σημερα το απογευμα", "σήμερα το πρωί", "σημερα το πρωι",
-        "disponibile", "disponibili", "oggi", "domani", "stasera",
-        "questo pomeriggio", "questa mattina",
-        "disponibilidade", "disponível", "disponivel", "hoje", "amanhã", "amanha",
-        "esta tarde", "esta manhã", "esta manha"
-    ]
-
-    return any(k in text for k in keywords)
-
-
-def has_recent_availability_context(history: list[dict] | None = None) -> bool:
-    if not history:
-        return False
-
-    for item in reversed(history[-8:]):
-        if item.get("role") != "user":
-            continue
-
-        content = item.get("content", "").strip()
-        if not content:
-            continue
-
-        if is_availability_request(content):
-            return True
-
-        if detect_date(content):
-            return True
-
-        if detect_tour_key(content):
-            return True
-
-        if detect_period(content):
-            return True
-
-    return False
 
 
 def is_relevant(user_message: str) -> bool:
@@ -456,160 +376,6 @@ def is_relevant(user_message: str) -> bool:
         "cão", "cao", "cães", "caes", "animal", "animais",
         "trazer", "vestir", "toalha", "cadeira de rodas", "acessível", "acessivel",
         "contactar", "contacto", "telefone", "whatsapp"
-    ]
-
-    return any(k in text for k in keywords)
-
-
-def is_followup(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    exact_followups = {
-        "yes", "yes please", "ok", "okay", "sure", "please",
-        "tell me more", "go ahead", "continue",
-        "ναι", "οκ", "εντάξει", "συνέχισε",
-        "si", "va bene", "continua",
-        "sim", "claro", "continue"
-    }
-
-    if text in exact_followups:
-        return True
-
-    followup_patterns = [
-        r"^and\b",
-        r"^and for\b",
-        r"^what about\b",
-        r"^how about\b",
-        r"^for the\b",
-        r"^what about the\b",
-        r"^και\b",
-        r"^και για\b",
-        r"^τι γίνεται με\b",
-        r"^τι γινεται με\b",
-        r"^e per\b",
-        r"^e per il\b",
-        r"^e per la\b",
-        r"^che mi dici di\b",
-        r"^e para\b",
-        r"^e quanto a\b",
-        r"^e sobre\b"
-    ]
-
-    return any(re.search(pattern, text) for pattern in followup_patterns)
-
-
-def is_best_choice_question(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    keywords = [
-        "which is the best",
-        "which one is the best",
-        "which is better",
-        "which one is better",
-        "what do you recommend",
-        "what would you recommend",
-        "best option",
-        "best for us",
-        "ποιο είναι το καλύτερο",
-        "ποιο ειναι το καλυτερο",
-        "ποιο είναι καλύτερο",
-        "ποιο ειναι καλυτερο",
-        "τι προτείνεις",
-        "τι προτεινεις",
-        "τι προτείνετε",
-        "τι προτεινετε",
-        "qual è il migliore",
-        "qual e il migliore",
-        "qual è meglio",
-        "qual e meglio",
-        "cosa consigli",
-        "qual é o melhor",
-        "qual e o melhor",
-        "qual é melhor",
-        "qual e melhor",
-        "o que recomenda",
-        "o que você recomenda",
-        "o que voce recomenda"
-    ]
-
-    return any(k in text for k in keywords)
-
-
-def is_capacity_request(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    keywords = [
-        "how many spots",
-        "how many seats",
-        "how many places",
-        "how many left",
-        "spots left",
-        "seats left",
-        "places left",
-        "available spots",
-        "available seats",
-        "availability left",
-        "how many guests",
-        "how many people",
-        "max guests",
-        "maximum guests",
-        "max people",
-        "maximum people",
-        "maximum capacity",
-        "max capacity",
-        "capacity",
-        "up to how many",
-        "how many can join",
-        "how many passengers",
-        "πόσες θέσεις",
-        "πόση διαθεσιμότητα",
-        "πόσα άτομα μένουν",
-        "πόσα άτομα",
-        "μέγιστη χωρητικότητα",
-        "χωρητικότητα",
-        "μέχρι πόσα άτομα",
-        "quanti posti",
-        "posti disponibili",
-        "quanti ospiti",
-        "quante persone",
-        "capacità",
-        "capacita",
-        "capienza massima",
-        "massimo numero di persone",
-        "quantos lugares",
-        "lugares disponíveis",
-        "vagas disponíveis",
-        "quantos hóspedes",
-        "quantas pessoas",
-        "capacidade",
-        "capacidade máxima",
-        "máximo de pessoas",
-        "maximo de pessoas"
-    ]
-
-    return any(k in text for k in keywords)
-
-
-def is_multi_capacity_request(user_message: str) -> bool:
-    text = user_message.lower().strip()
-
-    keywords = [
-        "all available vessel",
-        "all available vessels",
-        "all vessels",
-        "all available cruises",
-        "all available tours",
-        "all available options",
-        "all available boats",
-        "όλα τα σκάφη",
-        "όλα τα διαθέσιμα σκάφη",
-        "όλες οι διαθέσιμες επιλογές",
-        "tutte le barche",
-        "tutte le crociere disponibili",
-        "tutte le opzioni disponibili",
-        "todos os barcos",
-        "todos os cruzeiros disponíveis",
-        "todas as opções disponíveis"
     ]
 
     return any(k in text for k in keywords)
@@ -792,82 +558,6 @@ def filter_results_by_cruise_type(results, cruise_type: str | None):
         return shared_matches if shared_matches else results
 
     return results
-
-
-def detect_tour_key_from_history_text(text: str) -> str | None:
-    detected = detect_tour_key(text)
-    if detected:
-        return detected
-
-    lowered = text.lower()
-
-    if "diamond sunset" in lowered:
-        return "diamondsunset"
-    if "diamond morning" in lowered:
-        return "diamondmorning"
-    if "gems sunset" in lowered:
-        return "gemssunset"
-    if "gems morning" in lowered:
-        return "gemsmorning"
-    if "platinum sunset" in lowered:
-        return "platinumsunset"
-    if "platinum morning" in lowered:
-        return "platinummorning"
-    if "red sunset" in lowered:
-        return "redsunset"
-    if "red morning" in lowered:
-        return "redmorning"
-
-    return None
-
-
-def get_last_tour_and_date_from_history(
-    user_message: str,
-    history: list[dict]
-) -> tuple[str | None, str | None]:
-    current_tour = detect_tour_key_from_history_text(user_message)
-    current_date = detect_date(user_message)
-
-    if current_tour and current_date:
-        return current_tour, current_date
-
-    if history:
-        for item in reversed(history[-10:]):
-            content = item.get("content", "").strip()
-            if not content:
-                continue
-
-            if not current_tour:
-                current_tour = detect_tour_key_from_history_text(content)
-
-            if not current_date:
-                current_date = detect_date(content)
-
-            if current_tour and current_date:
-                return current_tour, current_date
-
-    return current_tour, current_date
-
-
-def get_effective_date(user_message: str, history: list[dict] | None = None) -> str | None:
-    current_date = detect_date(user_message)
-    if current_date:
-        return current_date
-
-    if history:
-        for item in reversed(history[-10:]):
-            if item.get("role") != "user":
-                continue
-
-            content = item.get("content", "").strip()
-            if not content:
-                continue
-
-            previous_date = detect_date(content)
-            if previous_date:
-                return previous_date
-
-    return detect_date("today")
 
 
 def get_capacity_number(data) -> int | None:
@@ -1443,20 +1133,32 @@ USER MESSAGE:
     )
 
     price_intent = (
-    "price" in user_message_lower
-    or "rate" in user_message_lower
-    or "cost" in user_message_lower
-    or "how much" in user_message_lower
-)
+        "price" in user_message_lower
+        or "rate" in user_message_lower
+        or "cost" in user_message_lower
+        or "how much" in user_message_lower
+    )
+
     availability_intent = (
-    not comparison_intent
-    and not price_intent
-    and (
+        not comparison_intent
+        and not price_intent
+        and (
             is_availability_request(user_message)
-            or (is_followup(user_message) and has_recent_availability_context(history))
+            or (
+                is_followup(user_message)
+                and has_recent_availability_context(
+                    history,
+                    is_availability_request_fn=is_availability_request,
+                    detect_period_fn=detect_period,
+                )
+            )
             or (
                 period is not None
-                and has_recent_availability_context(history)
+                and has_recent_availability_context(
+                    history,
+                    is_availability_request_fn=is_availability_request,
+                    detect_period_fn=detect_period,
+                )
             )
         )
     )
