@@ -48,6 +48,7 @@
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       padding: 24px;
+      overflow: hidden;
     }
 
     h1 {
@@ -137,7 +138,12 @@
       border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
-      white-space: nowrap;
+      white-space: normal;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      text-align: center;
+      line-height: 1.25;
     }
 
     .status-available {
@@ -169,7 +175,6 @@
       color: var(--muted);
     }
 
-    /* Mobile cards */
     .mobile-list {
       display: none;
     }
@@ -180,21 +185,24 @@
       padding: 16px;
       margin-bottom: 14px;
       background: #fff;
+      overflow: hidden;
     }
 
     .mobile-tour-title {
       font-size: 17px;
       font-weight: 700;
       margin-bottom: 12px;
+      line-height: 1.3;
     }
 
     .mobile-tour-row {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       padding: 8px 0;
       border-bottom: 1px solid #f0f2f5;
       font-size: 14px;
+      align-items: center;
     }
 
     .mobile-tour-row:last-child {
@@ -206,12 +214,23 @@
       color: var(--muted);
       font-weight: 600;
       min-width: 110px;
+      flex: 0 0 110px;
     }
 
     .mobile-value {
       text-align: right;
       font-weight: 600;
       color: var(--text);
+      max-width: 60%;
+      min-width: 0;
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      overflow: hidden;
+    }
+
+    .mobile-value .status-badge {
+      max-width: 100%;
     }
 
     @media (max-width: 768px) {
@@ -272,6 +291,14 @@
 
       .message {
         font-size: 13px;
+      }
+
+      .mobile-tour-row {
+        align-items: flex-start;
+      }
+
+      .mobile-value {
+        max-width: 58%;
       }
     }
   </style>
