@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Availability & Pricing</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --header-bg: #f9fafb;
+      --primary: #0b3b66;
+      --primary-hover: #145c94;
+      --success-bg: #dcfce7;
+      --success-text: #166534;
+      --warn-bg: #fef3c7;
+      --warn-text: #92400e;
+      --danger-bg: #fee2e2;
+      --danger-text: #991b1b;
+      --info-bg: #e0e7ff;
+      --info-text: #3730a3;
+      --unknown-bg: #e5e7eb;
+      --unknown-text: #374151;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 32px auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .controls input[type="date"] {
+      min-width: 190px;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 15px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .controls button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 12px;
+      background: var(--primary);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .controls button:hover {
+      background: var(--primary-hover);
+    }
+
+    .message {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 640px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 16px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 15px;
+      vertical-align: middle;
+    }
+
+    th {
+      background: var(--header-bg);
+      color: #374151;
+      font-weight: 700;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-available {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .status-low {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+    }
+
+    .status-contact {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+    }
+
+    .status-unknown {
+      background: var(--unknown-bg);
+      color: var(--unknown-text);
+    }
+
+    .status-missing {
+      background: var(--info-bg);
+      color: var(--info-text);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    /* Mobile cards */
+    .mobile-list {
+      display: none;
+    }
+
+    .mobile-tour-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #fff;
+    }
+
+    .mobile-tour-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .mobile-tour-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f2f5;
+      font-size: 14px;
+    }
+
+    .mobile-tour-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .mobile-label {
+      color: var(--muted);
+      font-weight: 600;
+      min-width: 110px;
+    }
+
+    .mobile-value {
+      text-align: right;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+      .page {
+        margin: 18px auto;
+        padding: 12px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .controls input[type="date"],
+      .controls button {
+        width: 100%;
+      }
+
+      .controls input[type="date"] {
+        min-width: 0;
+      }
+
+      table {
+        min-width: 580px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .table-wrap {
+        display: none;
+      }
+
+      .mobile-list {
+        display: block;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .message {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Availability & Pricing</h1>
+      <p class="subtitle">Check live availability and pricing for your selected date.</p>
+
+      <div class="controls">
+        <input type="date" id="dateInput" />
+        <button id="loadBtn">Check availability</button>
+      </div>
+
+      <div id="message" class="message">Please select a date.</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cruise</th>
+              <th>Price</th>
+              <th>Available Spots</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+            <tr>
+              <td colspan="4" class="muted">No data loaded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="mobileList" class="mobile-list">
+        <div class="muted">No data loaded yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dateInput = document.getElementById("dateInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const message = document.getElementById("message");
+    const resultsBody = document.getElementById("resultsBody");
+    const mobileList = document.getElementById("mobileList");
+
+    function formatPrice(price) {
+      if (price === null || price === undefined) {
+        return "—";
+      }
+      return `€${Number(price).toFixed(0)}`;
+    }
+
+    function formatSpots(spots) {
+      if (spots === null || spots === undefined) {
+        return "—";
+      }
+      if (spots > 20) {
+        return "20+";
+      }
+      if (spots <= 0) {
+        return "Please contact us";
+      }
+      return String(spots);
+    }
+
+    function getStatusLabel(status, spots) {
+      if (status === "available") {
+        if (typeof spots === "number" && spots <= 10) {
+          return "Low availability";
+        }
+        return "Available";
+      }
+      if (status === "low") {
+        return "Low availability";
+      }
+      if (status === "contact_us") {
+        return "Please contact us";
+      }
+      if (status === "missing_ids") {
+        return "Not connected yet";
+      }
+      if (status === "error") {
+        return "Error";
+      }
+      return "Unknown";
+    }
+
+    function getStatusClass(status, spots) {
+      if (status === "available") {
+        if (typeof spots === "number" && spots <= 10) {
+          return "status-low";
+        }
+        return "status-available";
+      }
+      if (status === "low") {
+        return "status-low";
+      }
+      if (status === "contact_us" || status === "error") {
+        return "status-contact";
+      }
+      if (status === "missing_ids") {
+        return "status-missing";
+      }
+      return "status-unknown";
+    }
+
+    function renderDesktopRows(tours) {
+      if (!Array.isArray(tours) || tours.length === 0) {
+        resultsBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="muted">No results found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      resultsBody.innerHTML = tours.map((tour) => {
+        const statusLabel = getStatusLabel(tour.status, tour.available_spots);
+        const statusClass = getStatusClass(tour.status, tour.available_spots);
+
+        return `
+          <tr>
+            <td>${tour.name ?? "—"}</td>
+            <td>${formatPrice(tour.price)}</td>
+            <td>${formatSpots(tour.available_spots)}</td>
+            <td>
+              <span class="status-badge ${statusClass}">
+                ${statusLabel}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderMobileRows(tours) {
+      if (!Array.isArray(tours) || tours.length === 0) {
+        mobileList.innerHTML = `<div class="muted">No results found.</div>`;
+        return;
+      }
+
+      mobileList.innerHTML = tours.map((tour) => {
+        const statusLabel = getStatusLabel(tour.status, tour.available_spots);
+        const statusClass = getStatusClass(tour.status, tour.available_spots);
+
+        return `
+          <div class="mobile-tour-card">
+            <div class="mobile-tour-title">${tour.name ?? "—"}</div>
+
+            <div class="mobile-tour-row">
+              <div class="mobile-label">Price</div>
+              <div class="mobile-value">${formatPrice(tour.price)}</div>
+            </div>
+
+            <div class="mobile-tour-row">
+              <div class="mobile-label">Available Spots</div>
+              <div class="mobile-value">${formatSpots(tour.available_spots)}</div>
+            </div>
+
+            <div class="mobile-tour-row">
+              <div class="mobile-label">Status</div>
+              <div class="mobile-value">
+                <span class="status-badge ${statusClass}">
+                  ${statusLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderRows(tours) {
+      renderDesktopRows(tours);
+      renderMobileRows(tours);
+    }
+
+    async function loadAvailability() {
+      const selectedDate = dateInput.value;
+
+      if (!selectedDate) {
+        message.textContent = "Please select a date first.";
+        return;
+      }
+
+      message.textContent = "Loading...";
+
+      resultsBody.innerHTML = `
+        <tr>
+          <td colspan="4" class="muted">Loading data...</td>
+        </tr>
+      `;
+
+      mobileList.innerHTML = `<div class="muted">Loading data...</div>`;
+
+      try {
+        const response = await fetch(`/availability-page-data?date=${selectedDate}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Failed to load availability.");
+        }
+
+        message.textContent = `Showing results for ${data.date}`;
+        renderRows(data.tours);
+      } catch (error) {
+        message.textContent = `Error: ${error.message}`;
+        resultsBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="muted">Could not load data.</td>
+          </tr>
+        `;
+        mobileList.innerHTML = `<div class="muted">Could not load data.</div>`;
+      }
+    }
+
+    loadBtn.addEventListener("click", loadAvailability);
+
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  </script>
+</body>
+</html>

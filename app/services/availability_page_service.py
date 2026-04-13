@@ -22,14 +22,38 @@ TOUR_CONFIG = [
     {
         "key": "gems_morning",
         "name": "Gems Morning",
-        "product_id": None,
-        "option_id": None,
+        "product_id": 37,
+        "option_id": 138,
+    },
+    {
+        "key": "gems_sunset",
+        "name": "Gems Sunset",
+        "product_id": 37,
+        "option_id": 139,
+    },
+    {
+        "key": "platinum_morning",
+        "name": "Platinum Morning",
+        "product_id": 39,
+        "option_id": 140,
+    },
+    {
+        "key": "platinum_sunset",
+        "name": "Platinum Sunset",
+        "product_id": 39,
+        "option_id": 141,
     },
     {
         "key": "diamond_morning",
         "name": "Diamond Morning",
-        "product_id": None,
-        "option_id": None,
+        "product_id": 41,
+        "option_id": 142,
+    },
+    {
+        "key": "diamond_sunset",
+        "name": "Diamond Sunset",
+        "product_id": 41,
+        "option_id": 143,
     },
 ]
 
@@ -47,42 +71,24 @@ def _extract_price(item: dict[str, Any]) -> float | None:
     if not pricing:
         return None
 
-    if isinstance(pricing, (int, float)):
-        return float(pricing)
-
     if isinstance(pricing, list):
         for participant in pricing:
             if not isinstance(participant, dict):
                 continue
 
             alias = str(participant.get("participant_type_alias", "")).lower()
-            prices = participant.get("prices", [])
 
-            if alias in {"perperson3", "adult", "peradult", "person", "perperson"}:
+            # STRICT adult detection
+            if any(x in alias for x in ["adult", "person"]):
+                prices = participant.get("prices", [])
+
                 if isinstance(prices, list) and prices:
                     first_price = prices[0]
+
                     if isinstance(first_price, dict):
                         value = first_price.get("price_per_participant")
-                        if isinstance(value, (int, float)):
+                        if isinstance(value, (int, float)) and value > 0:
                             return float(value)
-
-        for participant in pricing:
-            if not isinstance(participant, dict):
-                continue
-
-            prices = participant.get("prices", [])
-            if isinstance(prices, list) and prices:
-                first_price = prices[0]
-                if isinstance(first_price, dict):
-                    value = first_price.get("price_per_participant")
-                    if isinstance(value, (int, float)) and value > 0:
-                        return float(value)
-
-    if isinstance(pricing, dict):
-        for key in ["final_price", "discounted_price", "price", "amount"]:
-            val = pricing.get(key)
-            if isinstance(val, (int, float)):
-                return float(val)
 
     return None
 
