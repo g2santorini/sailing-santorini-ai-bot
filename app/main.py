@@ -118,6 +118,12 @@ def get_text(key: str, language: str) -> str:
             "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere i posti disponibili.",
             "pt": "Lamento, não consegui identificar exatamente o cruzeiro a partir do mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto os lugares disponíveis.",
         },
+        "price_fallback": {
+            "en": "I’m sorry, I could not identify the exact cruise and date from the previous message. Please tell me the cruise name and date, and I’ll gladly check the price for you.",
+            "el": "Λυπάμαι, δεν μπόρεσα να εντοπίσω ακριβώς ποια κρουαζιέρα και ποια ημερομηνία εννοείτε από το προηγούμενο μήνυμα. Πείτε μου το όνομα της κρουαζιέρας και την ημερομηνία και θα ελέγξω ευχαρίστως την τιμή για εσάς.",
+            "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera e la data dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere il prezzo per te.",
+            "pt": "Lamento, não consegui identificar exatamente o cruzeiro e a data a partir do mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto o preço para si.",
+        },
         "booking_details_reply": {
             "en": f"I can’t see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp and we’ll gladly assist you directly:\n{WHATSAPP_LINK}",
             "el": f"Δεν μπορώ να δω προσωπικά στοιχεία κράτησης εδώ. Παρακαλούμε ελέγξτε την επιβεβαίωση της κράτησής σας ή επικοινωνήστε μαζί μας στο WhatsApp και θα χαρούμε να σας εξυπηρετήσουμε:\n{WHATSAPP_LINK}",
@@ -368,6 +374,48 @@ def is_availability_request(user_message: str) -> bool:
     return any(k in text for k in keywords)
 
 
+def is_price_request(user_message: str) -> bool:
+    text = user_message.lower().strip()
+
+    keywords = [
+        "price",
+        "prices",
+        "what is the price",
+        "what's the price",
+        "how much",
+        "cost",
+        "what does it cost",
+        "rate",
+        "rates",
+
+        "τιμή",
+        "τιμες",
+        "πόσο",
+        "ποσο",
+        "κόστος",
+        "κοστος",
+        "πόσο κοστίζει",
+        "ποσο κοστιζει",
+
+        "prezzo",
+        "prezzi",
+        "quanto costa",
+        "costo",
+        "tariffa",
+        "tariffe",
+
+        "preço",
+        "precos",
+        "preços",
+        "quanto custa",
+        "custo",
+        "tarifa",
+        "tarifas"
+    ]
+
+    return any(k in text for k in keywords)
+
+
 def has_recent_availability_context(history: list[dict] | None = None) -> bool:
     if not history:
         return False
@@ -400,7 +448,7 @@ def is_relevant(user_message: str) -> bool:
 
     keywords = [
         "cruise", "cruises", "tour", "tours", "santorini",
-        "price", "availability", "available",
+        "price", "prices", "availability", "available",
         "private", "shared",
         "sunset", "morning",
         "pickup", "pick-up", "port", "catamaran",
@@ -430,7 +478,7 @@ def is_relevant(user_message: str) -> bool:
         "wheelchair", "accessible", "accessibility", "mobility",
         "contact", "whatsapp", "phone", "email", "reservation department",
 
-        "κρουαζιέρα", "κρουαζιερες", "τιμή", "διαθεσιμότητα",
+        "κρουαζιέρα", "κρουαζιερες", "τιμή", "τιμες", "διαθεσιμότητα",
         "ιδιωτική", "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
         "φαγητό", "ποτό", "ποτά", "μενού", "μπίρα", "μπυρα", "αναψυκτικά", "αναψυκτικα",
         "χορτοφαγ", "βίγκαν", "χαλάλ", "αλλεργ",
@@ -446,7 +494,7 @@ def is_relevant(user_message: str) -> bool:
         "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
         "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "τηλέφωνο", "τηλεφωνο", "whatsapp",
 
-        "crociera", "crociere", "prezzo", "disponibilità",
+        "crociera", "crociere", "prezzo", "prezzi", "disponibilità",
         "privata", "tramonto", "mattina",
         "cibo", "bevande", "birra", "menu",
         "vegetariano", "vegano", "halal",
@@ -460,7 +508,7 @@ def is_relevant(user_message: str) -> bool:
         "portare", "indossare", "asciugamano", "sedia a rotelle", "accessibile",
         "contattare", "contatto", "telefono", "whatsapp",
 
-        "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
+        "cruzeiro", "cruzeiros", "preço", "precos", "preços", "disponibilidade",
         "privado", "partilhado", "compartilhado",
         "comida", "bebidas", "cerveja", "menu",
         "vegetariano", "vegano", "alergia", "alergias",
@@ -836,21 +884,21 @@ def detect_tour_key_from_history_text(text: str) -> str | None:
     lowered = text.lower()
 
     if "diamond sunset" in lowered:
-        return "diamondsunset"
+        return "diamond_sunset"
     if "diamond morning" in lowered:
-        return "diamondmorning"
+        return "diamond_morning"
     if "gems sunset" in lowered:
-        return "gemssunset"
+        return "gems_sunset"
     if "gems morning" in lowered:
-        return "gemsmorning"
+        return "gems_morning"
     if "platinum sunset" in lowered:
-        return "platinumsunset"
+        return "platinum_sunset"
     if "platinum morning" in lowered:
-        return "platinummorning"
+        return "platinum_morning"
     if "red sunset" in lowered:
-        return "redsunset"
+        return "red_sunset"
     if "red morning" in lowered:
-        return "redmorning"
+        return "red_morning"
 
     return None
 
@@ -1003,64 +1051,6 @@ def build_capacity_reply(data, language: str) -> str:
     if spots_display:
         return (
             f"For {cruise_name}, there are {spots_display} spots available.\n\n"
-            f"You can proceed with your booking here:\n{booking_url}\n\n"
-            "Please select the date on the booking page."
-        )
-
-    return (
-        f"{cruise_name} is available for the requested date.\n\n"
-        f"You can proceed with your booking here:\n{booking_url}\n\n"
-        "Please select the date on the booking page."
-    )
-
-    if language == "it":
-        if spots == 1:
-            return (
-                f"Per {cruise_name} è disponibile solo 1 posto.\n\n"
-                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-            )
-        if isinstance(spots, int):
-            return (
-                f"Per {cruise_name} ci sono {spots} posti disponibili.\n\n"
-                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-            )
-        return (
-            f"{cruise_name} è disponibile per la data richiesta.\n\n"
-            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-        )
-
-    if language == "pt":
-        if spots == 1:
-            return (
-                f"Para {cruise_name} há apenas 1 lugar disponível.\n\n"
-                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                "Por favor selecione a data na página de reservas."
-            )
-        if isinstance(spots, int):
-            return (
-                f"Para {cruise_name} há {spots} lugares disponíveis.\n\n"
-                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                "Por favor selecione a data na página de reservas."
-            )
-        return (
-            f"{cruise_name} está disponível para a data solicitada.\n\n"
-            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-            "Por favor selecione a data na página de reservas."
-        )
-
-    if spots == 1:
-        return (
-            f"For {cruise_name}, there is only 1 spot available.\n\n"
-            f"You can proceed with your booking here:\n{booking_url}\n\n"
-            "Please select the date on the booking page."
-        )
-
-    if isinstance(spots, int):
-        return (
-            f"For {cruise_name}, there are {spots} spots available.\n\n"
             f"You can proceed with your booking here:\n{booking_url}\n\n"
             "Please select the date on the booking page."
         )
@@ -1467,6 +1457,27 @@ USER MESSAGE:
             return {"reply": reply}
         except Exception:
             return {"reply": get_text("whatsapp_uncertain_reply", language)}
+
+    if is_price_request(user_message):
+        last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
+
+        seasonal_reply = get_seasonal_reply(
+            date_str=last_date_str,
+            language=language,
+            tour_key=last_tour_key,
+        )
+        if seasonal_reply:
+            return {"reply": seasonal_reply}
+
+        if last_tour_key and last_date_str:
+            data = safe_check_tour_availability(last_tour_key, last_date_str)
+            if data:
+                reply_text = build_availability_reply(data)
+                reply_text = translate_availability_reply(reply_text, language)
+                return {"reply": reply_text}
+            return {"reply": get_text("availability_fallback", language)}
+
+        return {"reply": get_text("price_fallback", language)}
 
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
         date_str = detect_date(user_message)
