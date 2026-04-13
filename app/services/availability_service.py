@@ -36,7 +36,7 @@ def extract_prices(pricing_data):
         return adult_price, child_price, infant_price
 
     for participant_group in pricing_data:
-        alias = str(participant_group.get("participant_type_alias", "")).lower()
+        alias = str(participant_group.get("participant_type_alias", "")).lower().strip()
         prices = participant_group.get("prices", [])
 
         if not prices or not isinstance(prices, list):
@@ -45,11 +45,14 @@ def extract_prices(pricing_data):
         first_price = prices[0]
         price_per_participant = first_price.get("price_per_participant")
 
-        if alias == "perperson6":
+        if price_per_participant is None:
+            continue
+
+        if ("person" in alias or "adult" in alias) and adult_price is None:
             adult_price = price_per_participant
-        elif alias == "perchild":
+        elif "child" in alias and child_price is None:
             child_price = price_per_participant
-        elif alias == "perinfant":
+        elif "infant" in alias and infant_price is None:
             infant_price = price_per_participant
 
     return adult_price, child_price, infant_price
