@@ -1,3 +1,5 @@
+import re
+
 TOUR_OPTIONS = {
     "red_morning": {
         "tour_name": "Red Cruise",
@@ -216,3 +218,44 @@ TOUR_OPTIONS = {
         "notes": "Luxury Ferretti 55 motor yacht",
     },
 }
+
+
+def get_tour_option(tour_key: str) -> dict | None:
+    return TOUR_OPTIONS.get(tour_key)
+
+
+def extract_max_guests(option: dict) -> int | None:
+    if not option:
+        return None
+
+    notes = option.get("notes", "")
+    match = re.search(r"up to (\d+) guests", notes, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+
+    return None
+
+
+def build_tour_facts_block(tour_key: str) -> str:
+    option = get_tour_option(tour_key)
+    if not option:
+        return ""
+
+    max_guests = extract_max_guests(option)
+
+    lines = [
+        f"TOUR KEY: {tour_key}",
+        f"TOUR NAME: {option.get('tour_name', '')}",
+        f"OPTION NAME: {option.get('option_name', '')}",
+        f"PUBLIC LABEL: {option.get('public_label', '')}",
+        f"REPLY LABEL: {option.get('reply_label', '')}",
+        f"TOUR TYPE: {option.get('tour_type', '')}",
+        f"DEFAULT DEPARTURE TIME: {option.get('default_departure_time', '')}",
+        f"BOOKING URL: {option.get('booking_url', '')}",
+        f"NOTES: {option.get('notes', '')}",
+    ]
+
+    if max_guests is not None:
+        lines.append(f"MAX GUESTS: {max_guests}")
+
+    return "\n".join(lines)

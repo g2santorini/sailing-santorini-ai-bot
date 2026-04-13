@@ -14,7 +14,7 @@ def test_connection():
     params = {
         "from": "2026-04-06T00:00:00",
         "to": "2026-04-06T23:59:59",
-        "pricing": "false"
+        "pricing": "true"
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -33,7 +33,7 @@ def get_day_availability(product_id, product_option_id, date_str):
     params = {
         "from": f"{date_str}T00:00:00",
         "to": f"{date_str}T23:59:59",
-        "pricing": "false"
+        "pricing": "true"
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -49,5 +49,9 @@ def get_day_availability(product_id, product_option_id, date_str):
     return {
         "available": vacancies > 0,
         "vacancies": vacancies,
-        "date_time": item.get("date_time")
+        "date_time": item.get("date_time"),
+        "pricing": item.get("pricing"),
+        "price": item.get("price"),
+        "discounted_price": item.get("discounted_price"),
+        "currency": item.get("currency"),
     }

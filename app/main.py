@@ -14,6 +14,7 @@ from app.services.tour_detector import detect_tour_key
 from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
+from app.services.tour_mapping import build_tour_facts_block
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -573,16 +574,45 @@ def is_capacity_request(user_message: str) -> bool:
         "available seats",
         "availability left",
 
+        "how many guests",
+        "how many people",
+        "max guests",
+        "maximum guests",
+        "max people",
+        "maximum people",
+        "maximum capacity",
+        "max capacity",
+        "capacity",
+        "up to how many",
+        "how many can join",
+        "how many passengers",
+
         "πόσες θέσεις",
         "πόση διαθεσιμότητα",
         "πόσα άτομα μένουν",
+        "πόσα άτομα",
+        "μέγιστη χωρητικότητα",
+        "χωρητικότητα",
+        "μέχρι πόσα άτομα",
 
         "quanti posti",
         "posti disponibili",
+        "quanti ospiti",
+        "quante persone",
+        "capacità",
+        "capacita",
+        "capienza massima",
+        "massimo numero di persone",
 
         "quantos lugares",
         "lugares disponíveis",
-        "vagas disponíveis"
+        "vagas disponíveis",
+        "quantos hóspedes",
+        "quantas pessoas",
+        "capacidade",
+        "capacidade máxima",
+        "máximo de pessoas",
+        "maximo de pessoas"
     ]
 
     return any(k in text for k in keywords)
@@ -1489,6 +1519,7 @@ USER MESSAGE:
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
+    tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
     availability_intent = (
         is_availability_request(user_message)
@@ -1618,6 +1649,9 @@ Knowledge:
 - For follow-up questions such as "and for sunset?" or "what about the morning one?", treat them as a continuation of the previous cruise/availability context when relevant
 - Do not use markdown bold with asterisks in your replies
 - Do not use words like cheap or cheaper for cruise recommendations; prefer phrases such as better value, very good value, more premium, more relaxed, or more lively
+- If STRUCTURED TOUR FACTS are provided, treat them as higher priority than general knowledge
+- Never mix details between Red, Gems, Platinum, Diamond, or private cruises
+- For factual questions about a specific cruise, use the structured tour facts first
 
 Special handling:
 - Cruise ship guests should be directed to WhatsApp
@@ -1630,6 +1664,9 @@ BOOKING LINK:
 
 COMPANY KNOWLEDGE:
 {knowledge}
+
+STRUCTURED TOUR FACTS:
+{tour_facts}
 
 CONVERSATION HISTORY:
 {conversation_history}

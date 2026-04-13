@@ -170,7 +170,7 @@ https://wa.me/306972805193”
 ---
 
 #### Diamond
-- Premium shared cruise
+- Premium shared cruise (up to 20 guests)
 - Includes beer + 1 cocktail
 - Towels included
 - Best option for Oia guests
