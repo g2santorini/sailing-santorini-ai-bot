@@ -90,24 +90,47 @@ def log_and_return(
 def detect_language(user_message: str) -> str:
     text = user_message.lower()
 
-    greek_chars = any(
-        ("α" <= c <= "ω") or ("ά" <= c <= "ώ") for c in text
-    )
+    greek_chars = any(("α" <= c <= "ω") or ("ά" <= c <= "ώ") for c in text)
     if greek_chars:
         return "el"
 
     italian_keywords = [
-        "ciao", "salve", "buongiorno", "buonasera", "grazie",
-        "disponibilità", "disponibile", "privata", "tramonto",
-        "mattina", "persone", "crociera", "crociere", "oggi", "domani"
+        "ciao",
+        "salve",
+        "buongiorno",
+        "buonasera",
+        "grazie",
+        "disponibilità",
+        "disponibile",
+        "privata",
+        "tramonto",
+        "mattina",
+        "persone",
+        "crociera",
+        "crociere",
+        "oggi",
+        "domani",
     ]
     if any(word in text for word in italian_keywords):
         return "it"
 
     portuguese_keywords = [
-        "olá", "ola", "bom dia", "boa tarde", "boa noite", "obrigado",
-        "obrigada", "disponibilidade", "privado", "partilhado",
-        "pessoas", "hoje", "amanhã", "amanha", "passeio", "cruzeiro"
+        "olá",
+        "ola",
+        "bom dia",
+        "boa tarde",
+        "boa noite",
+        "obrigado",
+        "obrigada",
+        "disponibilidade",
+        "privado",
+        "partilhado",
+        "pessoas",
+        "hoje",
+        "amanhã",
+        "amanha",
+        "passeio",
+        "cruzeiro",
     ]
     if any(word in text for word in portuguese_keywords):
         return "pt"
@@ -197,7 +220,9 @@ def get_text(key: str, language: str) -> str:
         },
     }
 
-    return translations.get(key, {}).get(language, translations.get(key, {}).get("en", ""))
+    return translations.get(key, {}).get(
+        language, translations.get(key, {}).get("en", "")
+    )
 
 
 def translate_availability_reply(reply_text: str, language: str) -> str:
@@ -207,30 +232,51 @@ def translate_availability_reply(reply_text: str, language: str) -> str:
     replacements = {
         "el": [
             ("Thank you for your message.", "Σας ευχαριστούμε για το μήνυμά σας."),
-            ("Unfortunately, we do not currently have any", "Δυστυχώς, δεν έχουμε αυτή τη στιγμή"),
+            (
+                "Unfortunately, we do not currently have any",
+                "Δυστυχώς, δεν έχουμε αυτή τη στιγμή",
+            ),
             ("cruises available for", "διαθέσιμες κρουαζιέρες για"),
             ("available for", "διαθέσιμες για"),
-            ("You may check other dates here:", "Μπορείτε να δείτε άλλες ημερομηνίες εδώ:"),
+            (
+                "You may check other dates here:",
+                "Μπορείτε να δείτε άλλες ημερομηνίες εδώ:",
+            ),
             ("For ", "Για "),
             ("the following private", "τις παρακάτω ιδιωτικές"),
             ("the following shared", "τις παρακάτω κοινές"),
             ("the following", "τις παρακάτω"),
-            ("private cruises are available:", "ιδιωτικές κρουαζιέρες είναι διαθέσιμες:"),
+            (
+                "private cruises are available:",
+                "ιδιωτικές κρουαζιέρες είναι διαθέσιμες:",
+            ),
             ("shared cruises are available:", "κοινές κρουαζιέρες είναι διαθέσιμες:"),
             ("cruises are available:", "κρουαζιέρες είναι διαθέσιμες:"),
             (" is available.", " είναι διαθέσιμη."),
             (" are available.", " είναι διαθέσιμες."),
             ("Shared cruises:", "Κοινές κρουαζιέρες:"),
             ("Private cruises:", "Ιδιωτικές κρουαζιέρες:"),
-            ("You can proceed directly with your booking here:", "Μπορείτε να προχωρήσετε απευθείας στην κράτησή σας εδώ:"),
-            ("You may proceed with your booking here:", "Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:"),
-            ("Please select the date on the booking page.", "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."),
+            (
+                "You can proceed directly with your booking here:",
+                "Μπορείτε να προχωρήσετε απευθείας στην κράτησή σας εδώ:",
+            ),
+            (
+                "You may proceed with your booking here:",
+                "Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:",
+            ),
+            (
+                "Please select the date on the booking page.",
+                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης.",
+            ),
             ("morning", "πρωινές"),
             ("sunset", "απογευματινές"),
         ],
         "it": [
             ("Thank you for your message.", "Grazie per il tuo messaggio."),
-            ("Unfortunately, we do not currently have any", "Purtroppo al momento non abbiamo"),
+            (
+                "Unfortunately, we do not currently have any",
+                "Purtroppo al momento non abbiamo",
+            ),
             ("cruises available for", "crociere disponibili per"),
             ("available for", "disponibili per"),
             ("You may check other dates here:", "Puoi controllare altre date qui:"),
@@ -245,13 +291,25 @@ def translate_availability_reply(reply_text: str, language: str) -> str:
             (" are available.", " sono disponibili."),
             ("Shared cruises:", "Crociere condivise:"),
             ("Private cruises:", "Crociere private:"),
-            ("You can proceed directly with your booking here:", "Puoi procedere direttamente con la prenotazione qui:"),
-            ("You may proceed with your booking here:", "Puoi procedere con la prenotazione qui:"),
-            ("Please select the date on the booking page.", "Ti preghiamo di selezionare la data nella pagina di prenotazione."),
+            (
+                "You can proceed directly with your booking here:",
+                "Puoi procedere direttamente con la prenotazione qui:",
+            ),
+            (
+                "You may proceed with your booking here:",
+                "Puoi procedere con la prenotazione qui:",
+            ),
+            (
+                "Please select the date on the booking page.",
+                "Ti preghiamo di selezionare la data nella pagina di prenotazione.",
+            ),
         ],
         "pt": [
             ("Thank you for your message.", "Obrigado pela sua mensagem."),
-            ("Unfortunately, we do not currently have any", "Infelizmente, neste momento não temos"),
+            (
+                "Unfortunately, we do not currently have any",
+                "Infelizmente, neste momento não temos",
+            ),
             ("cruises available for", "cruzeiros disponíveis para"),
             ("available for", "disponíveis para"),
             ("You may check other dates here:", "Pode verificar outras datas aqui:"),
@@ -266,9 +324,18 @@ def translate_availability_reply(reply_text: str, language: str) -> str:
             (" are available.", " estão disponíveis."),
             ("Shared cruises:", "Cruzeiros partilhados:"),
             ("Private cruises:", "Cruzeiros privados:"),
-            ("You can proceed directly with your booking here:", "Pode avançar diretamente com a sua reserva aqui:"),
-            ("You may proceed with your booking here:", "Pode avançar com a sua reserva aqui:"),
-            ("Please select the date on the booking page.", "Por favor selecione a data na página de reservas."),
+            (
+                "You can proceed directly with your booking here:",
+                "Pode avançar diretamente com a sua reserva aqui:",
+            ),
+            (
+                "You may proceed with your booking here:",
+                "Pode avançar com a sua reserva aqui:",
+            ),
+            (
+                "Please select the date on the booking page.",
+                "Por favor selecione a data na página de reservas.",
+            ),
         ],
     }
 
@@ -283,13 +350,25 @@ def is_cruise_passenger(user_message: str) -> bool:
     text = user_message.lower()
 
     keywords = [
-        "cruise ship", "cruise passenger", "ship",
-        "old port", "tender", "cable car",
-        "from the ship", "coming by cruise",
-        "port of fira", "fira port",
-        "κρουαζιερόπλοιο", "παλιό λιμάνι", "τελεφερίκ",
-        "crociera", "nave", "porto vecchio",
-        "navio de cruzeiro", "passageiro de cruzeiro", "porto antigo"
+        "cruise ship",
+        "cruise passenger",
+        "ship",
+        "old port",
+        "tender",
+        "cable car",
+        "from the ship",
+        "coming by cruise",
+        "port of fira",
+        "fira port",
+        "κρουαζιερόπλοιο",
+        "παλιό λιμάνι",
+        "τελεφερίκ",
+        "crociera",
+        "nave",
+        "porto vecchio",
+        "navio de cruzeiro",
+        "passageiro de cruzeiro",
+        "porto antigo",
     ]
 
     return any(k in text for k in keywords)
@@ -299,15 +378,41 @@ def is_personal_booking_request(user_message: str) -> bool:
     text = user_message.lower().strip()
 
     keywords = [
-        "my pickup", "my pick-up", "pick up time", "pickup time", "pick-up time",
-        "my booking", "my reservation", "my transfer", "my ticket",
-        "can you check my booking", "can you see my booking", "can you confirm my booking",
-        "can you check my reservation", "can you see my reservation",
-        "booking number", "reservation number", "confirm my transfer",
-        "η κράτησή μου", "η κρατηση μου", "το booking μου", "η παραλαβή μου", "η παραλαβη μου",
-        "ώρα παραλαβής", "ωρα παραλαβης", "επιβεβαίωση κράτησης", "επιβεβαιωση κρατησης",
-        "la mia prenotazione", "il mio transfer", "orario di pick-up", "numero di prenotazione",
-        "a minha reserva", "o meu transfer", "hora do pickup", "número da reserva", "numero da reserva"
+        "my pickup",
+        "my pick-up",
+        "pick up time",
+        "pickup time",
+        "pick-up time",
+        "my booking",
+        "my reservation",
+        "my transfer",
+        "my ticket",
+        "can you check my booking",
+        "can you see my booking",
+        "can you confirm my booking",
+        "can you check my reservation",
+        "can you see my reservation",
+        "booking number",
+        "reservation number",
+        "confirm my transfer",
+        "η κράτησή μου",
+        "η κρατηση μου",
+        "το booking μου",
+        "η παραλαβή μου",
+        "η παραλαβη μου",
+        "ώρα παραλαβής",
+        "ωρα παραλαβης",
+        "επιβεβαίωση κράτησης",
+        "επιβεβαιωση κρατησης",
+        "la mia prenotazione",
+        "il mio transfer",
+        "orario di pick-up",
+        "numero di prenotazione",
+        "a minha reserva",
+        "o meu transfer",
+        "hora do pickup",
+        "número da reserva",
+        "numero da reserva",
     ]
 
     return any(k in text for k in keywords)
@@ -317,15 +422,47 @@ def is_uncertain_whatsapp_case(user_message: str) -> bool:
     text = user_message.lower()
 
     keywords = [
-        "wheelchair", "accessible", "accessibility", "mobility",
-        "bring beverages", "bring drinks", "bring alcohol", "bring wine", "bring beer",
-        "what beer do you have", "which beer do you have", "beer brand", "beer brands",
-        "special request", "special arrangement", "custom request",
-        "proposal", "fireworks",
-        "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
-        "να φέρω ποτά", "να φερω ποτα", "τι μπίρα έχετε", "τι μπυρα εχετε", "ειδικό αίτημα", "ειδικο αιτημα",
-        "sedia a rotelle", "accessibile", "portare bevande", "quale birra avete", "richiesta speciale",
-        "cadeira de rodas", "acessível", "acessivel", "trazer bebidas", "que cerveja têm", "pedido especial"
+        "wheelchair",
+        "accessible",
+        "accessibility",
+        "mobility",
+        "bring beverages",
+        "bring drinks",
+        "bring alcohol",
+        "bring wine",
+        "bring beer",
+        "what beer do you have",
+        "which beer do you have",
+        "beer brand",
+        "beer brands",
+        "special request",
+        "special arrangement",
+        "custom request",
+        "proposal",
+        "fireworks",
+        "καρότσι",
+        "καροτσι",
+        "αναπηρικό",
+        "αναπηρικο",
+        "προσβάσιμο",
+        "προσβασιμο",
+        "να φέρω ποτά",
+        "να φερω ποτα",
+        "τι μπίρα έχετε",
+        "τι μπυρα εχετε",
+        "ειδικό αίτημα",
+        "ειδικο αιτημα",
+        "sedia a rotelle",
+        "accessibile",
+        "portare bevande",
+        "quale birra avete",
+        "richiesta speciale",
+        "cadeira de rodas",
+        "acessível",
+        "acessivel",
+        "trazer bebidas",
+        "que cerveja têm",
+        "pedido especial",
     ]
 
     return any(k in text for k in keywords)
@@ -335,78 +472,299 @@ def is_relevant(user_message: str) -> bool:
     text = user_message.lower()
 
     keywords = [
-        "cruise", "cruises", "tour", "tours", "santorini",
-        "price", "availability", "available",
-        "private", "shared",
-        "sunset", "morning",
-        "pickup", "pick-up", "port", "catamaran",
-        "booking", "book", "reservation",
-        "cancel", "refund", "weather",
-        "food", "drinks", "drink", "beverage", "beverages", "beer", "menu", "meal",
-        "vegetarian", "vegan", "halal", "kosher",
-        "dietary", "allergy", "allergies",
-        "gluten", "gluten free", "gluten-free",
-        "celiac", "coeliac",
-        "transfer", "hotel", "itinerary",
-        "red beach", "white beach", "hot springs",
-        "pets", "pet", "dog", "dogs", "animal", "animals",
-        "kids", "group", "guests",
-        "people", "persons", "person",
-        "we are", "we have",
-        "recommend", "suggest", "suggestion",
-        "what do you recommend", "what do you suggest",
-        "difference", "compare", "comparison",
-        "which one", "which is better", "which is the best",
-        "best", "best option", "better", "vs", "or",
-        "red", "diamond", "gems", "platinum",
-        "lagoon", "emily", "ferretti",
-        "spot", "spots", "seat", "seats", "place", "places", "left", "vessel", "vessels", "all available",
-        "onboard", "on board", "bring", "wear", "clothes", "clothing", "shoes", "swimwear",
-        "towel", "towels", "snorkeling", "snorkel",
-        "wheelchair", "accessible", "accessibility", "mobility",
-        "contact", "whatsapp", "phone", "email", "reservation department",
-        "κρουαζιέρα", "κρουαζιερες", "τιμή", "διαθεσιμότητα",
-        "ιδιωτική", "ηλιοβασίλεμα", "πρωινή", "λιμάνι", "μεταφορά",
-        "φαγητό", "ποτό", "ποτά", "μενού", "μπίρα", "μπυρα", "αναψυκτικά", "αναψυκτικα",
-        "χορτοφαγ", "βίγκαν", "χαλάλ", "αλλεργ",
-        "γλουτένη", "χωρίς γλουτένη", "κοιλιοκάκη",
-        "άτομα", "άτομο", "είμαστε", "έχουμε",
-        "προτείνεις", "προτείνετε", "σύσταση",
-        "διαφορά", "σύγκριση", "ποιο είναι καλύτερο", "ποιο ειναι καλυτερο",
-        "ποιο είναι το καλύτερο", "ποιο ειναι το καλυτερο", "καλύτερο", "καλυτερο",
-        "θέσεις", "θέση", "πόσες θέσεις", "πόσα άτομα μένουν", "όλα τα σκάφη", "όλα τα διαθέσιμα",
-        "κατοικίδιο", "κατοικιδιο", "κατοικίδια", "κατοικιδια",
-        "σκύλος", "σκυλος", "σκυλιά", "σκυλια", "ζώο", "ζωο", "ζώα", "ζωα",
-        "να φέρω", "να φερω", "τι να φορέσω", "τι να φορεσω", "πετσέτα", "πετσετα",
-        "καρότσι", "καροτσι", "αναπηρικό", "αναπηρικο", "προσβάσιμο", "προσβασιμο",
-        "επικοινωνία", "επικοινωνησω", "επικοινωνήσω", "τηλέφωνο", "τηλεφωνο", "whatsapp",
-        "crociera", "crociere", "prezzo", "disponibilità",
-        "privata", "tramonto", "mattina",
-        "cibo", "bevande", "birra", "menu",
-        "vegetariano", "vegano", "halal",
-        "allergie", "glutine", "senza glutine",
-        "persone", "persona", "siamo", "abbiamo",
-        "consigli", "raccomandi", "suggerisci",
-        "differenza", "confronto", "qual è meglio", "qual e meglio",
-        "qual è il migliore", "qual e il migliore", "migliore",
-        "posti", "posto", "quanti posti", "tutte le barche",
-        "cane", "cani", "animale", "animali",
-        "portare", "indossare", "asciugamano", "sedia a rotelle", "accessibile",
-        "contattare", "contatto", "telefono", "whatsapp",
-        "cruzeiro", "cruzeiros", "preço", "preco", "disponibilidade",
-        "privado", "partilhado", "compartilhado",
-        "comida", "bebidas", "cerveja", "menu",
-        "vegetariano", "vegano", "alergia", "alergias",
-        "glúten", "gluten", "sem glúten", "sem gluten",
-        "pessoas", "pessoa", "somos", "temos",
-        "recomenda", "sugere",
-        "diferença", "comparação", "comparacao",
-        "qual é melhor", "qual e melhor",
-        "qual é o melhor", "qual e o melhor", "melhor",
-        "lugares", "quantos lugares", "vagas", "todos os barcos",
-        "cão", "cao", "cães", "caes", "animal", "animais",
-        "trazer", "vestir", "toalha", "cadeira de rodas", "acessível", "acessivel",
-        "contactar", "contacto", "telefone", "whatsapp"
+        "cruise",
+        "cruises",
+        "tour",
+        "tours",
+        "santorini",
+        "price",
+        "availability",
+        "available",
+        "private",
+        "shared",
+        "sunset",
+        "morning",
+        "pickup",
+        "pick-up",
+        "port",
+        "catamaran",
+        "booking",
+        "book",
+        "reservation",
+        "cancel",
+        "refund",
+        "weather",
+        "food",
+        "drinks",
+        "drink",
+        "beverage",
+        "beverages",
+        "beer",
+        "menu",
+        "meal",
+        "vegetarian",
+        "vegan",
+        "halal",
+        "kosher",
+        "dietary",
+        "allergy",
+        "allergies",
+        "gluten",
+        "gluten free",
+        "gluten-free",
+        "celiac",
+        "coeliac",
+        "transfer",
+        "hotel",
+        "itinerary",
+        "red beach",
+        "white beach",
+        "hot springs",
+        "pets",
+        "pet",
+        "dog",
+        "dogs",
+        "animal",
+        "animals",
+        "kids",
+        "group",
+        "guests",
+        "people",
+        "persons",
+        "person",
+        "we are",
+        "we have",
+        "recommend",
+        "suggest",
+        "suggestion",
+        "what do you recommend",
+        "what do you suggest",
+        "difference",
+        "compare",
+        "comparison",
+        "which one",
+        "which is better",
+        "which is the best",
+        "best",
+        "best option",
+        "better",
+        "vs",
+        "or",
+        "red",
+        "diamond",
+        "gems",
+        "platinum",
+        "lagoon",
+        "emily",
+        "ferretti",
+        "spot",
+        "spots",
+        "seat",
+        "seats",
+        "place",
+        "places",
+        "left",
+        "vessel",
+        "vessels",
+        "all available",
+        "onboard",
+        "on board",
+        "bring",
+        "wear",
+        "clothes",
+        "clothing",
+        "shoes",
+        "swimwear",
+        "towel",
+        "towels",
+        "snorkeling",
+        "snorkel",
+        "wheelchair",
+        "accessible",
+        "accessibility",
+        "mobility",
+        "contact",
+        "whatsapp",
+        "phone",
+        "email",
+        "reservation department",
+        "κρουαζιέρα",
+        "κρουαζιερες",
+        "τιμή",
+        "διαθεσιμότητα",
+        "ιδιωτική",
+        "ηλιοβασίλεμα",
+        "πρωινή",
+        "λιμάνι",
+        "μεταφορά",
+        "φαγητό",
+        "ποτό",
+        "ποτά",
+        "μενού",
+        "μπίρα",
+        "μπυρα",
+        "αναψυκτικά",
+        "αναψυκτικα",
+        "χορτοφαγ",
+        "βίγκαν",
+        "χαλάλ",
+        "αλλεργ",
+        "γλουτένη",
+        "χωρίς γλουτένη",
+        "κοιλιοκάκη",
+        "άτομα",
+        "άτομο",
+        "είμαστε",
+        "έχουμε",
+        "προτείνεις",
+        "προτείνετε",
+        "σύσταση",
+        "διαφορά",
+        "σύγκριση",
+        "ποιο είναι καλύτερο",
+        "ποιο ειναι καλυτερο",
+        "ποιο είναι το καλύτερο",
+        "ποιο ειναι το καλυτερο",
+        "καλύτερο",
+        "καλυτερο",
+        "θέσεις",
+        "θέση",
+        "πόσες θέσεις",
+        "πόσα άτομα μένουν",
+        "όλα τα σκάφη",
+        "όλα τα διαθέσιμα",
+        "κατοικίδιο",
+        "κατοικιδιο",
+        "κατοικίδια",
+        "κατοικιδια",
+        "σκύλος",
+        "σκυλος",
+        "σκυλιά",
+        "σκυλια",
+        "ζώο",
+        "ζωο",
+        "ζώα",
+        "ζωα",
+        "να φέρω",
+        "να φερω",
+        "τι να φορέσω",
+        "τι να φορεσω",
+        "πετσέτα",
+        "πετσετα",
+        "καρότσι",
+        "καροτσι",
+        "αναπηρικό",
+        "αναπηρικο",
+        "προσβάσιμο",
+        "προσβασιμο",
+        "επικοινωνία",
+        "επικοινωνησω",
+        "επικοινωνήσω",
+        "τηλέφωνο",
+        "τηλεφωνο",
+        "whatsapp",
+        "crociera",
+        "crociere",
+        "prezzo",
+        "disponibilità",
+        "privata",
+        "tramonto",
+        "mattina",
+        "cibo",
+        "bevande",
+        "birra",
+        "menu",
+        "vegetariano",
+        "vegano",
+        "halal",
+        "allergie",
+        "glutine",
+        "senza glutine",
+        "persone",
+        "persona",
+        "siamo",
+        "abbiamo",
+        "consigli",
+        "raccomandi",
+        "suggerisci",
+        "differenza",
+        "confronto",
+        "qual è meglio",
+        "qual e meglio",
+        "qual è il migliore",
+        "qual e il migliore",
+        "migliore",
+        "posti",
+        "posto",
+        "quanti posti",
+        "tutte le barche",
+        "cane",
+        "cani",
+        "animale",
+        "animali",
+        "portare",
+        "indossare",
+        "asciugamano",
+        "sedia a rotelle",
+        "accessibile",
+        "contattare",
+        "contatto",
+        "telefono",
+        "whatsapp",
+        "cruzeiro",
+        "cruzeiros",
+        "preço",
+        "preco",
+        "disponibilidade",
+        "privado",
+        "partilhado",
+        "compartilhado",
+        "comida",
+        "bebidas",
+        "cerveja",
+        "menu",
+        "vegetariano",
+        "vegano",
+        "alergia",
+        "alergias",
+        "glúten",
+        "gluten",
+        "sem glúten",
+        "sem gluten",
+        "pessoas",
+        "pessoa",
+        "somos",
+        "temos",
+        "recomenda",
+        "sugere",
+        "diferença",
+        "comparação",
+        "comparacao",
+        "qual é melhor",
+        "qual e melhor",
+        "qual é o melhor",
+        "qual e o melhor",
+        "melhor",
+        "lugares",
+        "quantos lugares",
+        "vagas",
+        "todos os barcos",
+        "cão",
+        "cao",
+        "cães",
+        "caes",
+        "animal",
+        "animais",
+        "trazer",
+        "vestir",
+        "toalha",
+        "cadeira de rodas",
+        "acessível",
+        "acessivel",
+        "contactar",
+        "contacto",
+        "telefone",
+        "whatsapp",
     ]
 
     return any(k in text for k in keywords)
@@ -461,7 +819,7 @@ def extract_result_text(item) -> str:
             "option_name",
             "type",
             "category",
-            "reply_label"
+            "reply_label",
         ]:
             value = item.get(key)
             if value:
@@ -509,7 +867,13 @@ def get_capacity_number(data) -> int | None:
     availability = data.get("availability")
 
     if isinstance(availability, dict):
-        for key in ["available_spots", "spots", "vacancies", "available", "capacity_left"]:
+        for key in [
+            "available_spots",
+            "spots",
+            "vacancies",
+            "available",
+            "capacity_left",
+        ]:
             value = availability.get(key)
             if isinstance(value, int):
                 return value
@@ -667,7 +1031,9 @@ def build_multi_capacity_reply(results: list[dict], language: str) -> str:
         lines.append("Puoi procedere con la prenotazione qui:")
         lines.append(BOOKING_LINK)
         lines.append("")
-        lines.append("Ti preghiamo di selezionare la data nella pagina di prenotazione.")
+        lines.append(
+            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+        )
         return "\n".join(lines)
 
     if language == "pt":
@@ -711,9 +1077,7 @@ def build_multi_capacity_reply(results: list[dict], language: str) -> str:
 
 
 def build_best_choice_reply(
-    history: list[dict],
-    language: str,
-    passenger_count: int | None = None
+    history: list[dict], language: str, passenger_count: int | None = None
 ) -> str:
     recent_text = " ".join(
         item.get("content", "")
@@ -755,9 +1119,7 @@ def build_best_choice_reply(
             )
 
         if mentions_diamond:
-            return (
-                "Το Diamond είναι η καλύτερη επιλογή αν προτεραιότητά σας είναι μια πιο premium και πιο ξεχωριστή εμπειρία."
-            )
+            return "Το Diamond είναι η καλύτερη επιλογή αν προτεραιότητά σας είναι μια πιο premium και πιο ξεχωριστή εμπειρία."
 
         return (
             "Εξαρτάται από το τι προτιμάτε περισσότερο.\n\n"
@@ -842,9 +1204,7 @@ def build_best_choice_reply(
         )
 
     if mentions_diamond:
-        return (
-            "Diamond is the best choice if your priority is a more premium and more distinctive experience."
-        )
+        return "Diamond is the best choice if your priority is a more premium and more distinctive experience."
 
     return (
         "It depends on the kind of experience you prefer.\n\n"
@@ -920,10 +1280,7 @@ def safe_find_available_tours(
 ):
     try:
         return find_available_tours(
-            effective_date,
-            period,
-            user_message,
-            passenger_count
+            effective_date, period, user_message, passenger_count
         )
     except Exception as exc:
         print(f"Availability search error for {effective_date}: {exc}")
@@ -934,9 +1291,11 @@ def safe_find_available_tours(
 def root():
     return {"message": "Santorini bot is running"}
 
+
 @app.get("/admin/logs")
 def admin_logs():
     return {"logs": get_chat_logs(200)}
+
 
 @app.post("/chat")
 def chat(request: ChatRequest):
@@ -1081,10 +1440,7 @@ USER MESSAGE:
             )
 
         results = safe_find_available_tours(
-            effective_date,
-            period,
-            user_message,
-            passenger_count
+            effective_date, period, user_message, passenger_count
         )
 
         if results:
@@ -1107,7 +1463,9 @@ USER MESSAGE:
         )
 
     if is_capacity_request(user_message):
-        last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
+        last_tour_key, last_date_str = get_last_tour_and_date_from_history(
+            user_message, history
+        )
 
         seasonal_reply = get_seasonal_reply(
             date_str=last_date_str,
@@ -1152,7 +1510,7 @@ USER MESSAGE:
             fallback=True,
             detected_tour=None,
         )
-        
+
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
@@ -1161,20 +1519,23 @@ USER MESSAGE:
 
     user_message_lower = user_message.lower()
 
-    price_intent = any(keyword in user_message_lower for keyword in [
-    "price",
-    "rate",
-    "cost",
-    "how much",
-    "how much does it cost",
-    "how much is",
-    "what is the price",
-    "τιμή",
-    "ποσο κοστιζει",
-    "πόσο κοστίζει",
-    "quanto custa",
-    "prezzo"
-])
+    price_intent = any(
+        keyword in user_message_lower
+        for keyword in [
+            "price",
+            "rate",
+            "cost",
+            "how much",
+            "how much does it cost",
+            "how much is",
+            "what is the price",
+            "τιμή",
+            "ποσο κοστιζει",
+            "πόσο κοστίζει",
+            "quanto custa",
+            "prezzo",
+        ]
+    )
 
     comparison_intent = (
         "difference" in user_message_lower
@@ -1191,7 +1552,9 @@ USER MESSAGE:
         effective_date_str = date_str
 
         if not effective_tour_key or not effective_date_str:
-            last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
+            last_tour_key, last_date_str = get_last_tour_and_date_from_history(
+                user_message, history
+            )
 
             if not effective_tour_key:
                 effective_tour_key = last_tour_key
@@ -1216,20 +1579,15 @@ USER MESSAGE:
             data = safe_check_tour_availability(effective_tour_key, effective_date_str)
             print("PRICE DATA DEBUG:", data)
             if data:
-                pricing = data.get("pricing") if isinstance(data, dict) else None
+                availability = data.get("availability", {}) if isinstance(data, dict) else {}
+
                 reply_label = data.get("reply_label", "this cruise")
                 booking_url = data.get("booking_url", BOOKING_LINK)
 
-                if isinstance(pricing, dict):
-                    amount = (
-                        pricing.get("adult_rate")
-                        or pricing.get("price")
-                        or pricing.get("rate")
-                        or pricing.get("amount")
-                    )
-                    currency = pricing.get("currency", "EUR")
+                amount = availability.get("adult_price")
+                currency = "EUR"
 
-                    if amount is not None:
+                if amount is not None:
                         if language == "el":
                             reply = (
                                 f"Η τιμή για το {reply_label} είναι {amount} {currency} ανά άτομο.\n\n"
@@ -1356,10 +1714,7 @@ USER MESSAGE:
             )
 
         results = safe_find_available_tours(
-            effective_date,
-            period,
-            user_message,
-            passenger_count
+            effective_date, period, user_message, passenger_count
         )
         if results is None:
             reply = get_text("availability_fallback", language)
@@ -1375,10 +1730,7 @@ USER MESSAGE:
 
         if filtered_results:
             reply_text = build_multi_availability_reply(
-                filtered_results,
-                effective_date,
-                period,
-                language
+                filtered_results, effective_date, period, language
             )
             reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
@@ -1402,7 +1754,7 @@ USER MESSAGE:
         reply = build_best_choice_reply(
             history=history,
             language=language,
-            passenger_count=detect_passenger_count(user_message, history)
+            passenger_count=detect_passenger_count(user_message, history),
         )
         return log_and_return(
             user_message=user_message,
