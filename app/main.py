@@ -1809,7 +1809,9 @@ USER MESSAGE:
             detected_tour=tour_key,
         )
 
-    if not is_relevant(user_message) and not is_followup(user_message):
+    short_followup = len(user_message.split()) <= 4
+
+    if not is_relevant(user_message) and not is_followup(user_message) and not short_followup:
         reply = get_text("irrelevant_reply", language)
         return log_and_return(
             user_message=user_message,
