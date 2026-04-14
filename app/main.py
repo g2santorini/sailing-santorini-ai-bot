@@ -765,6 +765,17 @@ def is_relevant(user_message: str) -> bool:
         "contacto",
         "telefone",
         "whatsapp",
+        "wheelchair", 
+        "accessible", 
+        "accessibility", 
+        "mobility",
+        "pregnant", 
+        "pregnancy",
+        "έγκυος", 
+        "εγκυος",
+        "gravidanza",
+        "grávida", 
+        "gravida",
     ]
 
     return any(k in text for k in keywords)
@@ -1357,6 +1368,22 @@ def chat(request: ChatRequest):
             fallback=False,
             detected_tour=None,
         )
+    
+    if "pregnant" in user_message.lower():
+        reply = (
+        "In most cases, pregnant guests may join, but it depends on the stage of pregnancy "
+        "and how comfortable you feel during the cruise.\n\n"
+        "For safety, we kindly recommend contacting us on WhatsApp so we can guide you properly:\n"
+        f"{WHATSAPP_LINK}"
+    )
+
+    return log_and_return(
+        user_message=user_message,
+        reply=reply,
+        language=language,
+        fallback=False,
+        detected_tour=None,
+    )
 
     if is_uncertain_whatsapp_case(user_message):
         conversation_history = ""
