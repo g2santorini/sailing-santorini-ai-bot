@@ -765,16 +765,16 @@ def is_relevant(user_message: str) -> bool:
         "contacto",
         "telefone",
         "whatsapp",
-        "wheelchair", 
-        "accessible", 
-        "accessibility", 
+        "wheelchair",
+        "accessible",
+        "accessibility",
         "mobility",
-        "pregnant", 
+        "pregnant",
         "pregnancy",
-        "έγκυος", 
+        "έγκυος",
         "εγκυος",
         "gravidanza",
-        "grávida", 
+        "grávida",
         "gravida",
     ]
 
@@ -1368,22 +1368,22 @@ def chat(request: ChatRequest):
             fallback=False,
             detected_tour=None,
         )
-    
+
     if "pregnant" in user_message.lower():
         reply = (
-        "In most cases, pregnant guests may join, but it depends on the stage of pregnancy "
-        "and how comfortable you feel during the cruise.\n\n"
-        "For safety, we kindly recommend contacting us on WhatsApp so we can guide you properly:\n"
-        f"{WHATSAPP_LINK}"
-    )
+            "In most cases, pregnant guests may join, but it depends on the stage of pregnancy "
+            "and how comfortable you feel during the cruise.\n\n"
+            "For safety, we kindly recommend contacting us on WhatsApp so we can guide you properly:\n"
+            f"{WHATSAPP_LINK}"
+        )
 
-    return log_and_return(
-        user_message=user_message,
-        reply=reply,
-        language=language,
-        fallback=False,
-        detected_tour=None,
-    )
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_uncertain_whatsapp_case(user_message):
         conversation_history = ""
@@ -1650,7 +1650,9 @@ USER MESSAGE:
             data = safe_check_tour_availability(effective_tour_key, effective_date_str)
             print("PRICE DATA DEBUG:", data)
             if data:
-                availability = data.get("availability", {}) if isinstance(data, dict) else {}
+                availability = (
+                    data.get("availability", {}) if isinstance(data, dict) else {}
+                )
 
                 reply_label = data.get("reply_label", "this cruise")
                 booking_url = data.get("booking_url", BOOKING_LINK)
@@ -1659,38 +1661,38 @@ USER MESSAGE:
                 currency = "EUR"
 
                 if amount is not None:
-                        if language == "el":
-                            reply = (
-                                f"Η τιμή για το {reply_label} είναι {amount} {currency} ανά άτομο.\n\n"
-                                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-                            )
-                        elif language == "it":
-                            reply = (
-                                f"Il prezzo per {reply_label} è {amount} {currency} a persona.\n\n"
-                                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-                            )
-                        elif language == "pt":
-                            reply = (
-                                f"O preço para {reply_label} é {amount} {currency} por pessoa.\n\n"
-                                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                                "Por favor selecione a data na página de reservas."
-                            )
-                        else:
-                            reply = (
-                                f"The price for {reply_label} is {amount} {currency} per person.\n\n"
-                                f"You can proceed with your booking here:\n{booking_url}\n\n"
-                                "Please select the date on the booking page."
-                            )
-
-                        return log_and_return(
-                            user_message=user_message,
-                            reply=reply,
-                            language=language,
-                            fallback=False,
-                            detected_tour=effective_tour_key,
+                    if language == "el":
+                        reply = (
+                            f"Η τιμή για το {reply_label} είναι {amount} {currency} ανά άτομο.\n\n"
+                            f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
+                            "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
                         )
+                    elif language == "it":
+                        reply = (
+                            f"Il prezzo per {reply_label} è {amount} {currency} a persona.\n\n"
+                            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+                            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+                        )
+                    elif language == "pt":
+                        reply = (
+                            f"O preço para {reply_label} é {amount} {currency} por pessoa.\n\n"
+                            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+                            "Por favor selecione a data na página de reservas."
+                        )
+                    else:
+                        reply = (
+                            f"The price for {reply_label} is {amount} {currency} per person.\n\n"
+                            f"You can proceed with your booking here:\n{booking_url}\n\n"
+                            "Please select the date on the booking page."
+                        )
+
+                    return log_and_return(
+                        user_message=user_message,
+                        reply=reply,
+                        language=language,
+                        fallback=False,
+                        detected_tour=effective_tour_key,
+                    )
 
         reply = get_text("availability_fallback", language)
         return log_and_return(
@@ -1827,7 +1829,9 @@ USER MESSAGE:
         if item.get("role") in {"user", "assistant"}
     ).lower()
 
-    budget_followup = "budget" in user_message.lower() or "value" in user_message.lower()
+    budget_followup = (
+        "budget" in user_message.lower() or "value" in user_message.lower()
+    )
 
     if budget_followup and history:
         mentions_red = "red" in recent_text
@@ -1920,7 +1924,11 @@ USER MESSAGE:
 
     short_followup = len(user_message.split()) <= 4
 
-    if not is_relevant(user_message) and not is_followup(user_message) and not short_followup:
+    if (
+        not is_relevant(user_message)
+        and not is_followup(user_message)
+        and not short_followup
+    ):
         reply = get_text("irrelevant_reply", language)
         return log_and_return(
             user_message=user_message,
