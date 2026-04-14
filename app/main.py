@@ -1152,7 +1152,7 @@ USER MESSAGE:
             fallback=True,
             detected_tour=None,
         )
-
+        
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
@@ -1160,6 +1160,13 @@ USER MESSAGE:
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
 
     user_message_lower = user_message.lower()
+
+    price_intent = (
+        "price" in user_message_lower
+        or "rate" in user_message_lower
+        or "cost" in user_message_lower
+        or "how much" in user_message_lower
+    )
 
     comparison_intent = (
         "difference" in user_message_lower
@@ -1171,12 +1178,91 @@ USER MESSAGE:
         or is_best_choice_question(user_message)
     )
 
-    price_intent = (
-        "price" in user_message_lower
-        or "rate" in user_message_lower
-        or "cost" in user_message_lower
-        or "how much" in user_message_lower
-    )
+    if price_intent:
+        effective_tour_key = tour_key
+        effective_date_str = date_str
+
+        if not effective_tour_key or not effective_date_str:
+            last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
+
+            if not effective_tour_key:
+                effective_tour_key = last_tour_key
+            if not effective_date_str:
+                effective_date_str = last_date_str
+
+        seasonal_reply = get_seasonal_reply(
+            date_str=effective_date_str,
+            language=language,
+            tour_key=effective_tour_key,
+        )
+        if seasonal_reply:
+            return log_and_return(
+                user_message=user_message,
+                reply=seasonal_reply,
+                language=language,
+                fallback=False,
+                detected_tour=effective_tour_key,
+            )
+
+        if effective_tour_key and effective_date_str:
+            data = safe_check_tour_availability(effective_tour_key, effective_date_str)
+            print("PRICE DATA DEBUG:", data)
+            if data:
+                pricing = data.get("pricing") if isinstance(data, dict) else None
+                reply_label = data.get("reply_label", "this cruise")
+                booking_url = data.get("booking_url", BOOKING_LINK)
+
+                if isinstance(pricing, dict):
+                    amount = (
+                        pricing.get("adult_rate")
+                        or pricing.get("price")
+                        or pricing.get("rate")
+                        or pricing.get("amount")
+                    )
+                    currency = pricing.get("currency", "EUR")
+
+                    if amount is not None:
+                        if language == "el":
+                            reply = (
+                                f"Η τιμή για το {reply_label} είναι {amount} {currency} ανά άτομο.\n\n"
+                                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
+                                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
+                            )
+                        elif language == "it":
+                            reply = (
+                                f"Il prezzo per {reply_label} è {amount} {currency} a persona.\n\n"
+                                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+                                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+                            )
+                        elif language == "pt":
+                            reply = (
+                                f"O preço para {reply_label} é {amount} {currency} por pessoa.\n\n"
+                                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+                                "Por favor selecione a data na página de reservas."
+                            )
+                        else:
+                            reply = (
+                                f"The price for {reply_label} is {amount} {currency} per person.\n\n"
+                                f"You can proceed with your booking here:\n{booking_url}\n\n"
+                                "Please select the date on the booking page."
+                            )
+
+                        return log_and_return(
+                            user_message=user_message,
+                            reply=reply,
+                            language=language,
+                            fallback=False,
+                            detected_tour=effective_tour_key,
+                        )
+
+        reply = get_text("availability_fallback", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=effective_tour_key,
+        )
 
     availability_intent = (
         not comparison_intent
