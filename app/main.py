@@ -1790,6 +1790,79 @@ USER MESSAGE:
             detected_tour=tour_key,
         )
 
+    recent_text = " ".join(
+        item.get("content", "")
+        for item in history[-10:]
+        if item.get("role") in {"user", "assistant"}
+    ).lower()
+
+    budget_followup = "budget" in user_message.lower() or "value" in user_message.lower()
+
+    if budget_followup and history:
+        mentions_red = "red" in recent_text
+        mentions_diamond = "diamond" in recent_text
+        mentions_gems = "gems" in recent_text
+
+        if mentions_red and mentions_diamond and not mentions_gems:
+            if language == "el":
+                reply = (
+                    "Αν η βασική προτεραιότητα είναι ο προϋπολογισμός, το Red Cruise είναι η καλύτερη επιλογή σε αξία.\n\n"
+                    "Το Diamond είναι η πιο premium επιλογή, με μικρότερο group και περισσότερες παροχές onboard."
+                )
+            elif language == "it":
+                reply = (
+                    "Se il budget è la priorità principale, la Red Cruise è l’opzione con il miglior rapporto qualità-prezzo.\n\n"
+                    "Diamond è la scelta più premium, con un gruppo più piccolo e più servizi a bordo."
+                )
+            elif language == "pt":
+                reply = (
+                    "Se o orçamento for a prioridade principal, o Red Cruise é a opção com melhor valor.\n\n"
+                    "Diamond é a escolha mais premium, com um grupo mais pequeno e mais extras a bordo."
+                )
+            else:
+                reply = (
+                    "If budget is the main priority, Red Cruise is the better value option.\n\n"
+                    "Diamond is the more premium choice, with a smaller group and more onboard extras."
+                )
+
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
+
+        if mentions_red and mentions_gems and not mentions_diamond:
+            if language == "el":
+                reply = (
+                    "Αν η βασική προτεραιότητα είναι ο προϋπολογισμός, το Red Cruise είναι συνήθως η καλύτερη επιλογή σε αξία.\n\n"
+                    "Το Gems είναι πιο άνετο και πιο refined, αλλά συνήθως όχι η πιο οικονομική επιλογή."
+                )
+            elif language == "it":
+                reply = (
+                    "Se il budget è la priorità principale, la Red Cruise è di solito l’opzione con il miglior valore.\n\n"
+                    "Gems è più comoda e più raffinata, ma di solito non è l’opzione più economica."
+                )
+            elif language == "pt":
+                reply = (
+                    "Se o orçamento for a prioridade principal, o Red Cruise costuma ser a opção com melhor valor.\n\n"
+                    "Gems é mais confortável e mais refinado, mas normalmente não é a opção mais económica."
+                )
+            else:
+                reply = (
+                    "If budget is the main priority, Red Cruise is usually the better value option.\n\n"
+                    "Gems is more comfortable and more refined, but usually not the lower-priced option."
+                )
+
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
+
     if is_best_choice_question(user_message) and history:
         reply = build_best_choice_reply(
             history=history,
