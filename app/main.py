@@ -1303,6 +1303,11 @@ def chat(request: ChatRequest):
     history = request.history or []
     language = detect_language(user_message)
 
+    tour_key = detect_tour_key(user_message)
+    date_str = detect_date(user_message)
+    period = detect_period(user_message)
+    tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
+
     if not user_message:
         reply = get_text("empty_reply", language)
         return log_and_return(
@@ -1448,15 +1453,18 @@ USER MESSAGE:
                 fallback=False,
                 detected_tour=None,
             )
-        except Exception:
+        except Exception as e:
+            print("OPENAI ERROR:", e)
+
             reply = get_text("whatsapp_uncertain_reply", language)
-            return log_and_return(
-                user_message=user_message,
-                reply=reply,
-                language=language,
-                fallback=True,
-                detected_tour=None,
-            )
+
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=None,
+        )
 
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
         date_str = detect_date(user_message)
@@ -1551,10 +1559,6 @@ USER MESSAGE:
             detected_tour=None,
         )
 
-    tour_key = detect_tour_key(user_message)
-    date_str = detect_date(user_message)
-    period = detect_period(user_message)
-    tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
 
     user_message_lower = user_message.lower()
