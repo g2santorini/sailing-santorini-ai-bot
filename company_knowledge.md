@@ -145,35 +145,45 @@ https://wa.me/306972805193”
 ### Shared Cruises
 
 #### Red Cruise
-- Large group (up to 55 guests)
-- Budget-friendly, lively
-- BBQ meal
-- White wine, soft drinks, water
-- No beer
-- No towels
+- Large group experience (up to 55 guests)
+- Lively atmosphere and very good value option
+- BBQ meal onboard (full menu available on the booking page)
+- Complimentary drinks: white wine, soft drinks and water
+- Towels and beer are not included
+- Full details available on the booking page
 
 ---
 
 #### Santorini Gems
-- Small group (up to 20 guests)
-- Balanced experience
-- Includes beer
-- Towels included
+- Small group experience (up to 20 guests)
+- Well-balanced option between comfort and value
+- BBQ meal onboard (full menu available on the booking page)
+- Complimentary drinks: white wine, soft drinks, water and beer
+- Towels provided
+- Ideal for a relaxed and comfortable small-group experience
+- Full details available on the booking page
 
 ---
 
 #### Platinum
-- Smaller group (up to 14 guests)
-- Less crowded
-- Same inclusions as Gems
+- Small group cruise (up to 14 guests)
+- Very relaxed and less crowded atmosphere
+- BBQ meal onboard (full menu available on the booking page)
+- Complimentary drinks: white wine, soft drinks and water
+- Towels provided
+- Ideal for guests who prefer a quieter and more intimate experience
+- Full details available on the booking page
 
 ---
 
 #### Diamond
 - Premium shared cruise (up to 20 guests)
-- Includes beer + 1 cocktail
-- Towels included
-- Best option for Oia guests
+- More elevated and refined onboard experience
+- BBQ meal onboard (full menu available on the booking page)
+- Complimentary drinks: white wine, soft drinks, water, beer and 1 cocktail per guest
+- Towels provided
+- Ideal for guests staying in Oia and looking for a premium experience
+- Full details available on the booking page
 
 ---
 
