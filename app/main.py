@@ -1161,12 +1161,20 @@ USER MESSAGE:
 
     user_message_lower = user_message.lower()
 
-    price_intent = (
-        "price" in user_message_lower
-        or "rate" in user_message_lower
-        or "cost" in user_message_lower
-        or "how much" in user_message_lower
-    )
+    price_intent = any(keyword in user_message_lower for keyword in [
+    "price",
+    "rate",
+    "cost",
+    "how much",
+    "how much does it cost",
+    "how much is",
+    "what is the price",
+    "τιμή",
+    "ποσο κοστιζει",
+    "πόσο κοστίζει",
+    "quanto custa",
+    "prezzo"
+])
 
     comparison_intent = (
         "difference" in user_message_lower
