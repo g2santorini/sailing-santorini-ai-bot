@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunset Oia Chat Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .top-bar {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .refresh-btn {
+      background: #0b3b66;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .refresh-btn:hover {
+      opacity: 0.92;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1100px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 14px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    th {
+      background: #0b3b66;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+
+    tr:hover {
+      background: #f9fafb;
+    }
+
+    .fallback-yes {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .fallback-no {
+      color: #15803d;
+      font-weight: bold;
+    }
+
+    .message-box {
+      max-width: 320px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .reply-box {
+      max-width: 480px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sunset Oia Chat Dashboard</h1>
+
+  <div class="top-bar">
+    <button class="refresh-btn" onclick="loadLogs()">Refresh</button>
+    <button id="fallback-btn" class="refresh-btn" onclick="toggleFallback()">Show Only Fallback</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>User Message</th>
+          <th>Bot Reply</th>
+          <th>Fallback</th>
+          <th>Tour</th>
+          <th>Language</th>
+        </tr>
+      </thead>
+      <tbody id="logs-body">
+        <tr>
+          <td colspan="7">Loading logs...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let showOnlyFallback = false;
+
+    function toggleFallback() {
+      showOnlyFallback = !showOnlyFallback;
+
+      const btn = document.getElementById("fallback-btn");
+      btn.innerText = showOnlyFallback ? "Show All" : "Show Only Fallback";
+
+      loadLogs();
+    }
+
+    async function loadLogs() {
+      const tbody = document.getElementById("logs-body");
+      tbody.innerHTML = `<tr><td colspan="7">Loading logs...</td></tr>`;
+
+      try {
+        const response = await fetch("/admin/logs");
+        const data = await response.json();
+        const logs = data.logs || [];
+
+        let filteredLogs = logs;
+
+        if (showOnlyFallback) {
+          filteredLogs = logs.filter(log => Number(log.fallback) === 1);
+        }
+
+        if (!filteredLogs.length) {
+          tbody.innerHTML = `<tr><td colspan="7">${showOnlyFallback ? "No fallback logs found." : "No logs found."}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filteredLogs.map(log => `
+          <tr>
+            <td>${log.id ?? ""}</td>
+            <td>${escapeHtml(log.timestamp ?? "")}</td>
+            <td><div class="message-box">${escapeHtml(log.user_message ?? "")}</div></td>
+            <td><div class="reply-box">${escapeHtml(log.bot_reply ?? "")}</div></td>
+            <td class="${Number(log.fallback) === 1 ? 'fallback-yes' : 'fallback-no'}">
+              ${Number(log.fallback) === 1 ? 'YES' : 'NO'}
+            </td>
+            <td>${escapeHtml(log.detected_tour ?? "-")}</td>
+            <td>${escapeHtml(log.language ?? "-")}</td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="7">Failed to load logs.</td></tr>`;
+        console.error(error);
+      }
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>

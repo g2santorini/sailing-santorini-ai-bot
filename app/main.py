@@ -17,6 +17,7 @@ from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
 from app.services.tour_mapping import build_tour_facts_block
+from app.services.chat_logger import init_db, save_chat_log, get_chat_logs
 from app.services.intent_service import (
     is_greeting,
     is_discount_request,
@@ -50,6 +51,7 @@ app.add_middleware(
 
 # ✅ NEW LINE
 app.include_router(availability_router)
+init_db()
 
 print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE + SMARTER WHATSAPP LOADED")
 
@@ -62,6 +64,27 @@ class ChatRequest(BaseModel):
 BOOKING_LINK = "https://sailingsantorini.link-twist.com/"
 WEBSITE_LINK = "https://sailing-santorini.com/"
 WHATSAPP_LINK = "https://wa.me/306972805193"
+
+
+def log_and_return(
+    user_message: str,
+    reply: str,
+    language: str,
+    fallback: bool = False,
+    detected_tour: str | None = None,
+):
+    try:
+        save_chat_log(
+            user_message=user_message,
+            bot_reply=reply,
+            fallback=fallback,
+            detected_tour=detected_tour,
+            language=language,
+        )
+    except Exception as exc:
+        print(f"Chat log save error: {exc}")
+
+    return {"reply": reply}
 
 
 def detect_language(user_message: str) -> str:
@@ -911,6 +934,9 @@ def safe_find_available_tours(
 def root():
     return {"message": "Santorini bot is running"}
 
+@app.get("/admin/logs")
+def admin_logs():
+    return {"logs": get_chat_logs(200)}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
@@ -919,19 +945,54 @@ def chat(request: ChatRequest):
     language = detect_language(user_message)
 
     if not user_message:
-        return {"reply": get_text("empty_reply", language)}
+        reply = get_text("empty_reply", language)
+        return log_and_return(
+            user_message="",
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_discount_request(user_message):
-        return {"reply": get_text("discount_reply", language)}
+        reply = get_text("discount_reply", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_cruise_passenger(user_message):
-        return {"reply": get_text("cruise_passenger_reply", language)}
+        reply = get_text("cruise_passenger_reply", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_contact_request(user_message):
-        return {"reply": get_text("contact_reply", language)}
+        reply = get_text("contact_reply", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_personal_booking_request(user_message):
-        return {"reply": get_text("booking_details_reply", language)}
+        reply = get_text("booking_details_reply", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_uncertain_whatsapp_case(user_message):
         conversation_history = ""
@@ -981,9 +1042,22 @@ USER MESSAGE:
 """
         try:
             reply = get_ai_reply(prompt)
-            return {"reply": reply}
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=False,
+                detected_tour=None,
+            )
         except Exception:
-            return {"reply": get_text("whatsapp_uncertain_reply", language)}
+            reply = get_text("whatsapp_uncertain_reply", language)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=True,
+                detected_tour=None,
+            )
 
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
         date_str = detect_date(user_message)
@@ -998,7 +1072,13 @@ USER MESSAGE:
             generic_availability=True,
         )
         if seasonal_reply:
-            return {"reply": seasonal_reply}
+            return log_and_return(
+                user_message=user_message,
+                reply=seasonal_reply,
+                language=language,
+                fallback=False,
+                detected_tour=None,
+            )
 
         results = safe_find_available_tours(
             effective_date,
@@ -1009,9 +1089,22 @@ USER MESSAGE:
 
         if results:
             reply_text = build_multi_capacity_reply(results, language)
-            return {"reply": reply_text}
+            return log_and_return(
+                user_message=user_message,
+                reply=reply_text,
+                language=language,
+                fallback=False,
+                detected_tour=None,
+            )
 
-        return {"reply": get_text("availability_fallback", language)}
+        reply = get_text("availability_fallback", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=None,
+        )
 
     if is_capacity_request(user_message):
         last_tour_key, last_date_str = get_last_tour_and_date_from_history(user_message, history)
@@ -1022,16 +1115,43 @@ USER MESSAGE:
             tour_key=last_tour_key,
         )
         if seasonal_reply:
-            return {"reply": seasonal_reply}
+            return log_and_return(
+                user_message=user_message,
+                reply=seasonal_reply,
+                language=language,
+                fallback=False,
+                detected_tour=last_tour_key,
+            )
 
         if last_tour_key and last_date_str:
             data = safe_check_tour_availability(last_tour_key, last_date_str)
             if data:
                 reply_text = build_capacity_reply(data, language)
-                return {"reply": reply_text}
-            return {"reply": get_text("availability_fallback", language)}
+                return log_and_return(
+                    user_message=user_message,
+                    reply=reply_text,
+                    language=language,
+                    fallback=False,
+                    detected_tour=last_tour_key,
+                )
 
-        return {"reply": get_text("spots_fallback", language)}
+            reply = get_text("availability_fallback", language)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=True,
+                detected_tour=last_tour_key,
+            )
+
+        reply = get_text("spots_fallback", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=None,
+        )
 
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
@@ -1092,15 +1212,35 @@ USER MESSAGE:
         generic_availability=availability_intent,
     )
     if seasonal_reply:
-        return {"reply": seasonal_reply}
+        return log_and_return(
+            user_message=user_message,
+            reply=seasonal_reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
 
     if tour_key and date_str:
         data = safe_check_tour_availability(tour_key, date_str)
         if data:
             reply_text = build_availability_reply(data)
             reply_text = translate_availability_reply(reply_text, language)
-            return {"reply": reply_text}
-        return {"reply": get_text("availability_fallback", language)}
+            return log_and_return(
+                user_message=user_message,
+                reply=reply_text,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
+
+        reply = get_text("availability_fallback", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=tour_key,
+        )
 
     if date_str or availability_intent:
         effective_date = get_effective_date(user_message, history)
@@ -1113,7 +1253,13 @@ USER MESSAGE:
             generic_availability=True,
         )
         if seasonal_reply:
-            return {"reply": seasonal_reply}
+            return log_and_return(
+                user_message=user_message,
+                reply=seasonal_reply,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
 
         results = safe_find_available_tours(
             effective_date,
@@ -1122,7 +1268,14 @@ USER MESSAGE:
             passenger_count
         )
         if results is None:
-            return {"reply": get_text("availability_fallback", language)}
+            reply = get_text("availability_fallback", language)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=True,
+                detected_tour=tour_key,
+            )
 
         filtered_results = filter_results_by_cruise_type(results, cruise_type_intent)
 
@@ -1134,9 +1287,22 @@ USER MESSAGE:
                 language
             )
             reply_text = translate_availability_reply(reply_text, language)
-            return {"reply": reply_text}
+            return log_and_return(
+                user_message=user_message,
+                reply=reply_text,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
 
-        return {"reply": get_text("availability_fallback", language)}
+        reply = get_text("availability_fallback", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=tour_key,
+        )
 
     if is_best_choice_question(user_message) and history:
         reply = build_best_choice_reply(
@@ -1144,13 +1310,33 @@ USER MESSAGE:
             language=language,
             passenger_count=detect_passenger_count(user_message, history)
         )
-        return {"reply": reply}
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
 
     if is_greeting(user_message):
-        return {"reply": get_text("greeting_reply", language)}
+        reply = get_text("greeting_reply", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
 
     if not is_relevant(user_message) and not is_followup(user_message):
-        return {"reply": get_text("irrelevant_reply", language)}
+        reply = get_text("irrelevant_reply", language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
 
     conversation_history = ""
     if history:
@@ -1229,4 +1415,10 @@ USER MESSAGE:
 """
 
     reply = get_ai_reply(prompt)
-    return {"reply": reply}
+    return log_and_return(
+        user_message=user_message,
+        reply=reply,
+        language=language,
+        fallback=False,
+        detected_tour=tour_key,
+    )
