@@ -15,6 +15,7 @@ from app.services.reply_builder import (
     build_time_comparison_reply,
 )
 from app.services.tour_detector import detect_tour_key
+from app.services.intent_service import is_sunset_question
 from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
@@ -1638,6 +1639,16 @@ USER MESSAGE:
 
     if time_comparison_intent:
         reply = build_time_comparison_reply(language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
+
+    if is_sunset_question(user_message):
+        reply = "Yes, our sunset cruises are timed so you can enjoy the famous Santorini sunset from onboard."
         return log_and_return(
             user_message=user_message,
             reply=reply,
