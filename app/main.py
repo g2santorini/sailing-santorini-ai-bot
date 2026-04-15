@@ -5,20 +5,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# ✅ NEW IMPORT
 from app.routes.availability_routes import router as availability_router
 
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
 from app.services.availability_lookup import check_tour_availability
-from app.services.reply_builder import build_availability_reply, build_time_comparison_reply
+from app.services.reply_builder import (
+    build_availability_reply,
+    build_time_comparison_reply,
+)
 from app.services.tour_detector import detect_tour_key
 from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
 from app.services.tour_mapping import build_tour_facts_block
 from app.services.chat_logger import init_db, save_chat_log, get_chat_logs
-from app.services.intent_service import is_time_comparison
 from app.services.intent_service import (
     is_greeting,
     is_discount_request,
@@ -28,6 +29,7 @@ from app.services.intent_service import (
     is_best_choice_question,
     is_capacity_request,
     is_multi_capacity_request,
+    is_time_comparison,
 )
 from app.services.context_service import (
     has_recent_availability_context,
@@ -50,7 +52,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ NEW LINE
 app.include_router(availability_router)
 init_db()
 
@@ -138,6 +139,7 @@ def detect_language(user_message: str) -> str:
 
     return "en"
 
+
 def is_clearly_irrelevant(message: str) -> bool:
     msg = message.lower()
 
@@ -151,6 +153,7 @@ def is_clearly_irrelevant(message: str) -> bool:
     ]
 
     return any(word in msg for word in unrelated_keywords)
+
 
 def get_text(key: str, language: str) -> str:
     translations = {
@@ -186,11 +189,8 @@ def get_text(key: str, language: str) -> str:
         },
         "irrelevant_reply": {
             "en": "I may not have fully understood your question, but I’ll be happy to help 🙂\n\nCould you please clarify if you are asking about the cruise experience?",
-
             "el": "Ίσως δεν κατάλαβα πλήρως την ερώτησή σας, αλλά θα χαρώ να βοηθήσω 🙂\n\nΜπορείτε να διευκρινίσετε αν αφορά την εμπειρία της κρουαζιέρας;",
-    
             "it": "Potrei non aver compreso completamente la tua domanda, ma sarò felice di aiutarti 🙂\n\nPuoi chiarire se riguarda l’esperienza della crociera?",
-    
             "pt": "Talvez eu não tenha compreendido totalmente a sua pergunta, mas terei todo o gosto em ajudar 🙂\n\nPode esclarecer se se refere à experiência do cruzeiro?",
         },
         "availability_fallback": {
@@ -1604,7 +1604,6 @@ USER MESSAGE:
         )
 
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
-
     user_message_lower = user_message.lower()
 
     price_intent = any(
@@ -1634,6 +1633,18 @@ USER MESSAGE:
         or "recommend" in user_message_lower
         or is_best_choice_question(user_message)
     )
+
+    time_comparison_intent = is_time_comparison(user_message)
+
+    if time_comparison_intent:
+        reply = build_time_comparison_reply(language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
 
     if price_intent:
         effective_tour_key = tour_key
@@ -1723,6 +1734,7 @@ USER MESSAGE:
     availability_intent = (
         not comparison_intent
         and not price_intent
+        and not time_comparison_intent
         and (
             is_availability_request(user_message)
             or (
@@ -1940,11 +1952,6 @@ USER MESSAGE:
         )
 
     short_followup = len(user_message.split()) <= 4
-
-    if is_time_comparison(user_message):
-        return {
-            "reply": build_time_comparison_reply(language)
-        }
 
     if (
         not is_followup(user_message)
