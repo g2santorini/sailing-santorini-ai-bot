@@ -137,6 +137,20 @@ def detect_language(user_message: str) -> str:
 
     return "en"
 
+def is_clearly_irrelevant(message: str) -> bool:
+    msg = message.lower()
+
+    unrelated_keywords = [
+        "football",
+        "aek",
+        "nba",
+        "weather",
+        "bitcoin",
+        "recipe",
+        "politics",
+    ]
+
+    return any(word in msg for word in unrelated_keywords)
 
 def get_text(key: str, language: str) -> str:
     translations = {
@@ -1928,9 +1942,9 @@ USER MESSAGE:
     short_followup = len(user_message.split()) <= 4
 
     if (
-        not is_relevant(user_message)
-        and not is_followup(user_message)
+        not is_followup(user_message)
         and not short_followup
+        and is_clearly_irrelevant(user_message)
     ):
         reply = get_text("irrelevant_reply", language)
         return log_and_return(
