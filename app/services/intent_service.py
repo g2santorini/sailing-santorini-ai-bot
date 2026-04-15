@@ -69,6 +69,20 @@ def is_availability_request(user_message: str) -> bool:
 
     return any(k in text for k in keywords)
 
+def is_time_comparison(message: str) -> bool:
+    message = message.lower()
+
+    keywords = [
+        "morning or sunset",
+        "sunset or morning",
+        "which is better morning",
+        "which is better sunset",
+        "best time",
+        "morning vs sunset",
+        "difference between morning and sunset",
+    ]
+
+    return any(k in message for k in keywords)
 
 def is_followup(user_message: str) -> bool:
     text = user_message.lower().strip()

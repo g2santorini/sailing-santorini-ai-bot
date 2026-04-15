@@ -11,13 +11,14 @@ from app.routes.availability_routes import router as availability_router
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
 from app.services.availability_lookup import check_tour_availability
-from app.services.reply_builder import build_availability_reply
+from app.services.reply_builder import build_availability_reply, build_time_comparison_reply
 from app.services.tour_detector import detect_tour_key
 from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
 from app.services.tour_mapping import build_tour_facts_block
 from app.services.chat_logger import init_db, save_chat_log, get_chat_logs
+from app.services.intent_service import is_time_comparison
 from app.services.intent_service import (
     is_greeting,
     is_discount_request,
@@ -144,7 +145,6 @@ def is_clearly_irrelevant(message: str) -> bool:
         "football",
         "aek",
         "nba",
-        "weather",
         "bitcoin",
         "recipe",
         "politics",
@@ -1940,6 +1940,11 @@ USER MESSAGE:
         )
 
     short_followup = len(user_message.split()) <= 4
+
+    if is_time_comparison(user_message):
+        return {
+            "reply": build_time_comparison_reply(language)
+        }
 
     if (
         not is_followup(user_message)

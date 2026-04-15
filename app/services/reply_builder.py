@@ -9,6 +9,29 @@ def format_price_line(availability: dict) -> str:
 
     return f"Adult price: €{adult_price:.0f}"
 
+def build_time_comparison_reply(language="en") -> str:
+    if language == "en":
+        return (
+            "Great question — both options are beautiful, but it depends on the experience you're looking for.\n\n"
+            "Morning cruises are more relaxed, with fewer crowds and more time for swimming.\n"
+            "Sunset cruises offer a more romantic atmosphere, ending with the famous Santorini sunset.\n\n"
+            "If you prefer calm and sunshine, go for morning.\n"
+            "If you want a more scenic and memorable vibe, sunset is usually the favorite."
+        )
+
+    elif language == "el":
+        return (
+            "Πολύ καλή ερώτηση — και οι δύο επιλογές είναι υπέροχες, εξαρτάται τι εμπειρία θέλετε.\n\n"
+            "Οι πρωινές εκδρομές είναι πιο χαλαρές, με λιγότερο κόσμο και περισσότερο χρόνο για μπάνιο.\n"
+            "Οι απογευματινές καταλήγουν στο ηλιοβασίλεμα και έχουν πιο ρομαντική ατμόσφαιρα.\n\n"
+            "Αν θέλετε χαλάρωση και ήλιο, προτιμήστε πρωινό.\n"
+            "Αν θέλετε εμπειρία με θέα και ηλιοβασίλεμα, το sunset είναι το πιο δημοφιλές."
+        )
+
+    return (
+        "Both morning and sunset cruises are beautiful. "
+        "Morning is more relaxed, while sunset is more scenic and romantic."
+    )
 
 def build_availability_reply(data: dict) -> str:
     if not data.get("success"):
