@@ -85,6 +85,9 @@ https://wa.me/306972805193”
 ## Experience (Onboard)
 
 ### Sea sickness
+### Can I get seasick?
+### Is the sea rough?
+### Is the cruise suitable if I get motion sickness?
 This is a very common concern 🙂
 Our cruises usually take place inside the caldera, where the sea is quite calm.
 If you are sensitive, you may consider taking a motion sickness tablet beforehand.
