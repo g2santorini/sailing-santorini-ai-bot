@@ -171,10 +171,13 @@ def get_text(key: str, language: str) -> str:
             "pt": f"Pode contactar diretamente a nossa equipa de reservas via WhatsApp e teremos todo o gosto em ajudar:\n{WHATSAPP_LINK}",
         },
         "irrelevant_reply": {
-            "en": "I can assist only with questions related to our cruises in Santorini.",
-            "el": "Μπορώ να βοηθήσω μόνο με ερωτήσεις που σχετίζονται με τις κρουαζιέρες μας στη Σαντορίνη.",
-            "it": "Posso aiutare solo con domande relative alle nostre crociere a Santorini.",
-            "pt": "Só posso ajudar com questões relacionadas com os nossos cruzeiros em Santorini.",
+            "en": "I may not have fully understood your question, but I’ll be happy to help 🙂\n\nCould you please clarify if you are asking about the cruise experience?",
+
+            "el": "Ίσως δεν κατάλαβα πλήρως την ερώτησή σας, αλλά θα χαρώ να βοηθήσω 🙂\n\nΜπορείτε να διευκρινίσετε αν αφορά την εμπειρία της κρουαζιέρας;",
+    
+            "it": "Potrei non aver compreso completamente la tua domanda, ma sarò felice di aiutarti 🙂\n\nPuoi chiarire se riguarda l’esperienza della crociera?",
+    
+            "pt": "Talvez eu não tenha compreendido totalmente a sua pergunta, mas terei todo o gosto em ajudar 🙂\n\nPode esclarecer se se refere à experiência do cruzeiro?",
         },
         "availability_fallback": {
             "en": f"The best way to check the latest availability is through our booking page:\n{BOOKING_LINK}\n\nSimply select your preferred date and you’ll see all available options instantly.\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
