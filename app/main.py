@@ -1515,7 +1515,11 @@ USER MESSAGE:
             )
 
         if data:
-            reply_text = build_availability_reply(data)
+            fallback_data = {
+                **data,
+                "alternative_tours": prepared_alternatives,
+            }
+            reply_text = build_availability_reply(fallback_data)
             reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,

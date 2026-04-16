@@ -9,6 +9,23 @@ def format_price_line(availability: dict) -> str:
 
     return f"Adult price: €{adult_price:.0f}"
 
+
+def format_alternative_tours(alternative_tours: list[dict]) -> str:
+    if not alternative_tours:
+        return ""
+
+    lines = []
+    for tour in alternative_tours:
+        label = tour.get("reply_label") or tour.get("label")
+        if label:
+            lines.append(f"- {label}")
+
+    if not lines:
+        return ""
+
+    return "\n".join(lines)
+
+
 def build_time_comparison_reply(language="en") -> str:
     if language == "en":
         return (
@@ -33,6 +50,7 @@ def build_time_comparison_reply(language="en") -> str:
         "Morning is more relaxed, while sunset is more scenic and romantic."
     )
 
+
 def build_availability_reply(data: dict) -> str:
     if not data.get("success"):
         return "Thank you for your message. I am sorry, but I could not identify this cruise."
@@ -43,6 +61,8 @@ def build_availability_reply(data: dict) -> str:
     availability = data["availability"]
     available = availability["available"]
     spots = availability["vacancies"]
+
+    alternative_tours = data.get("alternative_tours", [])
 
     date_label = availability.get("date_time", "")
 
@@ -63,22 +83,33 @@ def build_availability_reply(data: dict) -> str:
 
         if pricing_text:
             return (
-                f"Great news! The {label} is available for {formatted_date}.\n\n"
+                f"The {label} is available for {formatted_date}.\n\n"
                 f"{spots_text}\n\n"
                 f"{pricing_text}\n\n"
                 f"You can proceed with your booking using the following link:\n{url}\n\n"
-                f"Please select the date on the booking page."
+                "Please select the date on the booking page."
             )
 
         return (
-            f"Great news! The {label} is available for {formatted_date}.\n\n"
+            f"The {label} is available for {formatted_date}.\n\n"
             f"{spots_text}\n\n"
             f"You can proceed with your booking using the following link:\n{url}\n\n"
-            f"Please select the date on the booking page."
+            "Please select the date on the booking page."
+        )
+
+    alternatives_text = format_alternative_tours(alternative_tours)
+
+    if alternatives_text:
+        return (
+            f"Unfortunately, the {label} is not available for {formatted_date}.\n\n"
+            f"However, there are other available options for the same date:\n"
+            f"{alternatives_text}\n\n"
+            f"You may explore the available options here:\n{url}\n\n"
+            "Please select the date on the booking page."
         )
 
     return (
         f"Unfortunately, the {label} is not available for {formatted_date}.\n\n"
         f"You may check other available dates here:\n{url}\n\n"
-        f"If you wish, you may also try another cruise option."
+        "Please select the date on the booking page."
     )
