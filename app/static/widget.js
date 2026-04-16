@@ -306,7 +306,7 @@
 
     <div id="ss-body">
       <div id="ss-welcome">
-        <p>DEBUG VERSION 2 -Greetings from the beautiful Santorini!</p>
+        <p>Greetings from the beautiful Santorini!</p>
         <p>I’m here to help you with your cruise experience at Sunset Oia.</p>
         <p>Feel free to ask about availability, private options, or the differences between our tours.</p>
       </div>
@@ -573,10 +573,7 @@
     closeWidget(true);
   };
 
-  sendBtn.onclick = () => {
-  alert("SEND BUTTON CLICKED");
-  sendMessage();
-};
+  sendBtn.onclick = sendMessage;
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
