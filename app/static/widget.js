@@ -1,10 +1,19 @@
 (function () {
-  const API_URL = "/chat";
+  const currentScript = document.currentScript;
+  const scriptOrigin = currentScript
+    ? new URL(currentScript.src).origin
+    : window.location.origin;
+
+  const API_URL = `${scriptOrigin}/chat`;
 
   const AUTO_OPEN_ENABLED = true;
   const AUTO_OPEN_DELAY = 5000;
   const AUTO_OPEN_SESSION_KEY = "ss_widget_auto_opened";
   const AUTO_OPEN_CLOSED_KEY = "ss_widget_closed";
+
+  console.log("SS widget loaded");
+  console.log("SS widget script origin:", scriptOrigin);
+  console.log("SS widget API URL:", API_URL);
 
   const style = document.createElement("style");
   style.innerHTML = `
@@ -290,7 +299,7 @@
   container.innerHTML = `
     <div id="ss-header">
       <div id="ss-header-top">
-        <img id="ss-logo" src="/static/logo.png" alt="Sunset Oia logo" />
+        <img id="ss-logo" src="${scriptOrigin}/static/logo.png" alt="Sunset Oia logo" />
         <button id="ss-close" aria-label="Close">×</button>
       </div>
     </div>
@@ -502,6 +511,9 @@
     const message = input.value.trim();
     if (!message) return;
 
+    console.log("SS widget sending message:", message);
+    console.log("SS widget sending to:", API_URL);
+
     addMessage(message, "user");
     chatHistory.push({ role: "user", content: message });
 
@@ -525,7 +537,11 @@
         })
       });
 
+      console.log("SS widget response status:", res.status);
+
       const data = await res.json();
+      console.log("SS widget response data:", data);
+
       const replyText = data.reply || "Sorry, something went wrong.";
 
       removeTypingMessage();
@@ -589,4 +605,4 @@
   document.addEventListener("touchmove", preventPageBounce, { passive: false });
 
   scheduleAutoOpen();
-})(); 
+})();
