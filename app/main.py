@@ -3,10 +3,10 @@ from datetime import date, datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.routes.availability_routes import router as availability_router
-
+from app.services.translation_service import get_text, translate_availability_reply
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
 from app.services.availability_lookup import check_tour_availability
@@ -15,7 +15,6 @@ from app.services.reply_builder import (
     build_time_comparison_reply,
 )
 from app.services.tour_detector import detect_tour_key
-from app.services.intent_service import is_sunset_question
 from app.services.date_detector import detect_date
 from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
@@ -30,6 +29,7 @@ from app.services.intent_service import (
     is_best_choice_question,
     is_capacity_request,
     is_multi_capacity_request,
+    is_sunset_question,
     is_time_comparison,
 )
 from app.services.context_service import (
@@ -61,7 +61,7 @@ print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE + SMARTER WHATSAPP LOADED")
 
 class ChatRequest(BaseModel):
     message: str
-    history: list[dict] = []
+    history: list[dict] = Field(default_factory=list)
 
 
 BOOKING_LINK = "https://sailingsantorini.link-twist.com/"
@@ -154,214 +154,6 @@ def is_clearly_irrelevant(message: str) -> bool:
     ]
 
     return any(word in msg for word in unrelated_keywords)
-
-
-def get_text(key: str, language: str) -> str:
-    translations = {
-        "empty_reply": {
-            "en": "Hello! I’ll be happy to help you with our cruises in Santorini.",
-            "el": "Γεια σας! Θα χαρώ να σας βοηθήσω με τις κρουαζιέρες μας στη Σαντορίνη.",
-            "it": "Ciao! Sarò felice di aiutarti con le nostre crociere a Santorini.",
-            "pt": "Olá! Terei todo o gosto em ajudar com os nossos cruzeiros em Santorini.",
-        },
-        "greeting_reply": {
-            "en": "Hello and welcome! I’ll be happy to help you with our cruises in Santorini. Feel free to ask me about availability, prices, shared or private options.",
-            "el": "Γεια σας και καλώς ήρθατε! Θα χαρώ να σας βοηθήσω με τις κρουαζιέρες μας στη Σαντορίνη. Μπορείτε να με ρωτήσετε για διαθεσιμότητα, τιμές, κοινές ή ιδιωτικές επιλογές.",
-            "it": "Ciao e benvenuto! Sarò felice di aiutarti con le nostre crociere a Santorini. Puoi chiedermi disponibilità, prezzi e opzioni condivise o private.",
-            "pt": "Olá e bem-vindo! Terei todo o gosto em ajudar com os nossos cruzeiros em Santorini. Pode perguntar sobre disponibilidade, preços e opções partilhadas ou privadas.",
-        },
-        "discount_reply": {
-            "en": f"For special rate requests, please contact us via WhatsApp: {WHATSAPP_LINK}",
-            "el": f"Για ειδικά αιτήματα τιμών, παρακαλούμε επικοινωνήστε μαζί μας μέσω WhatsApp: {WHATSAPP_LINK}",
-            "it": f"Per richieste di tariffe speciali, ti preghiamo di contattarci via WhatsApp: {WHATSAPP_LINK}",
-            "pt": f"Para pedidos de tarifas especiais, por favor contacte-nos via WhatsApp: {WHATSAPP_LINK}",
-        },
-        "cruise_passenger_reply": {
-            "en": f"For cruise ship guests, we kindly recommend contacting us directly via WhatsApp so we can assist you based on your ship schedule:\n{WHATSAPP_LINK}",
-            "el": f"Για επισκέπτες κρουαζιερόπλοιου, σας προτείνουμε να επικοινωνήσετε απευθείας μαζί μας μέσω WhatsApp, ώστε να σας βοηθήσουμε βάσει του προγράμματος του πλοίου σας:\n{WHATSAPP_LINK}",
-            "it": f"Per gli ospiti delle navi da crociera, consigliamo gentilmente di contattarci direttamente via WhatsApp così potremo assistervi in base all’orario della vostra nave:\n{WHATSAPP_LINK}",
-            "pt": f"Para passageiros de cruzeiro, recomendamos gentilmente que nos contacte diretamente via WhatsApp para que possamos ajudar de acordo com o horário do seu navio:\n{WHATSAPP_LINK}",
-        },
-        "contact_reply": {
-            "en": f"You can contact our reservations team directly on WhatsApp and we’ll be happy to assist you:\n{WHATSAPP_LINK}",
-            "el": f"Μπορείτε να επικοινωνήσετε απευθείας με το τμήμα κρατήσεων μέσω WhatsApp και θα χαρούμε να σας εξυπηρετήσουμε:\n{WHATSAPP_LINK}",
-            "it": f"Puoi contattare direttamente il nostro team prenotazioni su WhatsApp e saremo felici di aiutarti:\n{WHATSAPP_LINK}",
-            "pt": f"Pode contactar diretamente a nossa equipa de reservas via WhatsApp e teremos todo o gosto em ajudar:\n{WHATSAPP_LINK}",
-        },
-        "irrelevant_reply": {
-            "en": "I may not have fully understood your question, but I’ll be happy to help 🙂\n\nCould you please clarify if you are asking about the cruise experience?",
-            "el": "Ίσως δεν κατάλαβα πλήρως την ερώτησή σας, αλλά θα χαρώ να βοηθήσω 🙂\n\nΜπορείτε να διευκρινίσετε αν αφορά την εμπειρία της κρουαζιέρας;",
-            "it": "Potrei non aver compreso completamente la tua domanda, ma sarò felice di aiutarti 🙂\n\nPuoi chiarire se riguarda l’esperienza della crociera?",
-            "pt": "Talvez eu não tenha compreendido totalmente a sua pergunta, mas terei todo o gosto em ajudar 🙂\n\nPode esclarecer se se refere à experiência do cruzeiro?",
-        },
-        "availability_fallback": {
-            "en": f"The best way to check the latest availability is through our booking page:\n{BOOKING_LINK}\n\nSimply select your preferred date and you’ll see all available options instantly.\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
-            "el": f"Ο καλύτερος τρόπος για να δείτε την πιο πρόσφατη διαθεσιμότητα είναι μέσω της σελίδας κρατήσεών μας:\n{BOOKING_LINK}\n\nΑπλώς επιλέξτε την ημερομηνία που προτιμάτε και θα δείτε άμεσα όλες τις διαθέσιμες επιλογές.\n\nΓια οποιαδήποτε διευκρίνιση, μπορείτε να επικοινωνήσετε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
-            "it": f"Il modo migliore per controllare la disponibilità più aggiornata è tramite la nostra pagina di prenotazione:\n{BOOKING_LINK}\n\nTi basta selezionare la data che preferisci e vedrai subito tutte le opzioni disponibili.\n\nPer qualsiasi chiarimento, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
-            "pt": f"A melhor forma de verificar a disponibilidade mais atualizada é através da nossa página de reservas:\n{BOOKING_LINK}\n\nBasta selecionar a data pretendida e verá imediatamente todas as opções disponíveis.\n\nPara qualquer esclarecimento, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
-        },
-        "spots_fallback": {
-            "en": "I’m sorry, I could not identify the exact cruise from the previous message. Please tell me the cruise name and date, and I’ll gladly check the number of available spots for you.",
-            "el": "Λυπάμαι, δεν μπόρεσα να εντοπίσω ακριβώς ποια κρουαζιέρα εννοείτε από το προηγούμενο μήνυμα. Πείτε μου το όνομα της κρουαζιέρας και την ημερομηνία και θα ελέγξω ευχαρίστως τις διαθέσιμες θέσεις.",
-            "it": "Mi dispiace, non sono riuscito a identificare con precisione la crociera dal messaggio precedente. Indicami il nome della crociera e la data e controllerò con piacere i posti disponibili.",
-            "pt": "Lamento, não consegui identificar exatamente o cruzeiro a partir do mensagem anterior. Diga-me o nome do cruzeiro e a data e verificarei com todo o gosto os lugares disponíveis.",
-        },
-        "booking_details_reply": {
-            "en": f"I can’t see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp and we’ll gladly assist you directly:\n{WHATSAPP_LINK}",
-            "el": f"Δεν μπορώ να δω προσωπικά στοιχεία κράτησης εδώ. Παρακαλούμε ελέγξτε την επιβεβαίωση της κράτησής σας ή επικοινωνήστε μαζί μας στο WhatsApp και θα χαρούμε να σας εξυπηρετήσουμε:\n{WHATSAPP_LINK}",
-            "it": f"Non posso vedere qui i dettagli personali della prenotazione. Ti preghiamo di controllare la conferma della prenotazione oppure di contattarci su WhatsApp e saremo lieti di aiutarti:\n{WHATSAPP_LINK}",
-            "pt": f"Não consigo ver aqui os dados pessoais da reserva. Por favor consulte a confirmação da sua reserva ou contacte-nos via WhatsApp e teremos todo o gosto em ajudar:\n{WHATSAPP_LINK}",
-        },
-        "whatsapp_uncertain_reply": {
-            "en": f"I don’t have that exact detail here, but our team can assist you directly on WhatsApp:\n{WHATSAPP_LINK}",
-            "el": f"Δεν έχω αυτή την ακριβή πληροφορία εδώ, αλλά η ομάδα μας μπορεί να σας βοηθήσει απευθείας στο WhatsApp:\n{WHATSAPP_LINK}",
-            "it": f"Non ho qui questo dettaglio preciso, ma il nostro team può aiutarti direttamente su WhatsApp:\n{WHATSAPP_LINK}",
-            "pt": f"Não tenho aqui esse detalhe exato, mas a nossa equipa pode ajudar diretamente via WhatsApp:\n{WHATSAPP_LINK}",
-        },
-        "morning_unavailable_reply": {
-            "en": f"Morning cruises are available only until 24 October 2026, so the requested morning cruise is not available on that date.\n\nDuring that period, only sunset cruises are operating.\n\nYou can check availability here:\n{BOOKING_LINK}\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
-            "el": f"Οι πρωινές κρουαζιέρες είναι διαθέσιμες μόνο έως τις 24 Οκτωβρίου 2026, επομένως η ζητούμενη πρωινή κρουαζιέρα δεν είναι διαθέσιμη για εκείνη την ημερομηνία.\n\nΚατά την περίοδο αυτή πραγματοποιούνται μόνο απογευματινές κρουαζιέρες ηλιοβασιλέματος.\n\nΜπορείτε να δείτε τη διαθεσιμότητα εδώ:\n{BOOKING_LINK}\n\nΓια οποιαδήποτε διευκρίνιση, επικοινωνήστε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
-            "it": f"Le crociere mattutine sono disponibili solo fino al 24 ottobre 2026, quindi la crociera mattutina richiesta non è disponibile in quella data.\n\nDurante quel periodo operano solo le crociere al tramonto.\n\nPuoi controllare la disponibilità qui:\n{BOOKING_LINK}\n\nPer qualsiasi chiarimento, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
-            "pt": f"Os cruzeiros da manhã estão disponíveis apenas até 24 de outubro de 2026, por isso o cruzeiro da manhã solicitado não está disponível nessa data.\n\nDurante esse período operam apenas os cruzeiros ao pôr do sol.\n\nPode verificar a disponibilidade aqui:\n{BOOKING_LINK}\n\nPara qualquer esclarecimento, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
-        },
-        "sunset_only_reply": {
-            "en": f"During that period, we operate sunset cruises only.\n\nThe sunset cruise is a beautiful experience, as you can enjoy the famous Santorini sunset from the sea.\n\nYou can check availability here:\n{BOOKING_LINK}\n\nIf you need help choosing, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
-            "el": f"Κατά την περίοδο αυτή πραγματοποιούνται μόνο απογευματινές κρουαζιέρες ηλιοβασιλέματος.\n\nΗ απογευματινή κρουαζιέρα είναι μια όμορφη εμπειρία, καθώς μπορείτε να απολαύσετε το διάσημο ηλιοβασίλεμα της Σαντορίνης από τη θάλασσα.\n\nΜπορείτε να δείτε τη διαθεσιμότητα εδώ:\n{BOOKING_LINK}\n\nΑν χρειάζεστε βοήθεια για να επιλέξετε, επικοινωνήστε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
-            "it": f"Durante quel periodo operano solo le crociere al tramonto.\n\nLa crociera al tramonto è una bellissima esperienza, perché permette di ammirare il famoso tramonto di Santorini dal mare.\n\nPuoi controllare la disponibilità qui:\n{BOOKING_LINK}\n\nSe hai bisogno di aiuto nella scelta, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
-            "pt": f"Durante esse período operam apenas os cruzeiros ao pôr do sol.\n\nO cruzeiro ao pôr do sol é uma experiência muito bonita, pois permite apreciar o famoso pôr do sol de Santorini a partir do mar.\n\nPode verificar a disponibilidade aqui:\n{BOOKING_LINK}\n\nSe precisar de ajuda para escolher, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
-        },
-        "off_season_reply": {
-            "en": f"Our cruises are not operating during that period, as the season is closed.\n\nWe resume from 15 March 2027.\n\nYou can check available dates here:\n{BOOKING_LINK}\n\nFor any clarification, feel free to contact us on WhatsApp:\n{WHATSAPP_LINK}",
-            "el": f"Οι κρουαζιέρες μας δεν πραγματοποιούνται κατά την περίοδο αυτή, καθώς η σεζόν είναι κλειστή.\n\nΞεκινάμε ξανά από τις 15 Μαρτίου 2027.\n\nΜπορείτε να δείτε τις διαθέσιμες ημερομηνίες εδώ:\n{BOOKING_LINK}\n\nΓια οποιαδήποτε διευκρίνιση, επικοινωνήστε μαζί μας στο WhatsApp:\n{WHATSAPP_LINK}",
-            "it": f"Le nostre crociere non operano in quel periodo, poiché la stagione è chiusa.\n\nRiprendiamo dal 15 marzo 2027.\n\nPuoi controllare le date disponibili qui:\n{BOOKING_LINK}\n\nPer qualsiasi chiarimento, puoi contattarci su WhatsApp:\n{WHATSAPP_LINK}",
-            "pt": f"Os nossos cruzeiros não operam durante esse período, pois a temporada está encerrada.\n\nRetomamos a partir de 15 de março de 2027.\n\nPode verificar as datas disponíveis aqui:\n{BOOKING_LINK}\n\nPara qualquer esclarecimento, contacte-nos via WhatsApp:\n{WHATSAPP_LINK}",
-        },
-    }
-
-    return translations.get(key, {}).get(
-        language, translations.get(key, {}).get("en", "")
-    )
-
-
-def translate_availability_reply(reply_text: str, language: str) -> str:
-    if language == "en":
-        return reply_text
-
-    replacements = {
-        "el": [
-            ("Thank you for your message.", "Σας ευχαριστούμε για το μήνυμά σας."),
-            (
-                "Unfortunately, we do not currently have any",
-                "Δυστυχώς, δεν έχουμε αυτή τη στιγμή",
-            ),
-            ("cruises available for", "διαθέσιμες κρουαζιέρες για"),
-            ("available for", "διαθέσιμες για"),
-            (
-                "You may check other dates here:",
-                "Μπορείτε να δείτε άλλες ημερομηνίες εδώ:",
-            ),
-            ("For ", "Για "),
-            ("the following private", "τις παρακάτω ιδιωτικές"),
-            ("the following shared", "τις παρακάτω κοινές"),
-            ("the following", "τις παρακάτω"),
-            (
-                "private cruises are available:",
-                "ιδιωτικές κρουαζιέρες είναι διαθέσιμες:",
-            ),
-            ("shared cruises are available:", "κοινές κρουαζιέρες είναι διαθέσιμες:"),
-            ("cruises are available:", "κρουαζιέρες είναι διαθέσιμες:"),
-            (" is available.", " είναι διαθέσιμη."),
-            (" are available.", " είναι διαθέσιμες."),
-            ("Shared cruises:", "Κοινές κρουαζιέρες:"),
-            ("Private cruises:", "Ιδιωτικές κρουαζιέρες:"),
-            (
-                "You can proceed directly with your booking here:",
-                "Μπορείτε να προχωρήσετε απευθείας στην κράτησή σας εδώ:",
-            ),
-            (
-                "You may proceed with your booking here:",
-                "Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:",
-            ),
-            (
-                "Please select the date on the booking page.",
-                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης.",
-            ),
-            ("morning", "πρωινές"),
-            ("sunset", "απογευματινές"),
-        ],
-        "it": [
-            ("Thank you for your message.", "Grazie per il tuo messaggio."),
-            (
-                "Unfortunately, we do not currently have any",
-                "Purtroppo al momento non abbiamo",
-            ),
-            ("cruises available for", "crociere disponibili per"),
-            ("available for", "disponibili per"),
-            ("You may check other dates here:", "Puoi controllare altre date qui:"),
-            ("For ", "Per il "),
-            ("the following private", "le seguenti private"),
-            ("the following shared", "le seguenti condivise"),
-            ("the following", "le seguenti"),
-            ("private cruises are available:", "crociere private disponibili:"),
-            ("shared cruises are available:", "crociere condivise disponibili:"),
-            ("cruises are available:", "crociere disponibili:"),
-            (" is available.", " è disponibile."),
-            (" are available.", " sono disponibili."),
-            ("Shared cruises:", "Crociere condivise:"),
-            ("Private cruises:", "Crociere private:"),
-            (
-                "You can proceed directly with your booking here:",
-                "Puoi procedere direttamente con la prenotazione qui:",
-            ),
-            (
-                "You may proceed with your booking here:",
-                "Puoi procedere con la prenotazione qui:",
-            ),
-            (
-                "Please select the date on the booking page.",
-                "Ti preghiamo di selezionare la data nella pagina di prenotazione.",
-            ),
-        ],
-        "pt": [
-            ("Thank you for your message.", "Obrigado pela sua mensagem."),
-            (
-                "Unfortunately, we do not currently have any",
-                "Infelizmente, neste momento não temos",
-            ),
-            ("cruises available for", "cruzeiros disponíveis para"),
-            ("available for", "disponíveis para"),
-            ("You may check other dates here:", "Pode verificar outras datas aqui:"),
-            ("For ", "Para "),
-            ("the following private", "os seguintes privados"),
-            ("the following shared", "os seguintes partilhados"),
-            ("the following", "os seguintes"),
-            ("private cruises are available:", "cruzeiros privados disponíveis:"),
-            ("shared cruises are available:", "cruzeiros partilhados disponíveis:"),
-            ("cruises are available:", "cruzeiros disponíveis:"),
-            (" is available.", " está disponível."),
-            (" are available.", " estão disponíveis."),
-            ("Shared cruises:", "Cruzeiros partilhados:"),
-            ("Private cruises:", "Cruzeiros privados:"),
-            (
-                "You can proceed directly with your booking here:",
-                "Pode avançar diretamente com a sua reserva aqui:",
-            ),
-            (
-                "You may proceed with your booking here:",
-                "Pode avançar com a sua reserva aqui:",
-            ),
-            (
-                "Please select the date on the booking page.",
-                "Por favor selecione a data na página de reservas.",
-            ),
-        ],
-    }
-
-    translated = reply_text
-    for source, target in replacements.get(language, []):
-        translated = translated.replace(source, target)
-
-    return translated
 
 
 def is_cruise_passenger(user_message: str) -> bool:
@@ -921,7 +713,7 @@ def is_private_result(item: dict) -> bool:
 
 def build_capacity_reply(data, language: str) -> str:
     if not isinstance(data, dict):
-        return get_text("availability_fallback", language)
+        return get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
 
     spots = get_capacity_number(data)
     cruise_name = data.get("reply_label", "this cruise")
@@ -1281,14 +1073,14 @@ def get_seasonal_reply(
     season_resume = date(2027, 3, 15)
 
     if off_season_start <= requested_date < season_resume:
-        return get_text("off_season_reply", language)
+        return get_text("off_season_reply", language, BOOKING_LINK, WHATSAPP_LINK)
 
     if sunset_only_start <= requested_date <= sunset_only_end:
         if requested_period == "morning":
-            return get_text("morning_unavailable_reply", language)
+            return get_text("morning_unavailable_reply", language, BOOKING_LINK, WHATSAPP_LINK)
 
         if generic_availability and requested_period is None and tour_key is None:
-            return get_text("sunset_only_reply", language)
+            return get_text("sunset_only_reply", language, BOOKING_LINK, WHATSAPP_LINK)
 
     return None
 
@@ -1338,7 +1130,7 @@ def chat(request: ChatRequest):
     tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
 
     if not user_message:
-        reply = get_text("empty_reply", language)
+        reply = get_text("empty_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message="",
             reply=reply,
@@ -1348,7 +1140,7 @@ def chat(request: ChatRequest):
         )
 
     if is_discount_request(user_message):
-        reply = get_text("discount_reply", language)
+        reply = get_text("discount_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1358,7 +1150,7 @@ def chat(request: ChatRequest):
         )
 
     if is_cruise_passenger(user_message):
-        reply = get_text("cruise_passenger_reply", language)
+        reply = get_text("cruise_passenger_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1368,7 +1160,7 @@ def chat(request: ChatRequest):
         )
 
     if is_contact_request(user_message):
-        reply = get_text("contact_reply", language)
+        reply = get_text("contact_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1378,7 +1170,7 @@ def chat(request: ChatRequest):
         )
 
     if is_personal_booking_request(user_message):
-        reply = get_text("booking_details_reply", language)
+        reply = get_text("booking_details_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1387,14 +1179,11 @@ def chat(request: ChatRequest):
             detected_tour=None,
         )
 
-    if "pregnant" in user_message.lower():
-        reply = (
-            "In most cases, pregnant guests may join, but it depends on the stage of pregnancy "
-            "and how comfortable you feel during the cruise.\n\n"
-            "For safety, we kindly recommend contacting us on WhatsApp so we can guide you properly:\n"
-            f"{WHATSAPP_LINK}"
-        )
-
+    if any(
+        word in user_message.lower()
+        for word in ["pregnant", "pregnancy", "έγκυος", "εγκυος", "gravidanza", "grávida", "gravida"]
+    ):
+        reply = get_text("pregnancy_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1501,7 +1290,7 @@ USER MESSAGE:
         except Exception as e:
             print("OPENAI ERROR:", e)
 
-            reply = get_text("whatsapp_uncertain_reply", language)
+            reply = get_text("whatsapp_uncertain_reply", language, BOOKING_LINK, WHATSAPP_LINK)
 
         return log_and_return(
             user_message=user_message,
@@ -1546,7 +1335,7 @@ USER MESSAGE:
                 detected_tour=None,
             )
 
-        reply = get_text("availability_fallback", language)
+        reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1586,7 +1375,7 @@ USER MESSAGE:
                     detected_tour=last_tour_key,
                 )
 
-            reply = get_text("availability_fallback", language)
+            reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
             return log_and_return(
                 user_message=user_message,
                 reply=reply,
@@ -1595,7 +1384,7 @@ USER MESSAGE:
                 detected_tour=last_tour_key,
             )
 
-        reply = get_text("spots_fallback", language)
+        reply = get_text("spots_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1648,7 +1437,7 @@ USER MESSAGE:
         )
 
     if is_sunset_question(user_message):
-        reply = "Yes, our sunset cruises are timed so you can enjoy the famous Santorini sunset from onboard."
+        reply = get_text("sunset_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1733,7 +1522,7 @@ USER MESSAGE:
                         detected_tour=effective_tour_key,
                     )
 
-        reply = get_text("availability_fallback", language)
+        reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1798,7 +1587,7 @@ USER MESSAGE:
                 detected_tour=tour_key,
             )
 
-        reply = get_text("availability_fallback", language)
+        reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1830,7 +1619,7 @@ USER MESSAGE:
             effective_date, period, user_message, passenger_count
         )
         if results is None:
-            reply = get_text("availability_fallback", language)
+            reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
             return log_and_return(
                 user_message=user_message,
                 reply=reply,
@@ -1854,7 +1643,7 @@ USER MESSAGE:
                 detected_tour=tour_key,
             )
 
-        reply = get_text("availability_fallback", language)
+        reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1953,7 +1742,7 @@ USER MESSAGE:
         )
 
     if is_greeting(user_message):
-        reply = get_text("greeting_reply", language)
+        reply = get_text("greeting_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1969,7 +1758,7 @@ USER MESSAGE:
         and not short_followup
         and is_clearly_irrelevant(user_message)
     ):
-        reply = get_text("irrelevant_reply", language)
+        reply = get_text("irrelevant_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
             reply=reply,

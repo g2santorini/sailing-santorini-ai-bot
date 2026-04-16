@@ -295,3 +295,18 @@ def is_sunset_question(user_message: str) -> bool:
     ]
 
     return contains_any(text, keywords)
+
+def is_pregnancy_question(message: str) -> bool:
+    text = message.lower()
+
+    keywords = [
+        "pregnant",
+        "pregnancy",
+        "έγκυος",
+        "εγκυος",
+        "gravidanza",
+        "grávida",
+        "gravida",
+    ]
+
+    return any(word in text for word in keywords)
