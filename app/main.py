@@ -996,6 +996,12 @@ def root():
     return {"message": "Santorini bot is running"}
 
 
+@app.get("/ping")
+def ping():
+    print("PING ENDPOINT HIT")
+    return {"ok": True}
+
+
 @app.get("/admin/logs")
 def admin_logs():
     return {"logs": get_chat_logs(200)}
@@ -1003,6 +1009,9 @@ def admin_logs():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
+    print("CHAT ENDPOINT HIT")
+    print("USER MESSAGE:", request.message)
+
     user_message = request.message.strip()
     history = request.history or []
     language = detect_language(user_message)
