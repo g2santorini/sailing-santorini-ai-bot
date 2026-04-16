@@ -1,10 +1,9 @@
-from datetime import date, datetime
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from app.services.language_service import detect_language
+from app.services.season_service import get_seasonal_reply
 from app.routes.availability_routes import router as availability_router
 from app.services.translation_service import get_text, translate_availability_reply
 from app.services.openai_service import get_ai_reply
@@ -984,56 +983,6 @@ def build_best_choice_reply(
     )
 
 
-def parse_iso_date(value: str | None) -> date | None:
-    if not value:
-        return None
-
-    try:
-        return datetime.strptime(value, "%Y-%m-%d").date()
-    except (TypeError, ValueError):
-        return None
-
-
-def get_requested_period(tour_key: str | None, period: str | None) -> str | None:
-    if tour_key:
-        lowered = tour_key.lower()
-        if "morning" in lowered:
-            return "morning"
-        if "sunset" in lowered:
-            return "sunset"
-    return period
-
-
-def get_seasonal_reply(
-    date_str: str | None,
-    language: str,
-    tour_key: str | None = None,
-    period: str | None = None,
-    generic_availability: bool = False,
-) -> str | None:
-    requested_date = parse_iso_date(date_str)
-    if not requested_date:
-        return None
-
-    requested_period = get_requested_period(tour_key, period)
-
-    sunset_only_start = date(2026, 10, 25)
-    sunset_only_end = date(2026, 11, 15)
-    off_season_start = date(2026, 11, 16)
-    season_resume = date(2027, 3, 15)
-
-    if off_season_start <= requested_date < season_resume:
-        return get_text("off_season_reply", language, BOOKING_LINK, WHATSAPP_LINK)
-
-    if sunset_only_start <= requested_date <= sunset_only_end:
-        if requested_period == "morning":
-            return get_text("morning_unavailable_reply", language, BOOKING_LINK, WHATSAPP_LINK)
-
-        if generic_availability and requested_period is None and tour_key is None:
-            return get_text("sunset_only_reply", language, BOOKING_LINK, WHATSAPP_LINK)
-
-    return None
-
 
 def safe_check_tour_availability(tour_key: str, date_str: str):
     try:
@@ -1132,12 +1081,12 @@ def chat(request: ChatRequest):
     if is_pregnancy_question(user_message):
         reply = get_text("pregnancy_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
-        user_message=user_message,
-        reply=reply,
-        language=language,
-        fallback=False,
-        detected_tour=None,
-    )
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=None,
+        )
 
     if is_uncertain_whatsapp_case(user_message):
         conversation_history = ""
@@ -1256,6 +1205,9 @@ USER MESSAGE:
         seasonal_reply = get_seasonal_reply(
             date_str=effective_date,
             language=language,
+            booking_link=BOOKING_LINK,
+            whatsapp_link=WHATSAPP_LINK,
+            tour_key=tour_key,
             period=period,
             generic_availability=True,
         )
@@ -1299,6 +1251,8 @@ USER MESSAGE:
         seasonal_reply = get_seasonal_reply(
             date_str=last_date_str,
             language=language,
+            booking_link=BOOKING_LINK,
+            whatsapp_link=WHATSAPP_LINK,
             tour_key=last_tour_key,
         )
         if seasonal_reply:
@@ -1410,6 +1364,8 @@ USER MESSAGE:
         seasonal_reply = get_seasonal_reply(
             date_str=effective_date_str,
             language=language,
+            booking_link=BOOKING_LINK,
+            whatsapp_link=WHATSAPP_LINK,
             tour_key=effective_tour_key,
         )
         if seasonal_reply:
@@ -1508,6 +1464,8 @@ USER MESSAGE:
     seasonal_reply = get_seasonal_reply(
         date_str=date_str,
         language=language,
+        booking_link=BOOKING_LINK,
+        whatsapp_link=WHATSAPP_LINK,
         tour_key=tour_key,
         period=period,
         generic_availability=availability_intent,
@@ -1549,6 +1507,8 @@ USER MESSAGE:
         seasonal_reply = get_seasonal_reply(
             date_str=effective_date,
             language=language,
+            booking_link=BOOKING_LINK,
+            whatsapp_link=WHATSAPP_LINK,
             tour_key=tour_key,
             period=period,
             generic_availability=True,
