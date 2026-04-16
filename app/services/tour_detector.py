@@ -6,6 +6,7 @@ def is_sunset(text: str) -> bool:
         or "tonight" in text
     )
 
+
 def is_morning(text: str) -> bool:
     return "morning" in text
 
@@ -60,5 +61,30 @@ def detect_tour_key(user_message: str) -> str | None:
 
     if "ferretti 55" in text and is_sunset(text):
         return "ferretti_55_sunset"
+
+    # Fallback χωρίς period
+    if "ferretti 55" in text:
+        return "ferretti_55_sunset"
+
+    if "ferretti 731" in text:
+        return "ferretti_731_sunset"
+
+    if "emily" in text:
+        return "emily_sunset"
+
+    if "lagoon" in text:
+        return "lagoon_380_400_sunset"
+
+    if "diamond" in text:
+        return "diamond_sunset"
+
+    if "platinum" in text:
+        return "platinum_sunset"
+
+    if "gems" in text:
+        return "gems_sunset"
+
+    if "red" in text:
+        return "red_sunset"
 
     return None
