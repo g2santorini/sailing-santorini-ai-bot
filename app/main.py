@@ -1210,7 +1210,6 @@ USER MESSAGE:
 
         if results:
             capacity_filtered = filter_by_capacity(results, passenger_count)
-
             if capacity_filtered:
                 reply_text = build_multi_capacity_reply(capacity_filtered, language)
                 return log_and_return(
@@ -1466,7 +1465,15 @@ USER MESSAGE:
 
     if tour_key and date_str:
         data = safe_check_tour_availability(tour_key, date_str)
-        if data:
+
+        is_available = (
+            isinstance(data, dict)
+            and data.get("success")
+            and isinstance(data.get("availability"), dict)
+            and data["availability"].get("available") is True
+        )
+
+        if is_available:
             reply_text = build_availability_reply(data)
             reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
@@ -1483,7 +1490,7 @@ USER MESSAGE:
 
         capacity_filtered = filter_by_capacity(
             alternative_results or [],
-            passenger_count
+            passenger_count,
         )
 
         prepared_alternatives = prepare_alternative_results(
@@ -1502,6 +1509,17 @@ USER MESSAGE:
             return log_and_return(
                 user_message=user_message,
                 reply=alternative_reply,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
+
+        if data:
+            reply_text = build_availability_reply(data)
+            reply_text = translate_availability_reply(reply_text, language)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply_text,
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
@@ -1554,7 +1572,7 @@ USER MESSAGE:
 
         filtered_results = filter_results_by_cruise_type(
             capacity_filtered,
-            cruise_type_intent
+            cruise_type_intent,
         )
 
         if filtered_results:
