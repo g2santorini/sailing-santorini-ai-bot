@@ -1473,6 +1473,23 @@ USER MESSAGE:
             and data["availability"].get("available") is True
         )
 
+    if tour_key and date_str:
+        data = safe_check_tour_availability(tour_key, date_str)
+        print("AVAILABILITY DATA:", data)
+
+        is_available = (
+            isinstance(data, dict)
+            and data.get("success")
+            and isinstance(data.get("availability"), dict)
+            and data["availability"].get("available") is True
+        )
+
+        print("IS AVAILABLE:", is_available)
+        print("TOUR KEY:", tour_key)
+        print("DATE STR:", date_str)
+        print("PERIOD:", period)
+        print("PASSENGER COUNT:", passenger_count)
+
         if is_available:
             reply_text = build_availability_reply(data)
             reply_text = translate_availability_reply(reply_text, language)
@@ -1487,17 +1504,20 @@ USER MESSAGE:
         alternative_results = safe_find_available_tours(
             date_str, period, user_message, passenger_count
         )
+        print("RAW ALTERNATIVE RESULTS:", alternative_results)
 
         capacity_filtered = filter_by_capacity(
             alternative_results or [],
             passenger_count,
         )
+        print("CAPACITY FILTERED RESULTS:", capacity_filtered)
 
         prepared_alternatives = prepare_alternative_results(
             results=capacity_filtered,
             requested_tour_key=tour_key,
             passenger_count=passenger_count,
         )
+        print("PREPARED ALTERNATIVES:", prepared_alternatives)
 
         alternative_reply = build_unavailable_alternatives_reply(
             requested_tour_key=tour_key,
@@ -1505,6 +1525,8 @@ USER MESSAGE:
             language=language,
             booking_link=BOOKING_LINK,
         )
+        print("ALTERNATIVE REPLY:", alternative_reply)
+
         if alternative_reply:
             return log_and_return(
                 user_message=user_message,
@@ -1519,7 +1541,11 @@ USER MESSAGE:
                 **data,
                 "alternative_tours": prepared_alternatives,
             }
+            print("FALLBACK DATA:", fallback_data)
+
             reply_text = build_availability_reply(fallback_data)
+            print("FINAL FALLBACK REPLY:", reply_text)
+
             reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,
