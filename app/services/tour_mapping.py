@@ -12,6 +12,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "09:30",
         "notes": "Large shared catamaran",
+        "max_guests": 55,
     },
     "red_morning_no_transfer": {
         "tour_name": "Red Cruise",
@@ -24,6 +25,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "09:30",
         "notes": "Large shared catamaran",
+        "max_guests": 55,
     },
     "red_sunset": {
         "tour_name": "Red Cruise",
@@ -36,6 +38,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "14:30",
         "notes": "Large shared catamaran",
+        "max_guests": 55,
     },
     "red_sunset_no_transfer": {
         "tour_name": "Red Cruise",
@@ -48,6 +51,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "14:30",
         "notes": "Large shared catamaran",
+        "max_guests": 55,
     },
     "gems_morning": {
         "tour_name": "Santorini Gems Cruise",
@@ -60,6 +64,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "09:30",
         "notes": "Small group catamaran (up to 20 guests)",
+        "max_guests": 20,
     },
     "gems_sunset": {
         "tour_name": "Santorini Gems Cruise",
@@ -72,6 +77,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "14:30",
         "notes": "Small group catamaran (up to 20 guests)",
+        "max_guests": 20,
     },
     "platinum_morning": {
         "tour_name": "Santorini Platinum Cruise",
@@ -84,6 +90,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "09:30",
         "notes": "Small group catamaran (up to 14 guests)",
+        "max_guests": 14,
     },
     "platinum_sunset": {
         "tour_name": "Santorini Platinum Cruise",
@@ -96,6 +103,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "14:30",
         "notes": "Small group catamaran (up to 14 guests)",
+        "max_guests": 14,
     },
     "diamond_morning": {
         "tour_name": "Santorini Diamond Cruise",
@@ -108,6 +116,8 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "09:30",
         "notes": "Luxury catamaran (up to 20 guests)",
+        "max_guests": 20,
+
     },
     "diamond_sunset": {
         "tour_name": "Santorini Diamond Cruise",
@@ -120,6 +130,7 @@ TOUR_OPTIONS = {
         "tour_type": "shared",
         "default_departure_time": "14:30",
         "notes": "Luxury catamaran (up to 20 guests)",
+        "max_guests": 20,
     },
     "lagoon_380_400_morning": {
         "tour_name": "Private Lagoon 380/400 Cruise",
@@ -132,6 +143,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "10:15",
         "notes": "Private catamaran cruise",
+        "max_guests": 14,
     },
     "lagoon_380_400_sunset": {
         "tour_name": "Private Lagoon 380/400 Cruise",
@@ -144,6 +156,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "15:15",
         "notes": "Private catamaran cruise",
+        "max_guests": 14,
     },
     "emily_morning": {
         "tour_name": "Private Emily Cruise",
@@ -156,6 +169,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "10:30",
         "notes": "Private power catamaran cruise",
+        "max_guests": 14,
     },
     "emily_sunset": {
         "tour_name": "Private Emily Cruise",
@@ -168,6 +182,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "15:30",
         "notes": "Private power catamaran cruise",
+        "max_guests": 14,
     },
     "ferretti_731_morning": {
         "tour_name": "Private Ferretti 731 Cruise",
@@ -180,6 +195,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "11:00",
         "notes": "Luxury Ferretti 731 motor yacht",
+        "max_guests": 4,
     },
     "ferretti_731_sunset": {
         "tour_name": "Private Ferretti 731 Cruise",
@@ -192,6 +208,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "15:00",
         "notes": "Luxury Ferretti 731 motor yacht",
+        "max_guests": 4,
     },
     "ferretti_55_morning": {
         "tour_name": "Private Ferretti 55 Cruise",
@@ -204,6 +221,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "11:00",
         "notes": "Luxury Ferretti 55 motor yacht",
+        "max_guests": 6,
     },
     "ferretti_55_sunset": {
         "tour_name": "Private Ferretti 55 Cruise",
@@ -216,6 +234,7 @@ TOUR_OPTIONS = {
         "tour_type": "private",
         "default_departure_time": "15:00",
         "notes": "Luxury Ferretti 55 motor yacht",
+        "max_guests": 6,
     },
 }
 
@@ -227,6 +246,10 @@ def get_tour_option(tour_key: str) -> dict | None:
 def extract_max_guests(option: dict) -> int | None:
     if not option:
         return None
+
+    explicit_max = option.get("max_guests")
+    if isinstance(explicit_max, int):
+        return explicit_max
 
     notes = option.get("notes", "")
     match = re.search(r"up to (\d+) guests", notes, re.IGNORECASE)
