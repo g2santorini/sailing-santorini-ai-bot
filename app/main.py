@@ -2,12 +2,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
 from app.services.language_service import detect_language
 from app.services.season_service import get_seasonal_reply
 from app.routes.availability_routes import router as availability_router
 from app.services.translation_service import get_text, translate_availability_reply
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
+from app.services.alternative_service import (
+    prepare_alternative_results,
+    build_unavailable_alternatives_reply,
+    filter_by_capacity,
+)
 from app.services.reply_builder import (
     build_availability_reply,
     build_time_comparison_reply,
@@ -1005,6 +1011,7 @@ def chat(request: ChatRequest):
     date_str = detect_date(user_message)
     period = detect_period(user_message)
     tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
+    passenger_count = detect_passenger_count(user_message, history)
 
     if not user_message:
         reply = get_text("empty_reply", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1177,7 +1184,6 @@ USER MESSAGE:
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
         date_str = detect_date(user_message)
         period = detect_period(user_message)
-        passenger_count = detect_passenger_count(user_message, history)
         effective_date = date_str or get_effective_date(user_message, history)
 
         seasonal_reply = get_seasonal_reply(
@@ -1203,14 +1209,17 @@ USER MESSAGE:
         )
 
         if results:
-            reply_text = build_multi_capacity_reply(results, language)
-            return log_and_return(
-                user_message=user_message,
-                reply=reply_text,
-                language=language,
-                fallback=False,
-                detected_tour=None,
-            )
+            capacity_filtered = filter_by_capacity(results, passenger_count)
+
+            if capacity_filtered:
+                reply_text = build_multi_capacity_reply(capacity_filtered, language)
+                return log_and_return(
+                    user_message=user_message,
+                    reply=reply_text,
+                    language=language,
+                    fallback=False,
+                    detected_tour=None,
+                )
 
         reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
@@ -1437,8 +1446,6 @@ USER MESSAGE:
         )
     )
 
-    passenger_count = detect_passenger_count(user_message, history)
-
     seasonal_reply = get_seasonal_reply(
         date_str=date_str,
         language=language,
@@ -1465,6 +1472,36 @@ USER MESSAGE:
             return log_and_return(
                 user_message=user_message,
                 reply=reply_text,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+            )
+
+        alternative_results = safe_find_available_tours(
+            date_str, period, user_message, passenger_count
+        )
+
+        capacity_filtered = filter_by_capacity(
+            alternative_results or [],
+            passenger_count
+        )
+
+        prepared_alternatives = prepare_alternative_results(
+            results=capacity_filtered,
+            requested_tour_key=tour_key,
+            passenger_count=passenger_count,
+        )
+
+        alternative_reply = build_unavailable_alternatives_reply(
+            requested_tour_key=tour_key,
+            alternatives=prepared_alternatives,
+            language=language,
+            booking_link=BOOKING_LINK,
+        )
+        if alternative_reply:
+            return log_and_return(
+                user_message=user_message,
+                reply=alternative_reply,
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
@@ -1513,7 +1550,12 @@ USER MESSAGE:
                 detected_tour=tour_key,
             )
 
-        filtered_results = filter_results_by_cruise_type(results, cruise_type_intent)
+        capacity_filtered = filter_by_capacity(results, passenger_count)
+
+        filtered_results = filter_results_by_cruise_type(
+            capacity_filtered,
+            cruise_type_intent
+        )
 
         if filtered_results:
             reply_text = build_multi_availability_reply(
@@ -1616,7 +1658,7 @@ USER MESSAGE:
         reply = build_best_choice_reply(
             history=history,
             language=language,
-            passenger_count=detect_passenger_count(user_message, history),
+            passenger_count=passenger_count,
         )
         return log_and_return(
             user_message=user_message,
