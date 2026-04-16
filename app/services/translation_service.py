@@ -6,6 +6,12 @@ def get_text(key: str, language: str, booking_link: str, whatsapp_link: str) -> 
             "it": "Ciao! Sarò felice di aiutarti con le nostre crociere a Santorini.",
             "pt": "Olá! Terei todo o gosto em ajudar com os nossos cruzeiros em Santorini.",
         },
+        "pregnancy_reply": {
+            "en": f"In most cases, pregnant guests may join, but it depends on the stage of pregnancy and how comfortable you feel during the cruise.\n\nFor safety, we kindly recommend contacting us on WhatsApp so we can guide you properly:\n{whatsapp_link}",
+            "el": f"Στις περισσότερες περιπτώσεις, οι έγκυες επισκέπτριες μπορούν να συμμετάσχουν, αλλά αυτό εξαρτάται από το στάδιο της εγκυμοσύνης και από το πόσο άνετα αισθάνεστε κατά τη διάρκεια της κρουαζιέρας.\n\nΓια λόγους ασφαλείας, σας προτείνουμε να επικοινωνήσετε μαζί μας στο WhatsApp, ώστε να σας καθοδηγήσουμε σωστά:\n{whatsapp_link}",
+            "it": f"Nella maggior parte dei casi, le ospiti in gravidanza possono partecipare, ma dipende dallo stadio della gravidanza e da quanto si sentono a proprio agio durante la crociera.\n\nPer motivi di sicurezza, consigliamo gentilmente di contattarci su WhatsApp così potremo guidarvi correttamente:\n{whatsapp_link}",
+            "pt": f"Na maioria dos casos, as hóspedes grávidas podem participar, mas isso depende da fase da gravidez e do nível de conforto durante o cruzeiro.\n\nPor motivos de segurança, recomendamos gentilmente que nos contacte via WhatsApp para que possamos orientá-la corretamente:\n{whatsapp_link}",
+        },
         "greeting_reply": {
             "en": "Hello and welcome! I’ll be happy to help you with our cruises in Santorini. Feel free to ask me about availability, prices, shared or private options.",
             "el": "Γεια σας και καλώς ήρθατε! Θα χαρώ να σας βοηθήσω με τις κρουαζιέρες μας στη Σαντορίνη. Μπορείτε να με ρωτήσετε για διαθεσιμότητα, τιμές, κοινές ή ιδιωτικές επιλογές.",
