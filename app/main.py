@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-
+from app.services.language_service import detect_language
 from app.routes.availability_routes import router as availability_router
 from app.services.translation_service import get_text, translate_availability_reply
 from app.services.openai_service import get_ai_reply
@@ -30,6 +30,7 @@ from app.services.intent_service import (
     is_capacity_request,
     is_multi_capacity_request,
     is_sunset_question,
+    is_pregnancy_question,
     is_time_comparison,
 )
 from app.services.context_service import (
@@ -88,57 +89,6 @@ def log_and_return(
         print(f"Chat log save error: {exc}")
 
     return {"reply": reply}
-
-
-def detect_language(user_message: str) -> str:
-    text = user_message.lower()
-
-    greek_chars = any(("α" <= c <= "ω") or ("ά" <= c <= "ώ") for c in text)
-    if greek_chars:
-        return "el"
-
-    italian_keywords = [
-        "ciao",
-        "salve",
-        "buongiorno",
-        "buonasera",
-        "grazie",
-        "disponibilità",
-        "disponibile",
-        "privata",
-        "tramonto",
-        "mattina",
-        "persone",
-        "crociera",
-        "crociere",
-        "oggi",
-        "domani",
-    ]
-    if any(word in text for word in italian_keywords):
-        return "it"
-
-    portuguese_keywords = [
-        "olá",
-        "ola",
-        "bom dia",
-        "boa tarde",
-        "boa noite",
-        "obrigado",
-        "obrigada",
-        "disponibilidade",
-        "privado",
-        "partilhado",
-        "pessoas",
-        "hoje",
-        "amanhã",
-        "amanha",
-        "passeio",
-        "cruzeiro",
-    ]
-    if any(word in text for word in portuguese_keywords):
-        return "pt"
-
-    return "en"
 
 
 def is_clearly_irrelevant(message: str) -> bool:
@@ -1179,18 +1129,15 @@ def chat(request: ChatRequest):
             detected_tour=None,
         )
 
-    if any(
-        word in user_message.lower()
-        for word in ["pregnant", "pregnancy", "έγκυος", "εγκυος", "gravidanza", "grávida", "gravida"]
-    ):
+    if is_pregnancy_question(user_message):
         reply = get_text("pregnancy_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
-            user_message=user_message,
-            reply=reply,
-            language=language,
-            fallback=False,
-            detected_tour=None,
-        )
+        user_message=user_message,
+        reply=reply,
+        language=language,
+        fallback=False,
+        detected_tour=None,
+    )
 
     if is_uncertain_whatsapp_case(user_message):
         conversation_history = ""
