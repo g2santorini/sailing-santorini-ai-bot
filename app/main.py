@@ -8,14 +8,16 @@ from app.routes.availability_routes import router as availability_router
 from app.services.translation_service import get_text, translate_availability_reply
 from app.services.openai_service import get_ai_reply
 from app.services.knowledge_service import get_company_knowledge
-from app.services.availability_lookup import check_tour_availability
 from app.services.reply_builder import (
     build_availability_reply,
     build_time_comparison_reply,
 )
+from app.services.availability_safe_service import (
+    safe_check_tour_availability,
+    safe_find_available_tours,
+)
 from app.services.tour_detector import detect_tour_key
 from app.services.date_detector import detect_date
-from app.services.availability_search import find_available_tours
 from app.services.multi_reply_builder import build_multi_availability_reply
 from app.services.tour_mapping import build_tour_facts_block
 from app.services.chat_logger import init_db, save_chat_log, get_chat_logs
@@ -981,30 +983,6 @@ def build_best_choice_reply(
         "For better value and a more lively atmosphere, Red is usually the strongest choice.\n"
         "For a more premium and more relaxed experience, Diamond or Gems are usually better options."
     )
-
-
-
-def safe_check_tour_availability(tour_key: str, date_str: str):
-    try:
-        return check_tour_availability(tour_key, date_str)
-    except Exception as exc:
-        print(f"Availability lookup error for {tour_key} on {date_str}: {exc}")
-        return None
-
-
-def safe_find_available_tours(
-    effective_date: str,
-    period: str | None,
-    user_message: str,
-    passenger_count: int | None,
-):
-    try:
-        return find_available_tours(
-            effective_date, period, user_message, passenger_count
-        )
-    except Exception as exc:
-        print(f"Availability search error for {effective_date}: {exc}")
-        return None
 
 
 @app.get("/")
