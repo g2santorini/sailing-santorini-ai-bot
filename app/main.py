@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -25,7 +25,12 @@ from app.services.tour_detector import detect_tour_key
 from app.services.date_detector import detect_date
 from app.services.multi_reply_builder import build_multi_availability_reply
 from app.services.tour_mapping import build_tour_facts_block
-from app.services.chat_logger import init_db, save_chat_log, get_chat_logs
+from app.services.chat_logger import (
+    init_db,
+    save_chat_log,
+    get_chat_logs,
+    get_chat_sessions,
+)
 from app.services.intent_service import (
     is_greeting,
     is_discount_request,
@@ -1035,6 +1040,23 @@ def root():
 @app.get("/admin/logs")
 def admin_logs():
     return {"logs": get_chat_logs(200)}
+
+@app.get("/admin/sessions")
+def admin_sessions(
+    from_date: str | None = Query(default=None),
+    to_date: str | None = Query(default=None),
+):
+    return {
+        "sessions": get_chat_sessions(
+            1000,
+            from_date=from_date,
+            to_date=to_date,
+        )
+    }
+
+@app.get("/admin/sessions")
+def admin_sessions():
+    return {"sessions": get_chat_sessions(1000)}
 
 
 @app.post("/chat")

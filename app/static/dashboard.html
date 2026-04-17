@@ -8,20 +8,42 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 24px;
+      padding: 16px;
       background: #f5f7fb;
       color: #1f2937;
     }
 
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      font-size: 24px;
     }
 
     .top-bar {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .filter-group input {
+      padding: 9px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
     }
 
     .refresh-btn {
@@ -32,6 +54,7 @@
       border-radius: 8px;
       cursor: pointer;
       font-size: 14px;
+      height: 40px;
     }
 
     .refresh-btn:hover {
@@ -48,12 +71,12 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1250px;
+      min-width: 1400px;
     }
 
     th, td {
       text-align: left;
-      padding: 14px;
+      padding: 12px;
       border-bottom: 1px solid #e5e7eb;
       vertical-align: top;
       font-size: 14px;
@@ -82,37 +105,32 @@
       font-weight: bold;
     }
 
-    .timestamp-cell {
-      white-space: nowrap;
-      min-width: 180px;
-    }
-
-    .session-cell {
-      min-width: 180px;
-      max-width: 220px;
-      font-family: Consolas, monospace;
-      font-size: 12px;
-      color: #374151;
-      word-break: break-word;
-    }
-
     .conversation-cell {
-      min-width: 460px;
+      min-width: 560px;
     }
 
     .conversation-box {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      max-width: 700px;
-      white-space: pre-wrap;
-      word-break: break-word;
+      gap: 10px;
+      max-width: 720px;
+    }
+
+    .pair-block {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 10px;
+      background: #ffffff;
     }
 
     .message-block {
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: 12px;
-      line-height: 1.55;
+      line-height: 1.5;
+    }
+
+    .message-block + .message-block {
+      margin-top: 8px;
     }
 
     .user-line {
@@ -144,9 +162,70 @@
       word-break: break-word;
     }
 
-    .tour-cell,
+    .small-muted {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .compact-cell {
+      min-width: 100px;
+      max-width: 130px;
+      white-space: normal;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .tour-cell {
+      min-width: 120px;
+      max-width: 160px;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .session-cell {
+      min-width: 120px;
+      max-width: 150px;
+      font-family: Consolas, monospace;
+      font-size: 11px;
+      color: #374151;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
     .lang-cell {
+      min-width: 70px;
       white-space: nowrap;
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      th, td {
+        padding: 10px;
+        font-size: 13px;
+      }
+
+      .conversation-cell {
+        min-width: 420px;
+      }
+
+      .conversation-box {
+        max-width: 520px;
+      }
+
+      .refresh-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -154,26 +233,37 @@
   <h1>Sunset Oia Chat Dashboard</h1>
 
   <div class="top-bar">
-    <button class="refresh-btn" onclick="loadLogs()">Refresh</button>
-    <button id="fallback-btn" class="refresh-btn" onclick="toggleFallback()">Show Only Fallback</button>
+    <div class="filter-group">
+      <label for="from-date">From date</label>
+      <input type="date" id="from-date" />
+    </div>
+
+    <div class="filter-group">
+      <label for="to-date">To date</label>
+      <input type="date" id="to-date" />
+    </div>
+
+    <button class="refresh-btn" onclick="loadSessions()">Apply Filters</button>
+    <button id="fallback-btn" class="refresh-btn" onclick="toggleFallback()">Show Only Fallback Sessions</button>
   </div>
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Timestamp</th>
-          <th>Session ID</th>
           <th>Conversation</th>
-          <th>Fallback</th>
-          <th>Tour</th>
+          <th>Start time</th>
+          <th>Last activity</th>
+          <th>Messages count</th>
+          <th>Fallbacks</th>
+          <th>Tours</th>
+          <th>Session ID</th>
           <th>Language</th>
         </tr>
       </thead>
-      <tbody id="logs-body">
+      <tbody id="sessions-body">
         <tr>
-          <td colspan="7">Loading logs...</td>
+          <td colspan="8">Loading sessions...</td>
         </tr>
       </tbody>
     </table>
@@ -186,59 +276,113 @@
       showOnlyFallback = !showOnlyFallback;
 
       const btn = document.getElementById("fallback-btn");
-      btn.innerText = showOnlyFallback ? "Show All" : "Show Only Fallback";
+      btn.innerText = showOnlyFallback
+        ? "Show All Sessions"
+        : "Show Only Fallback Sessions";
 
-      loadLogs();
+      loadSessions();
     }
 
-    async function loadLogs() {
-      const tbody = document.getElementById("logs-body");
-      tbody.innerHTML = `<tr><td colspan="7">Loading logs...</td></tr>`;
+    async function loadSessions() {
+      const tbody = document.getElementById("sessions-body");
+      tbody.innerHTML = `<tr><td colspan="8">Loading sessions...</td></tr>`;
 
       try {
-        const response = await fetch("/admin/logs");
-        const data = await response.json();
-        const logs = data.logs || [];
+        const fromDate = document.getElementById("from-date").value;
+        const toDate = document.getElementById("to-date").value;
 
-        let filteredLogs = logs;
+        const params = new URLSearchParams();
+
+        if (fromDate) params.append("from_date", fromDate);
+        if (toDate) params.append("to_date", toDate);
+
+        const response = await fetch(`/admin/sessions?${params.toString()}`);
+        const data = await response.json();
+        const sessions = data.sessions || [];
+
+        let filteredSessions = sessions;
 
         if (showOnlyFallback) {
-          filteredLogs = logs.filter(log => Number(log.fallback) === 1);
+          filteredSessions = sessions.filter(
+            session => Number(session.fallback_count || 0) > 0
+          );
         }
 
-        if (!filteredLogs.length) {
-          tbody.innerHTML = `<tr><td colspan="7">${showOnlyFallback ? "No fallback logs found." : "No logs found."}</td></tr>`;
+        if (!filteredSessions.length) {
+          tbody.innerHTML = `<tr><td colspan="8">${
+            showOnlyFallback
+              ? "No fallback sessions found."
+              : "No sessions found."
+          }</td></tr>`;
           return;
         }
 
-        tbody.innerHTML = filteredLogs.map(log => `
-          <tr>
-            <td>${log.id ?? ""}</td>
-            <td class="timestamp-cell">${escapeHtml(log.timestamp ?? "")}</td>
-            <td class="session-cell">${escapeHtml(log.session_id ?? "-")}</td>
-            <td class="conversation-cell">
-              <div class="conversation-box">
-                <div class="message-block user-line">
-                  <span class="message-title">Customer</span>
-                  <span class="message-text">${escapeHtml(log.user_message ?? "")}</span>
+        tbody.innerHTML = filteredSessions.map(session => {
+          const conversationHtml = buildConversation(session.conversation || []);
+          const tours = Array.isArray(session.detected_tours) && session.detected_tours.length
+            ? session.detected_tours.map(t => escapeHtml(t)).join(", ")
+            : "-";
+
+          return `
+            <tr>
+              <td class="conversation-cell">
+                <div class="conversation-box">
+                  ${conversationHtml}
                 </div>
-                <div class="message-block bot-line">
-                  <span class="message-title">Bot</span>
-                  <span class="message-text">${escapeHtml(log.bot_reply ?? "")}</span>
-                </div>
-              </div>
-            </td>
-            <td class="${Number(log.fallback) === 1 ? 'fallback-yes' : 'fallback-no'}">
-              ${Number(log.fallback) === 1 ? 'YES' : 'NO'}
-            </td>
-            <td class="tour-cell">${escapeHtml(log.detected_tour ?? "-")}</td>
-            <td class="lang-cell">${escapeHtml(log.language ?? "-")}</td>
-          </tr>
-        `).join("");
+              </td>
+              <td class="compact-cell">${formatGreekDateTime(session.start_time ?? "")}</td>
+              <td class="compact-cell">${formatGreekDateTime(session.last_activity ?? "")}</td>
+              <td class="compact-cell">${escapeHtml(session.messages_count ?? 0)}</td>
+              <td class="compact-cell ${Number(session.fallback_count || 0) > 0 ? 'fallback-yes' : 'fallback-no'}">
+                ${escapeHtml(session.fallback_count ?? 0)}
+              </td>
+              <td class="tour-cell">${tours}</td>
+              <td class="session-cell">${escapeHtml(session.session_id ?? "-")}</td>
+              <td class="lang-cell">${escapeHtml(session.language ?? "-")}</td>
+            </tr>
+          `;
+        }).join("");
       } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="7">Failed to load logs.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8">Failed to load sessions.</td></tr>`;
         console.error(error);
       }
+    }
+
+    function buildConversation(conversation) {
+      if (!Array.isArray(conversation) || !conversation.length) {
+        return `<div class="small-muted">No conversation available.</div>`;
+      }
+
+      return conversation.map(item => `
+        <div class="pair-block">
+          <div class="message-block user-line">
+            <span class="message-title">Customer</span>
+            <span class="message-text">${escapeHtml(item.user_message ?? "")}</span>
+          </div>
+          <div class="message-block bot-line">
+            <span class="message-title">Bot</span>
+            <span class="message-text">${escapeHtml(item.bot_reply ?? "")}</span>
+          </div>
+          <div class="small-muted">
+            ${formatGreekDateTime(item.timestamp ?? "")}
+            ${Number(item.fallback) === 1 || item.fallback === true ? " · Fallback" : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function formatGreekDateTime(isoString) {
+      if (!isoString) return "-";
+
+      const [datePart, timePartRaw] = String(isoString).split("T");
+      if (!datePart || !timePartRaw) return escapeHtml(isoString);
+
+      const [year, month, day] = datePart.split("-");
+      const timePart = timePartRaw.slice(0, 5);
+
+      if (!year || !month || !day) return escapeHtml(isoString);
+
+      return `${day}-${month}-${year} ${timePart}`;
     }
 
     function escapeHtml(text) {
@@ -250,7 +394,7 @@
         .replace(/'/g, "&#039;");
     }
 
-    loadLogs();
+    loadSessions();
   </script>
 </body>
 </html>
