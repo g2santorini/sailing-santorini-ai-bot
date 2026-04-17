@@ -71,7 +71,11 @@ def detect_requested_cruise_type(user_message: str) -> str | None:
     return None
 
 
-def tour_matches_requested(tour_key: str, reply_label: str, requested_tours: set[str]) -> bool:
+def tour_matches_requested(
+    tour_key: str,
+    reply_label: str,
+    requested_tours: set[str],
+) -> bool:
     if not requested_tours:
         return True
 
@@ -138,11 +142,16 @@ def find_available_tours(
     date_str: str,
     period: str | None = None,
     user_message: str = "",
-    passenger_count: int | None = None
+    passenger_count: int | None = None,
+    ignore_requested_tours: bool = False,
 ) -> list[dict]:
     results = []
     seen_labels = set()
-    requested_tours = detect_requested_tours(user_message)
+
+    requested_tours = set()
+    if not ignore_requested_tours:
+        requested_tours = detect_requested_tours(user_message)
+
     requested_cruise_type = detect_requested_cruise_type(user_message)
 
     for tour_key, tour in TOUR_OPTIONS.items():
@@ -157,7 +166,11 @@ def find_available_tours(
         if not tour_matches_cruise_type(tour, requested_cruise_type):
             continue
 
-        if not tour_matches_requested(tour_key, tour.get("reply_label", ""), requested_tours):
+        if not tour_matches_requested(
+            tour_key,
+            tour.get("reply_label", ""),
+            requested_tours,
+        ):
             continue
 
         data = check_tour_availability(tour_key, date_str)
@@ -182,13 +195,15 @@ def find_available_tours(
 
         seen_labels.add(reply_label)
 
-        results.append({
-            "tour_key": tour_key,
-            "reply_label": reply_label,
-            "booking_url": data["booking_url"],
-            "vacancies": availability["vacancies"],
-            "date_time": availability["date_time"],
-            "tour_type": tour.get("tour_type"),
-        })
+        results.append(
+            {
+                "tour_key": tour_key,
+                "reply_label": reply_label,
+                "booking_url": data["booking_url"],
+                "vacancies": availability["vacancies"],
+                "date_time": availability["date_time"],
+                "tour_type": tour.get("tour_type"),
+            }
+        )
 
     return results

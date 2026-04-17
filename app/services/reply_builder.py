@@ -59,8 +59,8 @@ def build_availability_reply(data: dict) -> str:
     url = data["booking_url"]
 
     availability = data["availability"]
-    available = availability["available"]
-    spots = availability["vacancies"]
+    available = availability.get("available", False)
+    spots = availability.get("vacancies", 0)
 
     alternative_tours = data.get("alternative_tours", [])
 
@@ -68,7 +68,7 @@ def build_availability_reply(data: dict) -> str:
 
     try:
         formatted_date = datetime.strptime(date_label[:10], "%Y-%m-%d").strftime("%d %B %Y").lstrip("0")
-    except:
+    except (ValueError, TypeError):
         formatted_date = date_label
 
     pricing_text = format_price_line(availability)
@@ -76,7 +76,7 @@ def build_availability_reply(data: dict) -> str:
     if available:
         if spots == 1:
             spots_text = "There is currently 1 spot available."
-        elif spots > 20:
+        elif isinstance(spots, int) and spots > 20:
             spots_text = "There are currently 20+ spots available."
         else:
             spots_text = f"There are currently {spots} spots available."
@@ -86,14 +86,14 @@ def build_availability_reply(data: dict) -> str:
                 f"The {label} is available for {formatted_date}.\n\n"
                 f"{spots_text}\n\n"
                 f"{pricing_text}\n\n"
-                f"You can proceed with your booking using the following link:\n{url}\n\n"
+                f"You can proceed with your booking here:\n{url}\n\n"
                 "Please select the date on the booking page."
             )
 
         return (
             f"The {label} is available for {formatted_date}.\n\n"
             f"{spots_text}\n\n"
-            f"You can proceed with your booking using the following link:\n{url}\n\n"
+            f"You can proceed with your booking here:\n{url}\n\n"
             "Please select the date on the booking page."
         )
 
@@ -102,7 +102,7 @@ def build_availability_reply(data: dict) -> str:
     if alternatives_text:
         return (
             f"Unfortunately, the {label} is not available for {formatted_date}.\n\n"
-            f"However, there are other available options for the same date:\n"
+            "However, there are other available options for the same date:\n"
             f"{alternatives_text}\n\n"
             f"You may explore the available options here:\n{url}\n\n"
             "Please select the date on the booking page."

@@ -196,12 +196,12 @@ def build_unavailable_alternatives_reply(
         return "\n".join(lines)
 
     type_text = "private" if requested_type == "private" else "shared"
-    lines = [f"{requested_label} is not available for the requested date.", ""]
-    lines.append(f"However, the following {type_text} options are available:")
+    lines = [f"The {requested_label} is not available for the selected date.", ""]
+    lines.append(f"However, you may consider the following {type_text} options:")
     for label in alt_labels:
         lines.append(f"- {label}")
     lines.append("")
-    lines.append("You can proceed with your booking here:")
+    lines.append("You may proceed with your booking here:")
     lines.append(booking_link)
     return "\n".join(lines)
 

@@ -15,10 +15,15 @@ def safe_find_available_tours(
     period: str | None,
     user_message: str,
     passenger_count: int | None,
+    ignore_requested_tours: bool = False,
 ):
     try:
         return find_available_tours(
-            effective_date, period, user_message, passenger_count
+            effective_date,
+            period,
+            user_message,
+            passenger_count,
+            ignore_requested_tours=ignore_requested_tours,
         )
     except Exception as exc:
         print(f"Availability search error for {effective_date}: {exc}")

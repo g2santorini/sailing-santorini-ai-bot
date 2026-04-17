@@ -29,13 +29,26 @@ def is_greeting(user_message: str) -> bool:
 
     return matches_any(text, greetings)
 
+def is_sunset_concern(message: str) -> bool:
+    message = message.lower()
+
+    keywords = [
+        "miss the sunset",
+        "see the sunset",
+        "sunset time",
+        "finish before sunset",
+        "cruise ends before sunset",
+        "will we see sunset"
+    ]
+
+    return any(k in message for k in keywords)
 
 def is_discount_request(user_message: str) -> bool:
     text = normalize_text(user_message)
 
     keywords = [
         "discount", "better price", "best price", "special price",
-        "cheaper", "deal", "offer",
+        "cheaper", "deal", 
         "εκπτωση", "έκπτωση", "καλύτερη τιμή", "καλυτερη τιμη",
         "καλύτερη προσφορά", "καλυτερη προσφορα", "προσφορά", "προσφορα",
         "sconto", "offerta", "prezzo migliore",

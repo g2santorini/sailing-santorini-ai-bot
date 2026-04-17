@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-
 from app.services.language_service import detect_language
 from app.services.season_service import get_seasonal_reply
 from app.routes.availability_routes import router as availability_router
@@ -37,6 +36,7 @@ from app.services.intent_service import (
     is_capacity_request,
     is_multi_capacity_request,
     is_sunset_question,
+    is_sunset_concern,
     is_pregnancy_question,
     is_time_comparison,
 )
@@ -96,6 +96,39 @@ def log_and_return(
         print(f"Chat log save error: {exc}")
 
     return {"reply": reply}
+
+
+def build_sunset_reassurance_reply(language: str) -> str:
+    if language == "el":
+        return (
+            "Μην ανησυχείτε καθόλου ότι θα χάσετε το ηλιοβασίλεμα.\n\n"
+            "Παρότι η αναχώρηση παραμένει σταθερή, η διάρκεια της κρουαζιέρας προσαρμόζεται ανάλογα με την ώρα του ηλιοβασιλέματος.\n"
+            "Κατά τους καλοκαιρινούς μήνες η κρουαζιέρα διαρκεί περισσότερο, ώστε να απολαύσετε πλήρως το ηλιοβασίλεμα εν πλω.\n\n"
+            "Όλες οι sunset cruises είναι σχεδιασμένες έτσι ώστε να απολαμβάνετε το ηλιοβασίλεμα από το καταμαράν."
+        )
+
+    if language == "it":
+        return (
+            "Non si preoccupi affatto di perdere il tramonto.\n\n"
+            "Anche se l’orario di partenza rimane fisso, la durata della crociera si adatta in base all’orario del tramonto.\n"
+            "Durante i mesi estivi la crociera dura più a lungo, così da permetterle di godersi pienamente il tramonto a bordo.\n\n"
+            "Tutte le crociere al tramonto sono organizzate in modo da farvi vivere il tramonto dal catamarano."
+        )
+
+    if language == "pt":
+        return (
+            "Não se preocupe de forma alguma em perder o pôr do sol.\n\n"
+            "Embora a hora de partida permaneça fixa, a duração do cruzeiro é ajustada de acordo com a hora do pôr do sol.\n"
+            "Durante os meses de verão, o cruzeiro dura mais para que possa desfrutar plenamente do pôr do sol a bordo.\n\n"
+            "Todos os cruzeiros ao pôr do sol são planeados para que os hóspedes apreciem o pôr do sol a partir do catamarã."
+        )
+
+    return (
+        "Please do not worry about missing the sunset.\n\n"
+        "Although the departure time remains fixed, the cruise duration is adjusted depending on the sunset time each day.\n"
+        "During the summer months, the cruise lasts longer so that you can fully enjoy the sunset on board.\n\n"
+        "All sunset cruises are designed so that guests enjoy the sunset from the catamaran."
+    )
 
 
 def is_clearly_irrelevant(message: str) -> bool:
@@ -996,12 +1029,6 @@ def root():
     return {"message": "Santorini bot is running"}
 
 
-@app.get("/ping")
-def ping():
-    print("PING ENDPOINT HIT")
-    return {"ok": True}
-
-
 @app.get("/admin/logs")
 def admin_logs():
     return {"logs": get_chat_logs(200)}
@@ -1009,9 +1036,6 @@ def admin_logs():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    print("CHAT ENDPOINT HIT")
-    print("USER MESSAGE:", request.message)
-
     user_message = request.message.strip()
     history = request.history or []
     language = detect_language(user_message)
@@ -1082,7 +1106,13 @@ def chat(request: ChatRequest):
             detected_tour=None,
         )
 
-    if is_uncertain_whatsapp_case(user_message):
+    if (
+    is_uncertain_whatsapp_case(user_message)
+    and "pick up" not in user_message.lower()
+    and "pickup" not in user_message.lower()
+    and "pick-up" not in user_message.lower()
+    and "transfer" not in user_message.lower()
+    ):
         conversation_history = ""
         if history:
             lines = []
@@ -1332,6 +1362,16 @@ USER MESSAGE:
             detected_tour=tour_key,
         )
 
+    if is_sunset_concern(user_message):
+        reply = build_sunset_reassurance_reply(language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+        )
+
     if is_sunset_question(user_message):
         reply = get_text("sunset_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
@@ -1433,6 +1473,7 @@ USER MESSAGE:
         not comparison_intent
         and not price_intent
         and not time_comparison_intent
+        and not is_sunset_concern(user_message)
         and (
             is_availability_request(user_message)
             or (
@@ -1482,23 +1523,6 @@ USER MESSAGE:
             and data["availability"].get("available") is True
         )
 
-    if tour_key and date_str:
-        data = safe_check_tour_availability(tour_key, date_str)
-        print("AVAILABILITY DATA:", data)
-
-        is_available = (
-            isinstance(data, dict)
-            and data.get("success")
-            and isinstance(data.get("availability"), dict)
-            and data["availability"].get("available") is True
-        )
-
-        print("IS AVAILABLE:", is_available)
-        print("TOUR KEY:", tour_key)
-        print("DATE STR:", date_str)
-        print("PERIOD:", period)
-        print("PASSENGER COUNT:", passenger_count)
-
         if is_available:
             reply_text = build_availability_reply(data)
             reply_text = translate_availability_reply(reply_text, language)
@@ -1511,7 +1535,11 @@ USER MESSAGE:
             )
 
         alternative_results = safe_find_available_tours(
-            date_str, period, user_message, passenger_count
+            date_str,
+            period,
+            user_message,
+            passenger_count,
+            ignore_requested_tours=True,
         )
         print("RAW ALTERNATIVE RESULTS:", alternative_results)
 
