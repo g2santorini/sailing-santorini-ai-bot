@@ -1,7 +1,9 @@
+from datetime import datetime
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
 from app.services.language_service import detect_language
 from app.services.season_service import get_seasonal_reply
 from app.routes.availability_routes import router as availability_router
@@ -1032,6 +1034,108 @@ def build_best_choice_reply(
     )
 
 
+BASE_TOUR_KEYS = {
+    "red",
+    "gems",
+    "platinum",
+    "diamond",
+    "lagoon_380_400",
+    "emily",
+    "ferretti_731",
+    "ferretti_55",
+}
+
+
+def is_base_tour_key(tour_key: str | None) -> bool:
+    return bool(tour_key and tour_key in BASE_TOUR_KEYS)
+
+
+def is_available_result(data) -> bool:
+    return (
+        isinstance(data, dict)
+        and data.get("success")
+        and isinstance(data.get("availability"), dict)
+        and data["availability"].get("available") is True
+    )
+
+
+def format_pretty_date(date_str: str) -> str:
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").strftime("%d %B %Y")
+    except ValueError:
+        return date_str
+
+
+def build_dual_period_reply(
+    morning_data,
+    sunset_data,
+    date_str: str,
+    language: str,
+) -> str | None:
+    morning_available = is_available_result(morning_data)
+    sunset_available = is_available_result(sunset_data)
+
+    if not morning_available and not sunset_available:
+        return None
+
+    if morning_available != sunset_available:
+        return None
+
+    morning_label = (
+        morning_data.get("reply_label", "Morning Cruise")
+        if isinstance(morning_data, dict)
+        else "Morning Cruise"
+    )
+    sunset_label = (
+        sunset_data.get("reply_label", "Sunset Cruise")
+        if isinstance(sunset_data, dict)
+        else "Sunset Cruise"
+    )
+
+    booking_url = (
+        (morning_data.get("booking_url") if isinstance(morning_data, dict) else None)
+        or (sunset_data.get("booking_url") if isinstance(sunset_data, dict) else None)
+        or BOOKING_LINK
+    )
+
+    pretty_date = format_pretty_date(date_str)
+
+    if language == "el":
+        return (
+            f"Για τις {pretty_date}, οι παρακάτω επιλογές είναι διαθέσιμες:\n\n"
+            f"- {morning_label}\n"
+            f"- {sunset_label}\n\n"
+            f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
+            "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
+        )
+
+    if language == "it":
+        return (
+            f"Per il {pretty_date}, sono disponibili le seguenti opzioni:\n\n"
+            f"- {morning_label}\n"
+            f"- {sunset_label}\n\n"
+            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
+            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
+        )
+
+    if language == "pt":
+        return (
+            f"Para {pretty_date}, as seguintes opções estão disponíveis:\n\n"
+            f"- {morning_label}\n"
+            f"- {sunset_label}\n\n"
+            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
+            "Por favor selecione a data na página de reservas."
+        )
+
+    return (
+        f"For {pretty_date}, the following options are available:\n\n"
+        f"- {morning_label}\n"
+        f"- {sunset_label}\n\n"
+        f"You can proceed with your booking here:\n{booking_url}\n\n"
+        "Please select the date on the booking page."
+    )
+
+
 @app.get("/")
 def root():
     return {"message": "Santorini bot is running"}
@@ -1040,6 +1144,7 @@ def root():
 @app.get("/admin/logs")
 def admin_logs():
     return {"logs": get_chat_logs(200)}
+
 
 @app.get("/admin/sessions")
 def admin_sessions(
@@ -1053,10 +1158,6 @@ def admin_sessions(
             to_date=to_date,
         )
     }
-
-@app.get("/admin/sessions")
-def admin_sessions():
-    return {"sessions": get_chat_sessions(1000)}
 
 
 @app.post("/chat")
@@ -1095,7 +1196,9 @@ def chat(request: ChatRequest):
         )
 
     if is_cruise_passenger(user_message):
-        reply = get_text("cruise_passenger_reply", language, BOOKING_LINK, WHATSAPP_LINK)
+        reply = get_text(
+            "cruise_passenger_reply", language, BOOKING_LINK, WHATSAPP_LINK
+        )
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1243,7 +1346,9 @@ USER MESSAGE:
         except Exception as e:
             print("OPENAI ERROR:", e)
 
-            reply = get_text("whatsapp_uncertain_reply", language, BOOKING_LINK, WHATSAPP_LINK)
+            reply = get_text(
+                "whatsapp_uncertain_reply", language, BOOKING_LINK, WHATSAPP_LINK
+            )
 
         return log_and_return(
             user_message=user_message,
@@ -1340,7 +1445,9 @@ USER MESSAGE:
                     session_id=session_id,
                 )
 
-            reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
+            reply = get_text(
+                "availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK
+            )
             return log_and_return(
                 user_message=user_message,
                 reply=reply,
@@ -1465,6 +1572,9 @@ USER MESSAGE:
                     data.get("availability", {}) if isinstance(data, dict) else {}
                 )
 
+                if not isinstance(availability, dict):
+                    availability = {}
+
                 reply_label = data.get("reply_label", "this cruise")
                 booking_url = data.get("booking_url", BOOKING_LINK)
 
@@ -1561,15 +1671,68 @@ USER MESSAGE:
             session_id=session_id,
         )
 
+    if is_base_tour_key(tour_key) and date_str:
+        morning_key = f"{tour_key}_morning"
+        sunset_key = f"{tour_key}_sunset"
+
+        morning_data = safe_check_tour_availability(morning_key, date_str)
+        sunset_data = safe_check_tour_availability(sunset_key, date_str)
+
+        dual_period_reply = build_dual_period_reply(
+            morning_data=morning_data,
+            sunset_data=sunset_data,
+            date_str=date_str,
+            language=language,
+        )
+
+        if dual_period_reply:
+            return log_and_return(
+                user_message=user_message,
+                reply=dual_period_reply,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+                session_id=session_id,
+            )
+
+        if is_available_result(morning_data):
+            reply_text = build_availability_reply(morning_data)
+            reply_text = translate_availability_reply(reply_text, language)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply_text,
+                language=language,
+                fallback=False,
+                detected_tour=morning_key,
+                session_id=session_id,
+            )
+
+        if is_available_result(sunset_data):
+            reply_text = build_availability_reply(sunset_data)
+            reply_text = translate_availability_reply(reply_text, language)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply_text,
+                language=language,
+                fallback=False,
+                detected_tour=sunset_key,
+                session_id=session_id,
+            )
+
+        reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=True,
+            detected_tour=tour_key,
+            session_id=session_id,
+        )
+
     if tour_key and date_str:
         data = safe_check_tour_availability(tour_key, date_str)
 
-        is_available = (
-            isinstance(data, dict)
-            and data.get("success")
-            and isinstance(data.get("availability"), dict)
-            and data["availability"].get("available") is True
-        )
+        is_available = is_available_result(data)
 
         if is_available:
             reply_text = build_availability_reply(data)
@@ -1623,7 +1786,7 @@ USER MESSAGE:
                 session_id=session_id,
             )
 
-        if data:
+        if data and isinstance(data.get("availability"), dict):
             fallback_data = {
                 **data,
                 "alternative_tours": prepared_alternatives,
@@ -1679,7 +1842,9 @@ USER MESSAGE:
             effective_date, period, user_message, passenger_count
         )
         if results is None:
-            reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
+            reply = get_text(
+                "availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK
+            )
             return log_and_return(
                 user_message=user_message,
                 reply=reply,
