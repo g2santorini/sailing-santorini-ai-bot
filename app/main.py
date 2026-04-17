@@ -70,6 +70,7 @@ print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE + SMARTER WHATSAPP LOADED")
 class ChatRequest(BaseModel):
     message: str
     history: list[dict] = Field(default_factory=list)
+    session_id: str | None = None
 
 
 BOOKING_LINK = "https://sailingsantorini.link-twist.com/"
@@ -83,6 +84,7 @@ def log_and_return(
     language: str,
     fallback: bool = False,
     detected_tour: str | None = None,
+    session_id: str | None = None,
 ):
     try:
         save_chat_log(
@@ -91,6 +93,7 @@ def log_and_return(
             fallback=fallback,
             detected_tour=detected_tour,
             language=language,
+            session_id=session_id,
         )
     except Exception as exc:
         print(f"Chat log save error: {exc}")
@@ -1039,6 +1042,7 @@ def chat(request: ChatRequest):
     user_message = request.message.strip()
     history = request.history or []
     language = detect_language(user_message)
+    session_id = request.session_id
 
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
@@ -1054,6 +1058,7 @@ def chat(request: ChatRequest):
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_discount_request(user_message):
@@ -1064,6 +1069,7 @@ def chat(request: ChatRequest):
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_cruise_passenger(user_message):
@@ -1074,6 +1080,7 @@ def chat(request: ChatRequest):
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_contact_request(user_message):
@@ -1084,6 +1091,7 @@ def chat(request: ChatRequest):
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_personal_booking_request(user_message):
@@ -1094,6 +1102,7 @@ def chat(request: ChatRequest):
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_pregnancy_question(user_message):
@@ -1104,14 +1113,15 @@ def chat(request: ChatRequest):
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if (
-    is_uncertain_whatsapp_case(user_message)
-    and "pick up" not in user_message.lower()
-    and "pickup" not in user_message.lower()
-    and "pick-up" not in user_message.lower()
-    and "transfer" not in user_message.lower()
+        is_uncertain_whatsapp_case(user_message)
+        and "pick up" not in user_message.lower()
+        and "pickup" not in user_message.lower()
+        and "pick-up" not in user_message.lower()
+        and "transfer" not in user_message.lower()
     ):
         conversation_history = ""
         if history:
@@ -1206,6 +1216,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=None,
+                session_id=session_id,
             )
         except Exception as e:
             print("OPENAI ERROR:", e)
@@ -1218,6 +1229,7 @@ USER MESSAGE:
             language=language,
             fallback=True,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
@@ -1241,6 +1253,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=None,
+                session_id=session_id,
             )
 
         results = safe_find_available_tours(
@@ -1257,6 +1270,7 @@ USER MESSAGE:
                     language=language,
                     fallback=False,
                     detected_tour=None,
+                    session_id=session_id,
                 )
 
         reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1266,6 +1280,7 @@ USER MESSAGE:
             language=language,
             fallback=True,
             detected_tour=None,
+            session_id=session_id,
         )
 
     if is_capacity_request(user_message):
@@ -1287,6 +1302,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=last_tour_key,
+                session_id=session_id,
             )
 
         if last_tour_key and last_date_str:
@@ -1299,6 +1315,7 @@ USER MESSAGE:
                     language=language,
                     fallback=False,
                     detected_tour=last_tour_key,
+                    session_id=session_id,
                 )
 
             reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1308,6 +1325,7 @@ USER MESSAGE:
                 language=language,
                 fallback=True,
                 detected_tour=last_tour_key,
+                session_id=session_id,
             )
 
         reply = get_text("spots_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1317,6 +1335,7 @@ USER MESSAGE:
             language=language,
             fallback=True,
             detected_tour=None,
+            session_id=session_id,
         )
 
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
@@ -1360,6 +1379,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     if is_sunset_concern(user_message):
@@ -1370,6 +1390,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     if is_sunset_question(user_message):
@@ -1380,6 +1401,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     if price_intent:
@@ -1410,6 +1432,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=effective_tour_key,
+                session_id=session_id,
             )
 
         if effective_tour_key and effective_date_str:
@@ -1458,6 +1481,7 @@ USER MESSAGE:
                         language=language,
                         fallback=False,
                         detected_tour=effective_tour_key,
+                        session_id=session_id,
                     )
 
         reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1467,6 +1491,7 @@ USER MESSAGE:
             language=language,
             fallback=True,
             detected_tour=effective_tour_key,
+            session_id=session_id,
         )
 
     availability_intent = (
@@ -1511,6 +1536,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     if tour_key and date_str:
@@ -1532,6 +1558,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         alternative_results = safe_find_available_tours(
@@ -1571,6 +1598,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         if data:
@@ -1590,6 +1618,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1599,6 +1628,7 @@ USER MESSAGE:
             language=language,
             fallback=True,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     if date_str or availability_intent:
@@ -1620,6 +1650,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         results = safe_find_available_tours(
@@ -1633,6 +1664,7 @@ USER MESSAGE:
                 language=language,
                 fallback=True,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         capacity_filtered = filter_by_capacity(results, passenger_count)
@@ -1653,6 +1685,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         reply = get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -1662,6 +1695,7 @@ USER MESSAGE:
             language=language,
             fallback=True,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     recent_text = " ".join(
@@ -1707,6 +1741,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
         if mentions_red and mentions_gems and not mentions_diamond:
@@ -1737,6 +1772,7 @@ USER MESSAGE:
                 language=language,
                 fallback=False,
                 detected_tour=tour_key,
+                session_id=session_id,
             )
 
     if is_best_choice_question(user_message) and history:
@@ -1751,6 +1787,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     if is_greeting(user_message):
@@ -1761,6 +1798,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     short_followup = len(user_message.split()) <= 4
@@ -1777,6 +1815,7 @@ USER MESSAGE:
             language=language,
             fallback=False,
             detected_tour=tour_key,
+            session_id=session_id,
         )
 
     conversation_history = ""
@@ -1862,4 +1901,5 @@ USER MESSAGE:
         language=language,
         fallback=False,
         detected_tour=tour_key,
+        session_id=session_id,
     )

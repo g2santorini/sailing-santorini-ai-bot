@@ -10,10 +10,29 @@
   const AUTO_OPEN_DELAY = 5000;
   const AUTO_OPEN_SESSION_KEY = "ss_widget_auto_opened";
   const AUTO_OPEN_CLOSED_KEY = "ss_widget_closed";
+  const CHAT_SESSION_ID_KEY = "ss_chat_session_id";
 
   console.log("SS widget loaded");
   console.log("SS widget script origin:", scriptOrigin);
   console.log("SS widget API URL:", API_URL);
+
+  function generateSessionId() {
+    return "ss-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+  }
+
+  function getSessionId() {
+    let sessionId = sessionStorage.getItem(CHAT_SESSION_ID_KEY);
+
+    if (!sessionId) {
+      sessionId = generateSessionId();
+      sessionStorage.setItem(CHAT_SESSION_ID_KEY, sessionId);
+    }
+
+    return sessionId;
+  }
+
+  const sessionId = getSessionId();
+  console.log("SS widget session ID:", sessionId);
 
   const style = document.createElement("style");
   style.innerHTML = `
@@ -533,7 +552,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          history: chatHistory
+          history: chatHistory,
+          session_id: sessionId
         })
       });
 

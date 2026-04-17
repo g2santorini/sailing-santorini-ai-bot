@@ -15,10 +15,12 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # ✅ Create table if not exists (with session_id)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL,
+            session_id TEXT,
             user_message TEXT NOT NULL,
             bot_reply TEXT NOT NULL,
             fallback INTEGER NOT NULL DEFAULT 0,
@@ -26,6 +28,12 @@ def init_db():
             language TEXT
         )
     """)
+
+    # ✅ Ensure column exists (for old DBs)
+    try:
+        cursor.execute("ALTER TABLE chat_logs ADD COLUMN session_id TEXT")
+    except:
+        pass
 
     conn.commit()
     conn.close()
@@ -37,6 +45,7 @@ def save_chat_log(
     fallback: bool = False,
     detected_tour: str | None = None,
     language: str | None = None,
+    session_id: str | None = None,   # ✅ NEW
 ):
     conn = get_connection()
     cursor = conn.cursor()
@@ -44,15 +53,17 @@ def save_chat_log(
     cursor.execute("""
         INSERT INTO chat_logs (
             timestamp,
+            session_id,
             user_message,
             bot_reply,
             fallback,
             detected_tour,
             language
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().isoformat(),
+        session_id or "unknown",   # ✅ fallback αν δεν υπάρχει
         user_message,
         bot_reply,
         1 if fallback else 0,
@@ -69,7 +80,7 @@ def get_chat_logs(limit: int = 100):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, timestamp, user_message, bot_reply, fallback, detected_tour, language
+        SELECT id, timestamp, session_id, user_message, bot_reply, fallback, detected_tour, language
         FROM chat_logs
         ORDER BY id DESC
         LIMIT ?

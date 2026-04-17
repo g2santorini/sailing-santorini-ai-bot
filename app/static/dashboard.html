@@ -48,7 +48,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1100px;
+      min-width: 1250px;
     }
 
     th, td {
@@ -65,6 +65,7 @@
       color: white;
       position: sticky;
       top: 0;
+      z-index: 1;
     }
 
     tr:hover {
@@ -81,16 +82,71 @@
       font-weight: bold;
     }
 
-    .message-box {
-      max-width: 320px;
+    .timestamp-cell {
+      white-space: nowrap;
+      min-width: 180px;
+    }
+
+    .session-cell {
+      min-width: 180px;
+      max-width: 220px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      color: #374151;
+      word-break: break-word;
+    }
+
+    .conversation-cell {
+      min-width: 460px;
+    }
+
+    .conversation-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 700px;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    .reply-box {
-      max-width: 480px;
+    .message-block {
+      padding: 12px 14px;
+      border-radius: 12px;
+      line-height: 1.55;
+    }
+
+    .user-line {
+      background: #fef2f2;
+      border-left: 4px solid #dc2626;
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .bot-line {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+
+    .message-title {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      opacity: 0.9;
+    }
+
+    .message-text {
+      display: block;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .tour-cell,
+    .lang-cell {
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -108,8 +164,8 @@
         <tr>
           <th>ID</th>
           <th>Timestamp</th>
-          <th>User Message</th>
-          <th>Bot Reply</th>
+          <th>Session ID</th>
+          <th>Conversation</th>
           <th>Fallback</th>
           <th>Tour</th>
           <th>Language</th>
@@ -158,14 +214,25 @@
         tbody.innerHTML = filteredLogs.map(log => `
           <tr>
             <td>${log.id ?? ""}</td>
-            <td>${escapeHtml(log.timestamp ?? "")}</td>
-            <td><div class="message-box">${escapeHtml(log.user_message ?? "")}</div></td>
-            <td><div class="reply-box">${escapeHtml(log.bot_reply ?? "")}</div></td>
+            <td class="timestamp-cell">${escapeHtml(log.timestamp ?? "")}</td>
+            <td class="session-cell">${escapeHtml(log.session_id ?? "-")}</td>
+            <td class="conversation-cell">
+              <div class="conversation-box">
+                <div class="message-block user-line">
+                  <span class="message-title">Customer</span>
+                  <span class="message-text">${escapeHtml(log.user_message ?? "")}</span>
+                </div>
+                <div class="message-block bot-line">
+                  <span class="message-title">Bot</span>
+                  <span class="message-text">${escapeHtml(log.bot_reply ?? "")}</span>
+                </div>
+              </div>
+            </td>
             <td class="${Number(log.fallback) === 1 ? 'fallback-yes' : 'fallback-no'}">
               ${Number(log.fallback) === 1 ? 'YES' : 'NO'}
             </td>
-            <td>${escapeHtml(log.detected_tour ?? "-")}</td>
-            <td>${escapeHtml(log.language ?? "-")}</td>
+            <td class="tour-cell">${escapeHtml(log.detected_tour ?? "-")}</td>
+            <td class="lang-cell">${escapeHtml(log.language ?? "-")}</td>
           </tr>
         `).join("");
       } catch (error) {
