@@ -51,6 +51,10 @@ def build_time_comparison_reply(language="en") -> str:
     )
 
 
+def is_private_label(label: str) -> bool:
+    return "private" in (label or "").lower()
+
+
 def build_availability_reply(data: dict) -> str:
     if not data.get("success"):
         return "Thank you for your message. I am sorry, but I could not identify this cruise."
@@ -72,8 +76,31 @@ def build_availability_reply(data: dict) -> str:
         formatted_date = date_label
 
     pricing_text = format_price_line(availability)
+    is_private = is_private_label(label)
 
     if available:
+        if is_private:
+            if spots == 1:
+                capacity_text = "It can accommodate up to 1 guest."
+            else:
+                capacity_text = f"It can accommodate up to {spots} guests."
+
+            if pricing_text:
+                return (
+                    f"The {label} is available for {formatted_date}.\n\n"
+                    f"{capacity_text}\n\n"
+                    f"{pricing_text}\n\n"
+                    f"You can proceed with your booking here:\n{url}\n\n"
+                    "Please select the date on the booking page."
+                )
+
+            return (
+                f"The {label} is available for {formatted_date}.\n\n"
+                f"{capacity_text}\n\n"
+                f"You can proceed with your booking here:\n{url}\n\n"
+                "Please select the date on the booking page."
+            )
+
         if spots == 1:
             spots_text = "There is currently 1 spot available."
         elif isinstance(spots, int) and spots > 20:
