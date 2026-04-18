@@ -1,5 +1,6 @@
 from datetime import datetime
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -1137,7 +1138,12 @@ def build_dual_period_reply(
 
 
 @app.get("/")
-def root():
+def root(request: Request):
+    host = request.headers.get("host", "").lower()
+
+    if host.startswith("pricelist."):
+        return FileResponse("app/static/availability-pricing.html")
+
     return {"message": "Santorini bot is running"}
 
 
