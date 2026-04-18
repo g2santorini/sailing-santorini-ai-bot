@@ -425,3 +425,14 @@ Shoes are removed onboard, so comfort is key.
 Customization is possible on private cruises.
 
 Shared cruises follow a set route, adjusted only for weather conditions
+
+Swimming duration:
+
+Guests usually have 2–3 swimming stops.
+
+At White Beach, the stop can last up to 1–1.5 hours, 
+depending on the cruise and weather conditions.
+
+Other stops (Hot Springs, Red Beach) are shorter.
+
+Morning cruises usually allow more time for swimming.
