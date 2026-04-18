@@ -70,20 +70,54 @@ def get_last_tour_and_date_from_history(
     if current_tour and current_date:
         return current_tour, current_date
 
+    # First preference:
+    # find the most recent USER message that contains BOTH tour and date together.
     if history:
         for item in reversed(history[-10:]):
+            if item.get("role") != "user":
+                continue
+
             content = item.get("content", "").strip()
             if not content:
                 continue
 
-            if not current_tour:
-                current_tour = detect_tour_key_from_history_text(content)
+            hist_tour = detect_tour_key_from_history_text(content)
+            hist_date = detect_date(content)
 
-            if not current_date:
-                current_date = detect_date(content)
+            if hist_tour and hist_date:
+                return current_tour or hist_tour, current_date or hist_date
 
-            if current_tour and current_date:
-                return current_tour, current_date
+    # Second preference:
+    # if user already gave one part now, complete it from the most recent USER message
+    # that contains the missing part.
+    if history:
+        if not current_tour:
+            for item in reversed(history[-10:]):
+                if item.get("role") != "user":
+                    continue
+
+                content = item.get("content", "").strip()
+                if not content:
+                    continue
+
+                hist_tour = detect_tour_key_from_history_text(content)
+                if hist_tour:
+                    current_tour = hist_tour
+                    break
+
+        if not current_date:
+            for item in reversed(history[-10:]):
+                if item.get("role") != "user":
+                    continue
+
+                content = item.get("content", "").strip()
+                if not content:
+                    continue
+
+                hist_date = detect_date(content)
+                if hist_date:
+                    current_date = hist_date
+                    break
 
     return current_tour, current_date
 

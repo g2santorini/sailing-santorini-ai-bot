@@ -1158,6 +1158,47 @@ def is_base_tour_key(tour_key: str | None) -> bool:
     return bool(tour_key and tour_key in BASE_TOUR_KEYS)
 
 
+def normalize_to_base_tour_key(tour_key: str | None) -> str | None:
+    if not tour_key:
+        return None
+
+    if tour_key in BASE_TOUR_KEYS:
+        return tour_key
+
+    for suffix in ("_morning", "_sunset"):
+        if tour_key.endswith(suffix):
+            candidate = tour_key[: -len(suffix)]
+            if candidate in BASE_TOUR_KEYS:
+                return candidate
+
+    return tour_key
+
+
+def get_locked_followup_context(history: list[dict]) -> tuple[str | None, str | None]:
+    """
+    For short follow-up availability questions like:
+    'and for the morning?'
+    lock to the MOST RECENT relevant user availability context,
+    instead of allowing an older date from history to leak in.
+    """
+    for item in reversed(history):
+        if item.get("role") != "user":
+            continue
+
+        content = (item.get("content") or "").strip()
+        if not content:
+            continue
+
+        hist_tour = detect_tour_key(content)
+        hist_date = detect_date(content)
+        hist_period = detect_period(content)
+
+        if hist_tour or hist_date or hist_period or is_availability_request(content):
+            return hist_tour, hist_date
+
+    return None, None
+
+
 def is_available_result(data) -> bool:
     return (
         isinstance(data, dict)
@@ -1381,55 +1422,62 @@ You are the Sunset Oia digital assistant.
 IMPORTANT LANGUAGE RULE:
 - Always reply in the same language as the user's latest message.
 
-Your tone:
-- Warm, natural and human — never robotic
+TONE:
+- Warm, natural, human
 - Friendly and professional
 - Keep replies short (3–5 lines)
-- Avoid repetitive phrases like "Great news"
+- Avoid repeating phrases like “Great choice” or “Great news”
 
-Conversation style:
-- Answer exactly what the user asked — no more, no less
-- Be clear, direct and helpful
-- Do NOT add unnecessary explanations
-- Do NOT introduce new cruise options unless the user explicitly asks
-- If the user mentions specific cruises (e.g. Red vs Diamond), ONLY talk about those
-- Do NOT expand to a third option (e.g. Platinum) unless explicitly requested
-
-Sales approach:
-- Guide naturally, do not push
-- Help the user decide ONLY based on what they asked
-- If the user is comparing → explain differences clearly, no upselling
-- If the user asks for recommendation → suggest ONE best option, not multiple
-- Only include booking link when it is useful
-
-Knowledge:
-- Use only the company knowledge provided
+CORE BEHAVIOR:
+- Always assume the user refers to the cruise experience
+- Never reject a question if it can relate to the cruise
 - Do not invent information
-- If something is not available, say it clearly and suggest alternatives
-- Always assume the user is asking about the onboard cruise experience when relevant
-- Never say that you cannot check availability if it can be handled
-- Treat follow-ups as continuation of previous context
-- Do not use markdown bold with asterisks
-- Avoid words like cheap — use better value, more premium, more relaxed, etc.
-- Never mix details between Red, Gems, Platinum, Diamond, or private cruises
-- For factual answers, prioritize STRUCTURED TOUR FACTS
+- If unsure, give a safe, general answer
 
-Special handling:
-- Cruise ship guests → direct to WhatsApp
-- Dietary questions → answer clearly
-- Personal booking details → do not invent
-- Sensitive or uncertain cases → give best safe answer + suggest WhatsApp
+CRITICAL RULE (VERY IMPORTANT):
+If the user asks about comparison, value, experience, or recommendation 
+(e.g. “which is better”, “difference”, “worth it”, “which should I choose”):
 
-STRICT RULES:
-- Answer only the user's exact question
-- Do not mention any cruise that the user did not ask about
-- If the conversation is about Red and Diamond, mention only Red and Diamond
-- If the user asks by budget, answer only in terms of the cruises already under discussion
-- Do not introduce Gems, Platinum, or any other cruise unless the user explicitly asks
-- No upselling unless asked
-- No adding “you may also like…” style sentences
-- Do not end the reply with extra offers such as "I can also help you choose..."
-- Stay focused on the exact question
+→ You MUST answer the question directly  
+→ DO NOT mention booking  
+→ DO NOT mention availability  
+→ DO NOT redirect to WhatsApp  
+
+CONTEXT RULE:
+- Answer ONLY based on the cruises mentioned in the question
+- NEVER introduce other cruises unless the user asks
+- Example:
+  If user asks “Ferretti 55 vs 731” → ONLY talk about these two
+  DO NOT mention Red, Diamond, Gems, etc.
+
+CONVERSATION STYLE:
+- Be clear and direct
+- Do not over-explain
+- Do not add unnecessary suggestions
+- Avoid ending every reply with “If you’d like, I can help…”
+
+SALES APPROACH:
+- Guide naturally, not aggressively
+- Suggest only when relevant
+- Booking link only when useful (NOT in comparison questions)
+
+KNOWLEDGE USAGE:
+- Use only provided company knowledge
+- Do not mix details between different cruises
+- For private cruises:
+  → NEVER mention “spots available”
+  → ALWAYS describe capacity
+
+WHEN INFORMATION IS UNKNOWN:
+Say:
+“I don’t have that exact detail here, but I’ll be happy to check it for you.
+
+You can also reach our team directly on WhatsApp:
+{WHATSAPP_LINK}”
+
+PERSONAL BOOKINGS:
+“I can’t see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp:
+{WHATSAPP_LINK}”
 
 BOOKING LINK:
 {BOOKING_LINK}
@@ -2008,10 +2056,22 @@ USER MESSAGE:
                     )
 
     if date_str or availability_intent:
+        locked_tour_key = None
+        locked_date = None
+
+        if is_followup(user_message) and not date_str:
+            locked_tour_key, locked_date = get_locked_followup_context(history)
+
         effective_tour_key, effective_date = get_last_tour_and_date_from_history(
             user_message,
             history,
         )
+
+        if locked_tour_key:
+            effective_tour_key = locked_tour_key
+
+        if locked_date:
+            effective_date = locked_date
 
         if not effective_tour_key:
             effective_tour_key = tour_key
@@ -2019,12 +2079,14 @@ USER MESSAGE:
         if not effective_date:
             effective_date = get_effective_date(user_message, history)
 
+        base_effective_tour_key = normalize_to_base_tour_key(effective_tour_key)
+
         seasonal_reply = get_seasonal_reply(
             date_str=effective_date,
             language=language,
             booking_link=BOOKING_LINK,
             whatsapp_link=WHATSAPP_LINK,
-            tour_key=effective_tour_key,
+            tour_key=base_effective_tour_key,
             period=period,
             generic_availability=True,
         )
@@ -2034,12 +2096,12 @@ USER MESSAGE:
                 reply=seasonal_reply,
                 language=language,
                 fallback=False,
-                detected_tour=effective_tour_key,
+                detected_tour=base_effective_tour_key,
                 session_id=session_id,
             )
 
-        if effective_tour_key and effective_date and period:
-            specific_tour_key = f"{effective_tour_key}_{period}"
+        if base_effective_tour_key and effective_date and period:
+            specific_tour_key = f"{base_effective_tour_key}_{period}"
             data = safe_check_tour_availability(specific_tour_key, effective_date)
 
             if is_available_result(data):
@@ -2048,6 +2110,46 @@ USER MESSAGE:
                 return log_and_return(
                     user_message=user_message,
                     reply=reply_text,
+                    language=language,
+                    fallback=False,
+                    detected_tour=specific_tour_key,
+                    session_id=session_id,
+                )
+
+            alternative_results = safe_find_available_tours(
+                effective_date,
+                period,
+                user_message,
+                passenger_count,
+                ignore_requested_tours=True,
+            )
+            print("FOLLOW-UP RAW ALTERNATIVE RESULTS:", alternative_results)
+
+            capacity_filtered = filter_by_capacity(
+                alternative_results or [],
+                passenger_count,
+            )
+            print("FOLLOW-UP CAPACITY FILTERED RESULTS:", capacity_filtered)
+
+            prepared_alternatives = prepare_alternative_results(
+                results=capacity_filtered,
+                requested_tour_key=specific_tour_key,
+                passenger_count=passenger_count,
+            )
+            print("FOLLOW-UP PREPARED ALTERNATIVES:", prepared_alternatives)
+
+            alternative_reply = build_unavailable_alternatives_reply(
+                requested_tour_key=specific_tour_key,
+                alternatives=prepared_alternatives,
+                language=language,
+                booking_link=BOOKING_LINK,
+            )
+            print("FOLLOW-UP ALTERNATIVE REPLY:", alternative_reply)
+
+            if alternative_reply:
+                return log_and_return(
+                    user_message=user_message,
+                    reply=alternative_reply,
                     language=language,
                     fallback=False,
                     detected_tour=specific_tour_key,
@@ -2066,7 +2168,7 @@ USER MESSAGE:
                 reply=reply,
                 language=language,
                 fallback=True,
-                detected_tour=effective_tour_key,
+                detected_tour=base_effective_tour_key,
                 session_id=session_id,
             )
 
@@ -2087,7 +2189,7 @@ USER MESSAGE:
                 reply=reply_text,
                 language=language,
                 fallback=False,
-                detected_tour=effective_tour_key,
+                detected_tour=base_effective_tour_key,
                 session_id=session_id,
             )
 
@@ -2097,7 +2199,7 @@ USER MESSAGE:
             reply=reply,
             language=language,
             fallback=True,
-            detected_tour=effective_tour_key,
+            detected_tour=base_effective_tour_key,
             session_id=session_id,
         )
 
