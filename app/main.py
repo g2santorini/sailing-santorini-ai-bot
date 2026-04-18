@@ -142,6 +142,16 @@ def build_sunset_reassurance_reply(language: str) -> str:
     )
 
 
+def build_date_clarification_reply(language: str) -> str:
+    if language == "el":
+        return "Για ποια ημερομηνία θα θέλατε να ελέγξω διαθεσιμότητα;"
+    if language == "it":
+        return "Per quale data desidera che controlli la disponibilità?"
+    if language == "pt":
+        return "Para que data gostaria que eu verificasse a disponibilidade?"
+    return "For which date would you like me to check availability?"
+
+
 def is_clearly_irrelevant(message: str) -> bool:
     msg = message.lower()
 
@@ -900,6 +910,7 @@ def build_capacity_reply(data, language: str) -> str:
         f"You can proceed with your booking here:\n{booking_url}\n\n"
         "Please select the date on the booking page."
     )
+
 
 def format_shared_vacancies(vacancies) -> str:
     try:
@@ -1754,6 +1765,17 @@ USER MESSAGE:
         )
     )
 
+    if availability_intent and tour_key and not date_str:
+        reply = build_date_clarification_reply(language)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+            session_id=session_id,
+        )
+
     seasonal_reply = get_seasonal_reply(
         date_str=date_str,
         language=language,
@@ -1918,15 +1940,91 @@ USER MESSAGE:
             session_id=session_id,
         )
 
+    if date_str and not tour_key:
+        last_tour_key, _ = get_last_tour_and_date_from_history(user_message, history)
+
+        if last_tour_key:
+            if is_base_tour_key(last_tour_key):
+                morning_key = f"{last_tour_key}_morning"
+                sunset_key = f"{last_tour_key}_sunset"
+
+                morning_data = safe_check_tour_availability(morning_key, date_str)
+                sunset_data = safe_check_tour_availability(sunset_key, date_str)
+
+                dual_period_reply = build_dual_period_reply(
+                    morning_data=morning_data,
+                    sunset_data=sunset_data,
+                    date_str=date_str,
+                    language=language,
+                )
+
+                if dual_period_reply:
+                    return log_and_return(
+                        user_message=user_message,
+                        reply=dual_period_reply,
+                        language=language,
+                        fallback=False,
+                        detected_tour=last_tour_key,
+                        session_id=session_id,
+                    )
+
+                if is_available_result(morning_data):
+                    reply_text = build_availability_reply(morning_data)
+                    reply_text = translate_availability_reply(reply_text, language)
+                    return log_and_return(
+                        user_message=user_message,
+                        reply=reply_text,
+                        language=language,
+                        fallback=False,
+                        detected_tour=morning_key,
+                        session_id=session_id,
+                    )
+
+                if is_available_result(sunset_data):
+                    reply_text = build_availability_reply(sunset_data)
+                    reply_text = translate_availability_reply(reply_text, language)
+                    return log_and_return(
+                        user_message=user_message,
+                        reply=reply_text,
+                        language=language,
+                        fallback=False,
+                        detected_tour=sunset_key,
+                        session_id=session_id,
+                    )
+
+            else:
+                data = safe_check_tour_availability(last_tour_key, date_str)
+
+                if is_available_result(data):
+                    reply_text = build_availability_reply(data)
+                    reply_text = translate_availability_reply(reply_text, language)
+                    return log_and_return(
+                        user_message=user_message,
+                        reply=reply_text,
+                        language=language,
+                        fallback=False,
+                        detected_tour=last_tour_key,
+                        session_id=session_id,
+                    )
+
     if date_str or availability_intent:
-        effective_date = get_effective_date(user_message, history)
+        effective_tour_key, effective_date = get_last_tour_and_date_from_history(
+            user_message,
+            history,
+        )
+
+        if not effective_tour_key:
+            effective_tour_key = tour_key
+
+        if not effective_date:
+            effective_date = get_effective_date(user_message, history)
 
         seasonal_reply = get_seasonal_reply(
             date_str=effective_date,
             language=language,
             booking_link=BOOKING_LINK,
             whatsapp_link=WHATSAPP_LINK,
-            tour_key=tour_key,
+            tour_key=effective_tour_key,
             period=period,
             generic_availability=True,
         )
@@ -1936,9 +2034,25 @@ USER MESSAGE:
                 reply=seasonal_reply,
                 language=language,
                 fallback=False,
-                detected_tour=tour_key,
+                detected_tour=effective_tour_key,
                 session_id=session_id,
             )
+
+        if effective_tour_key and effective_date and period:
+            specific_tour_key = f"{effective_tour_key}_{period}"
+            data = safe_check_tour_availability(specific_tour_key, effective_date)
+
+            if is_available_result(data):
+                reply_text = build_availability_reply(data)
+                reply_text = translate_availability_reply(reply_text, language)
+                return log_and_return(
+                    user_message=user_message,
+                    reply=reply_text,
+                    language=language,
+                    fallback=False,
+                    detected_tour=specific_tour_key,
+                    session_id=session_id,
+                )
 
         results = safe_find_available_tours(
             effective_date, period, user_message, passenger_count
@@ -1952,7 +2066,7 @@ USER MESSAGE:
                 reply=reply,
                 language=language,
                 fallback=True,
-                detected_tour=tour_key,
+                detected_tour=effective_tour_key,
                 session_id=session_id,
             )
 
@@ -1973,7 +2087,7 @@ USER MESSAGE:
                 reply=reply_text,
                 language=language,
                 fallback=False,
-                detected_tour=tour_key,
+                detected_tour=effective_tour_key,
                 session_id=session_id,
             )
 
@@ -1983,7 +2097,7 @@ USER MESSAGE:
             reply=reply,
             language=language,
             fallback=True,
-            detected_tour=tour_key,
+            detected_tour=effective_tour_key,
             session_id=session_id,
         )
 
