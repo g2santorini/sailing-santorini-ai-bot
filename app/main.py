@@ -1160,10 +1160,10 @@ USER MESSAGE:
     routing_decision = route_message(user_message, current_state)
     routing_action = routing_decision.get("action")
 
-# --------------------------------------------------
-# FORCE availability if user explicitly asks for it
-# (even after comparison flow)
-# --------------------------------------------------
+    # --------------------------------------------------
+    # FORCE availability if user explicitly asks for it
+    # (even after comparison flow)
+    # --------------------------------------------------
     if is_availability_request(user_message):
         routing_action = "availability_ready"
         routing_decision["action"] = "availability_ready"
@@ -1233,8 +1233,8 @@ USER MESSAGE:
             print("OPENAI ERROR:", e)
 
     forced_availability_flow = routing_action in {
-    "availability_ready",
-    "continue_pending",
+        "availability_ready",
+        "continue_pending",
     } or is_availability_request(user_message)
 
     if forced_availability_flow:
@@ -1487,6 +1487,10 @@ USER MESSAGE:
             )
 
         if is_available_result(morning_data):
+            if morning_data and isinstance(morning_data, dict):
+                morning_data["requested_group_size"] = passenger_count
+                morning_data["general_booking_url"] = BOOKING_LINK
+
             reply_text = build_availability_reply(morning_data)
             return log_and_return(
                 user_message=user_message,
@@ -1498,6 +1502,10 @@ USER MESSAGE:
             )
 
         if is_available_result(sunset_data):
+            if sunset_data and isinstance(sunset_data, dict):
+                sunset_data["requested_group_size"] = passenger_count
+                sunset_data["general_booking_url"] = BOOKING_LINK
+
             reply_text = build_availability_reply(sunset_data)
             return log_and_return(
                 user_message=user_message,
@@ -1525,6 +1533,30 @@ USER MESSAGE:
         is_available = is_available_result(data)
 
         if is_available:
+            alternative_results = safe_find_available_tours(
+                date_str,
+                period,
+                user_message,
+                passenger_count,
+                ignore_requested_tours=True,
+            )
+
+            capacity_filtered = filter_by_capacity(
+                alternative_results or [],
+                passenger_count,
+            )
+
+            prepared_alternatives = prepare_alternative_results(
+                results=capacity_filtered,
+                requested_tour_key=tour_key,
+                passenger_count=passenger_count,
+            )
+
+            if data and isinstance(data, dict):
+                data["requested_group_size"] = passenger_count
+                data["general_booking_url"] = BOOKING_LINK
+                data["alternative_tours"] = prepared_alternatives
+
             reply_text = build_availability_reply(data)
             return log_and_return(
                 user_message=user_message,
@@ -1579,6 +1611,7 @@ USER MESSAGE:
             fallback_data = {
                 **data,
                 "alternative_tours": prepared_alternatives,
+                "general_booking_url": BOOKING_LINK,
             }
             print("FALLBACK DATA:", fallback_data)
 
@@ -1633,6 +1666,10 @@ USER MESSAGE:
                     )
 
                 if is_available_result(morning_data):
+                    if morning_data and isinstance(morning_data, dict):
+                        morning_data["requested_group_size"] = passenger_count
+                        morning_data["general_booking_url"] = BOOKING_LINK
+
                     reply_text = build_availability_reply(morning_data)
                     return log_and_return(
                         user_message=user_message,
@@ -1644,6 +1681,10 @@ USER MESSAGE:
                     )
 
                 if is_available_result(sunset_data):
+                    if sunset_data and isinstance(sunset_data, dict):
+                        sunset_data["requested_group_size"] = passenger_count
+                        sunset_data["general_booking_url"] = BOOKING_LINK
+
                     reply_text = build_availability_reply(sunset_data)
                     return log_and_return(
                         user_message=user_message,
@@ -1658,6 +1699,10 @@ USER MESSAGE:
                 data = safe_check_tour_availability(last_tour_key, date_str)
 
                 if is_available_result(data):
+                    if data and isinstance(data, dict):
+                        data["requested_group_size"] = passenger_count
+                        data["general_booking_url"] = BOOKING_LINK
+
                     return log_and_return(
                         user_message=user_message,
                         reply=build_availability_reply(data),
@@ -1718,6 +1763,30 @@ USER MESSAGE:
             data = safe_check_tour_availability(specific_tour_key, effective_date)
 
             if is_available_result(data):
+                alternative_results = safe_find_available_tours(
+                    effective_date,
+                    period,
+                    user_message,
+                    passenger_count,
+                    ignore_requested_tours=True,
+                )
+
+                capacity_filtered = filter_by_capacity(
+                    alternative_results or [],
+                    passenger_count,
+                )
+
+                prepared_alternatives = prepare_alternative_results(
+                    results=capacity_filtered,
+                    requested_tour_key=specific_tour_key,
+                    passenger_count=passenger_count,
+                )
+
+                if data and isinstance(data, dict):
+                    data["requested_group_size"] = passenger_count
+                    data["general_booking_url"] = BOOKING_LINK
+                    data["alternative_tours"] = prepared_alternatives
+
                 reply_text = build_availability_reply(data)
                 return log_and_return(
                     user_message=user_message,

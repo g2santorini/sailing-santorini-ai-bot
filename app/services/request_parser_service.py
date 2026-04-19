@@ -65,13 +65,15 @@ def detect_passenger_count(
     patterns = [
         r"\bwe are (\d+)\b",
         r"\bwe have (\d+)\b",
+        r"\bgroup of (\d+)\b",
+        r"\bparty of (\d+)\b",
         r"\bfor (\d+) people\b",
         r"\bfor (\d+) persons\b",
+        r"\bfor (\d+) guests\b",
         r"\b(\d+) people\b",
         r"\b(\d+) persons\b",
         r"\b(\d+) guests\b",
         r"\b(\d+) pax\b",
-        r"\bparty of (\d+)\b",
     ]
 
     for text in texts_to_check:
