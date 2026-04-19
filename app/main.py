@@ -284,6 +284,13 @@ def is_personal_booking_request(user_message: str) -> bool:
         "booking number",
         "reservation number",
         "confirm my transfer",
+        "check my transfer",
+        "reconfirm",
+        "re-confirm",
+        "reconfirm my tour",
+        "reconfirm booking",
+        "reconfirm reservation",
+        "can i reconfirm",
     ]
 
     return any(k in text for k in keywords)
