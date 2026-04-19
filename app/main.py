@@ -1,3 +1,4 @@
+import urllib.parse
 from datetime import datetime
 
 from fastapi import FastAPI, Query, Request
@@ -229,6 +230,29 @@ USER MESSAGE:
 """
 
 
+def build_whatsapp_link(message: str) -> str:
+    encoded = urllib.parse.quote(message)
+    return f"{WHATSAPP_LINK}?text={encoded}"
+
+
+def format_human_date(date_str: str | None) -> str | None:
+    if not date_str:
+        return None
+
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").strftime("%d %B %Y").lstrip("0")
+    except ValueError:
+        return date_str
+
+
+def format_period_label(period: str | None) -> str | None:
+    if period == "morning":
+        return "morning"
+    if period == "sunset":
+        return "sunset"
+    return None
+
+
 def is_clearly_irrelevant(message: str) -> bool:
     msg = message.lower()
 
@@ -303,27 +327,99 @@ def is_large_private_request(
     return cruise_type_intent == "private" or any(k in text for k in private_keywords)
 
 
-def build_full_day_whatsapp_reply() -> str:
+def build_full_day_whatsapp_reply(
+    date_str: str | None = None,
+    passenger_count: int | None = None,
+) -> str:
+    pretty_date = format_human_date(date_str)
+
+    if isinstance(passenger_count, int) and pretty_date:
+        prefilled_message = (
+            f"Hello, we are {passenger_count} guests and interested in a full-day private cruise on {pretty_date}."
+        )
+    elif isinstance(passenger_count, int):
+        prefilled_message = (
+            f"Hello, we are {passenger_count} guests and interested in a full-day private cruise."
+        )
+    elif pretty_date:
+        prefilled_message = (
+            f"Hello, we are interested in a full-day private cruise on {pretty_date}."
+        )
+    else:
+        prefilled_message = "Hello, we are interested in a full-day private cruise."
+
+    whatsapp_link = build_whatsapp_link(prefilled_message)
+
     return (
-        "We’d be very happy to help with a full-day private cruise.\n\n"
-        "Full-day options are not shown in the live online booking, so the best way is to contact our team directly on WhatsApp and we will gladly check the best available option for your date.\n\n"
-        f"WhatsApp:\n{WHATSAPP_LINK}"
+        "A full-day private cruise is a fantastic choice for a more complete experience around the island.\n\n"
+        "These options are not available for direct online booking, as they are tailored to each request.\n\n"
+        "Our team will be happy to assist you and suggest the best option for your date.\n\n"
+        f"You can contact us directly on WhatsApp here:\n{whatsapp_link}"
     )
 
 
-def build_large_private_whatsapp_reply(passenger_count: int) -> str:
+def build_large_private_whatsapp_reply(
+    passenger_count: int,
+    date_str: str | None = None,
+    period: str | None = None,
+) -> str:
+    pretty_date = format_human_date(date_str)
+    period_label = format_period_label(period)
+
+    if pretty_date and period_label:
+        prefilled_message = (
+            f"Hello, we are {passenger_count} guests and interested in a private {period_label} cruise on {pretty_date}."
+        )
+    elif pretty_date:
+        prefilled_message = (
+            f"Hello, we are {passenger_count} guests and interested in a private cruise on {pretty_date}."
+        )
+    else:
+        prefilled_message = (
+            f"Hello, we are {passenger_count} guests and interested in a private cruise."
+        )
+
+    whatsapp_link = build_whatsapp_link(prefilled_message)
+
     return (
-        "We’d be very happy to assist with a private cruise for your group.\n\n"
-        f"For private requests above 15 guests, the best option is to contact our team directly on WhatsApp, so we can check the most suitable yachts for your group of {passenger_count} and make the best recommendation for your date.\n\n"
-        f"WhatsApp:\n{WHATSAPP_LINK}"
+        f"For a group of {passenger_count} guests, we can arrange a private cruise tailored to your needs.\n\n"
+        "These options are not available through the standard booking system, as they require custom planning.\n\n"
+        "Our team will be happy to assist you with the best available solution.\n\n"
+        f"You can contact us directly on WhatsApp here:\n{whatsapp_link}"
     )
 
 
-def build_cruise_passenger_whatsapp_reply() -> str:
+def build_cruise_passenger_whatsapp_reply(
+    date_str: str | None = None,
+    period: str | None = None,
+) -> str:
+    pretty_date = format_human_date(date_str)
+    period_label = format_period_label(period)
+
+    if pretty_date and period_label:
+        prefilled_message = (
+            f"Hello, we are arriving by cruise ship and would like advice for a {period_label} cruise on {pretty_date}."
+        )
+    elif pretty_date:
+        prefilled_message = (
+            f"Hello, we are arriving by cruise ship and would like advice for a cruise on {pretty_date}."
+        )
+    elif period_label:
+        prefilled_message = (
+            f"Hello, we are arriving by cruise ship and would like advice for a {period_label} cruise."
+        )
+    else:
+        prefilled_message = (
+            "Hello, we are arriving by cruise ship and would like advice for a cruise."
+        )
+
+    whatsapp_link = build_whatsapp_link(prefilled_message)
+
     return (
-        "We’d be happy to assist.\n\n"
-        "As cruise ship arrival logistics can vary depending on timing, tender boats and cable car access, the best way is to contact our team directly on WhatsApp so we can guide you properly.\n\n"
-        f"WhatsApp:\n{WHATSAPP_LINK}"
+        "Thank you for your interest!\n\n"
+        "Since you are arriving by cruise ship, timing and logistics are very important, and we want to ensure everything is perfectly arranged for you.\n\n"
+        "Our team will be happy to guide you and recommend the most suitable option.\n\n"
+        f"You can contact us directly on WhatsApp here:\n{whatsapp_link}"
     )
 
 
@@ -948,7 +1044,10 @@ def chat(request: ChatRequest):
 
     if is_cruise_passenger(user_message):
         clear_session_state(session_id)
-        reply = build_cruise_passenger_whatsapp_reply()
+        reply = build_cruise_passenger_whatsapp_reply(
+            date_str=date_str,
+            period=period,
+        )
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -960,7 +1059,10 @@ def chat(request: ChatRequest):
 
     if is_full_day_request(user_message):
         clear_session_state(session_id)
-        reply = build_full_day_whatsapp_reply()
+        reply = build_full_day_whatsapp_reply(
+            date_str=date_str,
+            passenger_count=passenger_count,
+        )
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -972,7 +1074,11 @@ def chat(request: ChatRequest):
 
     if is_large_private_request(user_message, passenger_count, cruise_type_intent):
         clear_session_state(session_id)
-        reply = build_large_private_whatsapp_reply(passenger_count)
+        reply = build_large_private_whatsapp_reply(
+            passenger_count=passenger_count,
+            date_str=date_str,
+            period=period,
+        )
         return log_and_return(
             user_message=user_message,
             reply=reply,
