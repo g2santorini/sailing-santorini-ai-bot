@@ -27,6 +27,7 @@ from app.services.context_service import (
     get_last_tour_and_date_from_history,
     has_recent_availability_context,
 )
+from app.services.conversation_state import create_empty_state
 from app.services.date_detector import detect_date
 from app.services.intent_service import (
     is_availability_request,
@@ -53,6 +54,7 @@ from app.services.request_parser_service import (
     detect_cruise_type_intent,
     detect_passenger_count,
 )
+from app.services.response_router import route_message
 from app.services.season_service import get_seasonal_reply
 from app.services.tour_detector import detect_tour_key
 from app.services.tour_mapping import build_tour_facts_block
@@ -85,6 +87,32 @@ BOOKING_LINK = "https://sailingsantorini.link-twist.com/"
 WEBSITE_LINK = "https://sailing-santorini.com/"
 WHATSAPP_LINK = "https://wa.me/306972805193"
 DEFAULT_LANGUAGE = "en"
+
+# --------------------------------------------------
+# Simple in-memory conversation state
+# --------------------------------------------------
+SESSION_STATES: dict[str, dict] = {}
+
+
+def get_session_state(session_id: str | None) -> dict:
+    if not session_id:
+        return create_empty_state()
+
+    return SESSION_STATES.get(session_id, create_empty_state())
+
+
+def save_session_state(session_id: str | None, state: dict) -> None:
+    if not session_id:
+        return
+
+    SESSION_STATES[session_id] = state
+
+
+def clear_session_state(session_id: str | None) -> None:
+    if not session_id:
+        return
+
+    SESSION_STATES[session_id] = create_empty_state()
 
 
 def log_and_return(
@@ -121,6 +149,84 @@ def build_sunset_reassurance_reply() -> str:
 
 def build_date_clarification_reply() -> str:
     return "For which date would you like me to check availability?"
+
+
+def build_conversation_history(history: list[dict]) -> str:
+    if not history:
+        return ""
+
+    lines = []
+    for item in history[-8:]:
+        role = item.get("role", "")
+        content = item.get("content", "")
+        if role == "user":
+            lines.append(f"User: {content}")
+        elif role == "assistant":
+            lines.append(f"Assistant: {content}")
+
+    return "\n".join(lines)
+
+
+def build_comparison_recommendation_prompt(
+    user_message: str,
+    conversation_history: str,
+    knowledge: str,
+    tour_facts: str,
+) -> str:
+    return f"""
+You are the Sunset Oia digital assistant.
+
+IMPORTANT LANGUAGE RULE:
+- Always reply in English.
+
+TONE:
+- Warm, natural and human
+- Friendly and professional
+- Keep replies short (3–5 lines)
+- Avoid repetitive phrasing
+
+CRITICAL RULE:
+If the user asks for comparison, recommendation, or guidance
+(e.g. "which is better", "which tour is the best", "what do you recommend", "morning or sunset"):
+
+→ Answer the question directly
+→ Do NOT ask for a date
+→ Do NOT mention availability
+→ Do NOT redirect to booking unless truly helpful
+→ Do NOT turn the reply into an availability flow
+
+CONTEXT RULE:
+- Answer ONLY based on the cruises or options mentioned by the user
+- If the user asks about morning vs sunset, answer as an experience comparison
+- If the user adds another option in a follow-up (e.g. "and what about Gems?"), continue the same comparison/recommendation context
+
+STYLE:
+- Be clear, short, and useful
+- Sound like a good sales assistant, not a form
+- Soft recommendation is welcome when useful
+- No markdown bold with asterisks
+
+KNOWLEDGE USAGE:
+- Use only provided company knowledge
+- Do not invent information
+- Never mix details between different cruises
+- If STRUCTURED TOUR FACTS are provided, use them as higher priority
+
+BOOKING LINK:
+{BOOKING_LINK}
+
+COMPANY KNOWLEDGE:
+{knowledge}
+
+STRUCTURED TOUR FACTS:
+{tour_facts}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+USER MESSAGE:
+{user_message}
+"""
 
 
 def is_clearly_irrelevant(message: str) -> bool:
@@ -735,6 +841,8 @@ def chat(request: ChatRequest):
     language = DEFAULT_LANGUAGE
     session_id = request.session_id
 
+    current_state = get_session_state(session_id)
+
     tour_key = detect_tour_key(user_message)
     date_str = detect_date(user_message)
     period = detect_period(user_message)
@@ -753,6 +861,7 @@ def chat(request: ChatRequest):
         )
 
     if is_discount_request(user_message):
+        clear_session_state(session_id)
         reply = get_text("discount_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -764,6 +873,7 @@ def chat(request: ChatRequest):
         )
 
     if is_cruise_passenger(user_message):
+        clear_session_state(session_id)
         reply = get_text(
             "cruise_passenger_reply", language, BOOKING_LINK, WHATSAPP_LINK
         )
@@ -777,6 +887,7 @@ def chat(request: ChatRequest):
         )
 
     if is_contact_request(user_message):
+        clear_session_state(session_id)
         reply = get_text("contact_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -788,6 +899,7 @@ def chat(request: ChatRequest):
         )
 
     if is_personal_booking_request(user_message):
+        clear_session_state(session_id)
         reply = get_text("booking_details_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -799,6 +911,7 @@ def chat(request: ChatRequest):
         )
 
     if is_pregnancy_question(user_message):
+        clear_session_state(session_id)
         reply = get_text("pregnancy_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -816,18 +929,8 @@ def chat(request: ChatRequest):
         and "pick-up" not in user_message.lower()
         and "transfer" not in user_message.lower()
     ):
-        conversation_history = ""
-        if history:
-            lines = []
-            for item in history[-8:]:
-                role = item.get("role", "")
-                content = item.get("content", "")
-                if role == "user":
-                    lines.append(f"User: {content}")
-                elif role == "assistant":
-                    lines.append(f"Assistant: {content}")
-            conversation_history = "\n".join(lines)
-
+        clear_session_state(session_id)
+        conversation_history = build_conversation_history(history)
         knowledge = get_company_knowledge()
 
         prompt = f"""
@@ -935,6 +1038,7 @@ USER MESSAGE:
         )
 
     if is_capacity_request(user_message) and is_multi_capacity_request(user_message):
+        clear_session_state(session_id)
         date_str = detect_date(user_message)
         period = detect_period(user_message)
         effective_date = date_str or get_effective_date(user_message, history)
@@ -986,6 +1090,7 @@ USER MESSAGE:
         )
 
     if is_capacity_request(user_message):
+        clear_session_state(session_id)
         last_tour_key, last_date_str = get_last_tour_and_date_from_history(
             user_message, history
         )
@@ -1042,6 +1147,105 @@ USER MESSAGE:
             session_id=session_id,
         )
 
+    # --------------------------------------------------
+    # New flow layer
+    # --------------------------------------------------
+    routing_decision = route_message(user_message, current_state)
+    routing_action = routing_decision.get("action")
+
+# --------------------------------------------------
+# FORCE availability if user explicitly asks for it
+# (even after comparison flow)
+# --------------------------------------------------
+    if is_availability_request(user_message):
+        routing_action = "availability_ready"
+        routing_decision["action"] = "availability_ready"
+
+    if routing_action == "clarify":
+        save_session_state(
+            session_id,
+            routing_decision.get("state", create_empty_state()),
+        )
+        reply = (
+            routing_decision.get("reply")
+            or "Could you share a little more detail so I can help you properly?"
+        )
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=routing_decision.get("tour"),
+            session_id=session_id,
+        )
+
+    if routing_action == "booking_guidance":
+        clear_session_state(session_id)
+        reply = routing_decision.get("reply") or (
+            "I’ll be happy to help. Just let me know your preferred date and cruise, and I’ll guide you with the next step."
+        )
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=routing_decision.get("tour"),
+            session_id=session_id,
+        )
+
+    if routing_action in {
+        "comparison_answer",
+        "recommendation_answer",
+        "continue_comparison",
+    }:
+        save_session_state(
+            session_id,
+            routing_decision.get("state", create_empty_state()),
+        )
+        conversation_history = build_conversation_history(history)
+        knowledge = get_company_knowledge()
+
+        prompt = build_comparison_recommendation_prompt(
+            user_message=user_message,
+            conversation_history=conversation_history,
+            knowledge=knowledge,
+            tour_facts=tour_facts,
+        )
+
+        try:
+            reply = get_ai_reply(prompt)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=False,
+                detected_tour=tour_key,
+                session_id=session_id,
+            )
+        except Exception as e:
+            print("OPENAI ERROR:", e)
+
+    forced_availability_flow = routing_action in {
+    "availability_ready",
+    "continue_pending",
+    } or is_availability_request(user_message)
+
+    if forced_availability_flow:
+        clear_session_state(session_id)
+
+        routed_tour = routing_decision.get("tour")
+        routed_date = routing_decision.get("date")
+        routed_time = routing_decision.get("time")
+
+        if routed_tour:
+            tour_key = routed_tour
+        if routed_date:
+            date_str = routed_date
+        if routed_time:
+            period = routed_time
+
+        tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
+
     cruise_type_intent = detect_cruise_type_intent(user_message, history)
     user_message_lower = user_message.lower()
 
@@ -1071,6 +1275,7 @@ USER MESSAGE:
     time_comparison_intent = is_time_comparison(user_message)
 
     if time_comparison_intent:
+        clear_session_state(session_id)
         reply = build_time_comparison_reply(language)
         return log_and_return(
             user_message=user_message,
@@ -1082,6 +1287,7 @@ USER MESSAGE:
         )
 
     if is_sunset_concern(user_message):
+        clear_session_state(session_id)
         reply = build_sunset_reassurance_reply()
         return log_and_return(
             user_message=user_message,
@@ -1093,6 +1299,7 @@ USER MESSAGE:
         )
 
     if is_sunset_question(user_message):
+        clear_session_state(session_id)
         reply = get_text("sunset_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -1104,6 +1311,7 @@ USER MESSAGE:
         )
 
     if price_intent:
+        clear_session_state(session_id)
         effective_tour_key = tour_key
         effective_date_str = date_str
 
@@ -1178,26 +1386,29 @@ USER MESSAGE:
         )
 
     availability_intent = (
-        not comparison_intent
-        and not price_intent
-        and not time_comparison_intent
-        and not is_sunset_concern(user_message)
-        and (
-            is_availability_request(user_message)
-            or (
-                is_followup(user_message)
-                and has_recent_availability_context(
-                    history,
-                    is_availability_request_fn=is_availability_request,
-                    detect_period_fn=detect_period,
+        forced_availability_flow
+        or (
+            not comparison_intent
+            and not price_intent
+            and not time_comparison_intent
+            and not is_sunset_concern(user_message)
+            and (
+                is_availability_request(user_message)
+                or (
+                    is_followup(user_message)
+                    and has_recent_availability_context(
+                        history,
+                        is_availability_request_fn=is_availability_request,
+                        detect_period_fn=detect_period,
+                    )
                 )
-            )
-            or (
-                period is not None
-                and has_recent_availability_context(
-                    history,
-                    is_availability_request_fn=is_availability_request,
-                    detect_period_fn=detect_period,
+                or (
+                    period is not None
+                    and has_recent_availability_context(
+                        history,
+                        is_availability_request_fn=is_availability_request,
+                        detect_period_fn=detect_period,
+                    )
                 )
             )
         )
@@ -1205,6 +1416,16 @@ USER MESSAGE:
 
     if availability_intent and tour_key and not date_str:
         reply = build_date_clarification_reply()
+        save_session_state(
+            session_id,
+            {
+                "pending_action": "availability",
+                "pending_tour": tour_key,
+                "pending_date": None,
+                "pending_time": period,
+                "comparison_candidates": [],
+            },
+        )
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1224,6 +1445,7 @@ USER MESSAGE:
         generic_availability=availability_intent,
     )
     if seasonal_reply:
+        clear_session_state(session_id)
         return log_and_return(
             user_message=user_message,
             reply=seasonal_reply,
@@ -1234,6 +1456,7 @@ USER MESSAGE:
         )
 
     if is_base_tour_key(tour_key) and date_str:
+        clear_session_state(session_id)
         morning_key = f"{tour_key}_morning"
         sunset_key = f"{tour_key}_sunset"
 
@@ -1289,6 +1512,7 @@ USER MESSAGE:
         )
 
     if tour_key and date_str:
+        clear_session_state(session_id)
         data = safe_check_tour_availability(tour_key, date_str)
 
         is_available = is_available_result(data)
@@ -1377,6 +1601,7 @@ USER MESSAGE:
         last_tour_key, _ = get_last_tour_and_date_from_history(user_message, history)
 
         if last_tour_key:
+            clear_session_state(session_id)
             if is_base_tour_key(last_tour_key):
                 morning_key = f"{last_tour_key}_morning"
                 sunset_key = f"{last_tour_key}_sunset"
@@ -1426,10 +1651,9 @@ USER MESSAGE:
                 data = safe_check_tour_availability(last_tour_key, date_str)
 
                 if is_available_result(data):
-                    reply_text = build_availability_reply(data)
                     return log_and_return(
                         user_message=user_message,
-                        reply=reply_text,
+                        reply=build_availability_reply(data),
                         language=language,
                         fallback=False,
                         detected_tour=last_tour_key,
@@ -1437,6 +1661,7 @@ USER MESSAGE:
                     )
 
     if date_str or availability_intent:
+        clear_session_state(session_id)
         locked_tour_key = None
         locked_date = None
 
@@ -1593,6 +1818,7 @@ USER MESSAGE:
     )
 
     if budget_followup and history:
+        clear_session_state(session_id)
         mentions_red = "red" in recent_text
         mentions_diamond = "diamond" in recent_text
         mentions_gems = "gems" in recent_text
@@ -1628,6 +1854,7 @@ USER MESSAGE:
             )
 
     if is_best_choice_question(user_message) and history:
+        clear_session_state(session_id)
         reply = build_best_choice_reply(
             history=history,
             passenger_count=passenger_count,
@@ -1642,6 +1869,7 @@ USER MESSAGE:
         )
 
     if is_greeting(user_message):
+        clear_session_state(session_id)
         reply = get_text("greeting_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -1659,6 +1887,7 @@ USER MESSAGE:
         and not short_followup
         and is_clearly_irrelevant(user_message)
     ):
+        clear_session_state(session_id)
         reply = get_text("irrelevant_reply", language, BOOKING_LINK, WHATSAPP_LINK)
         return log_and_return(
             user_message=user_message,
@@ -1669,18 +1898,7 @@ USER MESSAGE:
             session_id=session_id,
         )
 
-    conversation_history = ""
-    if history:
-        lines = []
-        for item in history[-8:]:
-            role = item.get("role", "")
-            content = item.get("content", "")
-            if role == "user":
-                lines.append(f"User: {content}")
-            elif role == "assistant":
-                lines.append(f"Assistant: {content}")
-        conversation_history = "\n".join(lines)
-
+    conversation_history = build_conversation_history(history)
     knowledge = get_company_knowledge()
 
     prompt = f"""
@@ -1741,6 +1959,7 @@ USER MESSAGE:
 {user_message}
 """
 
+    clear_session_state(session_id)
     reply = get_ai_reply(prompt)
     return log_and_return(
         user_message=user_message,

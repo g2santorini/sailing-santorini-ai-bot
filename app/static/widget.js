@@ -327,7 +327,7 @@
       <div id="ss-welcome">
         <p>Greetings from the beautiful Santorini!</p>
         <p>I’m here to help you with your cruise experience at Sunset Oia.</p>
-        <p>Feel free to ask about availability, private options, or the differences between our tours.</p>
+        <p>If you’d like, I can check availability for your dates or give you a quick overview of the different cruise options.</p>
       </div>
     </div>
 
