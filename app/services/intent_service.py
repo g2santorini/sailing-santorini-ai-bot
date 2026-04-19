@@ -166,6 +166,20 @@ def is_best_choice_question(user_message: str) -> bool:
         "what would you recommend",
         "best option",
         "best for us",
+        "fits best",
+        "which fits best",
+        "which one fits best",
+        "which cruise fits best",
+        "best for me",
+        "best for our group",
+        "best for my family",
+        "most suitable",
+        "most suitable for",
+        "ideal for",
+        "ideal for us",
+        "recommend for",
+        "which cruise do you recommend",
+        "which one do you recommend",
     ]
 
     return contains_any(text, keywords)
