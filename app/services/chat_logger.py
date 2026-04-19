@@ -1,8 +1,11 @@
+import os
 import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-DB_PATH = Path("chat_logs.db")
+DB_PATH = Path(os.getenv("CHAT_DB_PATH", "chat_logs.db"))
+
+print(f"[CHAT LOGGER] Using DB: {DB_PATH.resolve()}")
 
 
 def get_connection():

@@ -1,62 +1,62 @@
 from datetime import datetime
+
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app.services.language_service import detect_language
-from app.services.season_service import get_seasonal_reply
 from app.routes.availability_routes import router as availability_router
-from app.services.translation_service import get_text, translate_availability_reply
-from app.services.openai_service import get_ai_reply
-from app.services.knowledge_service import get_company_knowledge
 from app.services.alternative_service import (
-    prepare_alternative_results,
     build_unavailable_alternatives_reply,
     filter_by_capacity,
-)
-from app.services.reply_builder import (
-    build_availability_reply,
-    build_time_comparison_reply,
+    prepare_alternative_results,
 )
 from app.services.availability_safe_service import (
     safe_check_tour_availability,
     safe_find_available_tours,
 )
-from app.services.tour_detector import detect_tour_key
-from app.services.date_detector import detect_date
-from app.services.multi_reply_builder import build_multi_availability_reply
-from app.services.tour_mapping import build_tour_facts_block
 from app.services.chat_logger import (
-    init_db,
-    save_chat_log,
     get_chat_logs,
     get_chat_sessions,
-)
-from app.services.intent_service import (
-    is_greeting,
-    is_discount_request,
-    is_contact_request,
-    is_availability_request,
-    is_followup,
-    is_best_choice_question,
-    is_capacity_request,
-    is_multi_capacity_request,
-    is_sunset_question,
-    is_sunset_concern,
-    is_pregnancy_question,
-    is_time_comparison,
+    init_db,
+    save_chat_log,
 )
 from app.services.context_service import (
-    has_recent_availability_context,
-    get_last_tour_and_date_from_history,
     get_effective_date,
+    get_last_tour_and_date_from_history,
+    has_recent_availability_context,
+)
+from app.services.date_detector import detect_date
+from app.services.intent_service import (
+    is_availability_request,
+    is_best_choice_question,
+    is_capacity_request,
+    is_contact_request,
+    is_discount_request,
+    is_followup,
+    is_greeting,
+    is_multi_capacity_request,
+    is_pregnancy_question,
+    is_sunset_concern,
+    is_sunset_question,
+    is_time_comparison,
+)
+from app.services.knowledge_service import get_company_knowledge
+from app.services.multi_reply_builder import build_multi_availability_reply
+from app.services.openai_service import get_ai_reply
+from app.services.reply_builder import (
+    build_availability_reply,
+    build_time_comparison_reply,
 )
 from app.services.request_parser_service import (
     detect_cruise_type_intent,
     detect_passenger_count,
 )
+from app.services.season_service import get_seasonal_reply
+from app.services.tour_detector import detect_tour_key
+from app.services.tour_mapping import build_tour_facts_block
+from app.services.translation_service import get_text
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -72,7 +72,7 @@ app.add_middleware(
 app.include_router(availability_router)
 init_db()
 
-print("MAIN WITH HISTORY + MULTILINGUAL KNOWLEDGE + SMARTER WHATSAPP LOADED")
+print("MAIN WITH HISTORY + ENGLISH-ONLY MODE LOADED")
 
 
 class ChatRequest(BaseModel):
@@ -84,6 +84,7 @@ class ChatRequest(BaseModel):
 BOOKING_LINK = "https://sailingsantorini.link-twist.com/"
 WEBSITE_LINK = "https://sailing-santorini.com/"
 WHATSAPP_LINK = "https://wa.me/306972805193"
+DEFAULT_LANGUAGE = "en"
 
 
 def log_and_return(
@@ -109,31 +110,7 @@ def log_and_return(
     return {"reply": reply}
 
 
-def build_sunset_reassurance_reply(language: str) -> str:
-    if language == "el":
-        return (
-            "Μην ανησυχείτε καθόλου ότι θα χάσετε το ηλιοβασίλεμα.\n\n"
-            "Παρότι η αναχώρηση παραμένει σταθερή, η διάρκεια της κρουαζιέρας προσαρμόζεται ανάλογα με την ώρα του ηλιοβασιλέματος.\n"
-            "Κατά τους καλοκαιρινούς μήνες η κρουαζιέρα διαρκεί περισσότερο, ώστε να απολαύσετε πλήρως το ηλιοβασίλεμα εν πλω.\n\n"
-            "Όλες οι sunset cruises είναι σχεδιασμένες έτσι ώστε να απολαμβάνετε το ηλιοβασίλεμα από το καταμαράν."
-        )
-
-    if language == "it":
-        return (
-            "Non si preoccupi affatto di perdere il tramonto.\n\n"
-            "Anche se l’orario di partenza rimane fisso, la durata della crociera si adatta in base all’orario del tramonto.\n"
-            "Durante i mesi estivi la crociera dura più a lungo, così da permetterle di godersi pienamente il tramonto a bordo.\n\n"
-            "Tutte le crociere al tramonto sono organizzate in modo da farvi vivere il tramonto dal catamarano."
-        )
-
-    if language == "pt":
-        return (
-            "Não se preocupe de forma alguma em perder o pôr do sol.\n\n"
-            "Embora a hora de partida permaneça fixa, a duração do cruzeiro é ajustada de acordo com a hora do pôr do sol.\n"
-            "Durante os meses de verão, o cruzeiro dura mais para que possa desfrutar plenamente do pôr do sol a bordo.\n\n"
-            "Todos os cruzeiros ao pôr do sol são planeados para que os hóspedes apreciem o pôr do sol a partir do catamarã."
-        )
-
+def build_sunset_reassurance_reply() -> str:
     return (
         "Please do not worry about missing the sunset.\n\n"
         "Although the departure time remains fixed, the cruise duration is adjusted depending on the sunset time each day.\n"
@@ -142,13 +119,7 @@ def build_sunset_reassurance_reply(language: str) -> str:
     )
 
 
-def build_date_clarification_reply(language: str) -> str:
-    if language == "el":
-        return "Για ποια ημερομηνία θα θέλατε να ελέγξω διαθεσιμότητα;"
-    if language == "it":
-        return "Per quale data desidera che controlli la disponibilità?"
-    if language == "pt":
-        return "Para que data gostaria que eu verificasse a disponibilidade?"
+def build_date_clarification_reply() -> str:
     return "For which date would you like me to check availability?"
 
 
@@ -181,15 +152,6 @@ def is_cruise_passenger(user_message: str) -> bool:
         "coming by cruise",
         "port of fira",
         "fira port",
-        "κρουαζιερόπλοιο",
-        "παλιό λιμάνι",
-        "τελεφερίκ",
-        "crociera",
-        "nave",
-        "porto vecchio",
-        "navio de cruzeiro",
-        "passageiro de cruzeiro",
-        "porto antigo",
     ]
 
     return any(k in text for k in keywords)
@@ -216,24 +178,6 @@ def is_personal_booking_request(user_message: str) -> bool:
         "booking number",
         "reservation number",
         "confirm my transfer",
-        "η κράτησή μου",
-        "η κρατηση μου",
-        "το booking μου",
-        "η παραλαβή μου",
-        "η παραλαβη μου",
-        "ώρα παραλαβής",
-        "ωρα παραλαβης",
-        "επιβεβαίωση κράτησης",
-        "επιβεβαιωση κρατησης",
-        "la mia prenotazione",
-        "il mio transfer",
-        "orario di pick-up",
-        "numero di prenotazione",
-        "a minha reserva",
-        "o meu transfer",
-        "hora do pickup",
-        "número da reserva",
-        "numero da reserva",
     ]
 
     return any(k in text for k in keywords)
@@ -261,29 +205,6 @@ def is_uncertain_whatsapp_case(user_message: str) -> bool:
         "custom request",
         "proposal",
         "fireworks",
-        "καρότσι",
-        "καροτσι",
-        "αναπηρικό",
-        "αναπηρικο",
-        "προσβάσιμο",
-        "προσβασιμο",
-        "να φέρω ποτά",
-        "να φερω ποτα",
-        "τι μπίρα έχετε",
-        "τι μπυρα εχετε",
-        "ειδικό αίτημα",
-        "ειδικο αιτημα",
-        "sedia a rotelle",
-        "accessibile",
-        "portare bevande",
-        "quale birra avete",
-        "richiesta speciale",
-        "cadeira de rodas",
-        "acessível",
-        "acessivel",
-        "trazer bebidas",
-        "que cerveja têm",
-        "pedido especial",
     ]
 
     return any(k in text for k in keywords)
@@ -409,194 +330,8 @@ def is_relevant(user_message: str) -> bool:
         "phone",
         "email",
         "reservation department",
-        "κρουαζιέρα",
-        "κρουαζιερες",
-        "τιμή",
-        "διαθεσιμότητα",
-        "ιδιωτική",
-        "ηλιοβασίλεμα",
-        "πρωινή",
-        "λιμάνι",
-        "μεταφορά",
-        "φαγητό",
-        "ποτό",
-        "ποτά",
-        "μενού",
-        "μπίρα",
-        "μπυρα",
-        "αναψυκτικά",
-        "αναψυκτικα",
-        "χορτοφαγ",
-        "βίγκαν",
-        "χαλάλ",
-        "αλλεργ",
-        "γλουτένη",
-        "χωρίς γλουτένη",
-        "κοιλιοκάκη",
-        "άτομα",
-        "άτομο",
-        "είμαστε",
-        "έχουμε",
-        "προτείνεις",
-        "προτείνετε",
-        "σύσταση",
-        "διαφορά",
-        "σύγκριση",
-        "ποιο είναι καλύτερο",
-        "ποιο ειναι καλυτερο",
-        "ποιο είναι το καλύτερο",
-        "ποιο ειναι το καλυτερο",
-        "καλύτερο",
-        "καλυτερο",
-        "θέσεις",
-        "θέση",
-        "πόσες θέσεις",
-        "πόσα άτομα μένουν",
-        "όλα τα σκάφη",
-        "όλα τα διαθέσιμα",
-        "κατοικίδιο",
-        "κατοικιδιο",
-        "κατοικίδια",
-        "κατοικιδια",
-        "σκύλος",
-        "σκυλος",
-        "σκυλιά",
-        "σκυλια",
-        "ζώο",
-        "ζωο",
-        "ζώα",
-        "ζωα",
-        "να φέρω",
-        "να φερω",
-        "τι να φορέσω",
-        "τι να φορεσω",
-        "πετσέτα",
-        "πετσετα",
-        "καρότσι",
-        "καροτσι",
-        "αναπηρικό",
-        "αναπηρικο",
-        "προσβάσιμο",
-        "προσβασιμο",
-        "επικοινωνία",
-        "επικοινωνησω",
-        "επικοινωνήσω",
-        "τηλέφωνο",
-        "τηλεφωνο",
-        "whatsapp",
-        "crociera",
-        "crociere",
-        "prezzo",
-        "disponibilità",
-        "privata",
-        "tramonto",
-        "mattina",
-        "cibo",
-        "bevande",
-        "birra",
-        "menu",
-        "vegetariano",
-        "vegano",
-        "halal",
-        "allergie",
-        "glutine",
-        "senza glutine",
-        "persone",
-        "persona",
-        "siamo",
-        "abbiamo",
-        "consigli",
-        "raccomandi",
-        "suggerisci",
-        "differenza",
-        "confronto",
-        "qual è meglio",
-        "qual e meglio",
-        "qual è il migliore",
-        "qual e il migliore",
-        "migliore",
-        "posti",
-        "posto",
-        "quanti posti",
-        "tutte le barche",
-        "cane",
-        "cani",
-        "animale",
-        "animali",
-        "portare",
-        "indossare",
-        "asciugamano",
-        "sedia a rotelle",
-        "accessibile",
-        "contattare",
-        "contatto",
-        "telefono",
-        "whatsapp",
-        "cruzeiro",
-        "cruzeiros",
-        "preço",
-        "preco",
-        "disponibilidade",
-        "privado",
-        "partilhado",
-        "compartilhado",
-        "comida",
-        "bebidas",
-        "cerveja",
-        "menu",
-        "vegetariano",
-        "vegano",
-        "alergia",
-        "alergias",
-        "glúten",
-        "gluten",
-        "sem glúten",
-        "sem gluten",
-        "pessoas",
-        "pessoa",
-        "somos",
-        "temos",
-        "recomenda",
-        "sugere",
-        "diferença",
-        "comparação",
-        "comparacao",
-        "qual é melhor",
-        "qual e melhor",
-        "qual é o melhor",
-        "qual e o melhor",
-        "melhor",
-        "lugares",
-        "quantos lugares",
-        "vagas",
-        "todos os barcos",
-        "cão",
-        "cao",
-        "cães",
-        "caes",
-        "animal",
-        "animais",
-        "trazer",
-        "vestir",
-        "toalha",
-        "cadeira de rodas",
-        "acessível",
-        "acessivel",
-        "contactar",
-        "contacto",
-        "telefone",
-        "whatsapp",
-        "wheelchair",
-        "accessible",
-        "accessibility",
-        "mobility",
         "pregnant",
         "pregnancy",
-        "έγκυος",
-        "εγκυος",
-        "gravidanza",
-        "grávida",
-        "gravida",
     ]
 
     return any(k in text for k in keywords)
@@ -605,15 +340,7 @@ def is_relevant(user_message: str) -> bool:
 def detect_period(user_message: str) -> str | None:
     text = user_message.lower()
 
-    if (
-        "morning" in text
-        or "this morning" in text
-        or "πρωιν" in text
-        or "mattina" in text
-        or "questa mattina" in text
-        or "manhã" in text
-        or "manha" in text
-    ):
+    if "morning" in text or "this morning" in text:
         return "morning"
 
     if (
@@ -623,16 +350,6 @@ def detect_period(user_message: str) -> str | None:
         or "tonight" in text
         or "afternoon" in text
         or "evening" in text
-        or "ηλιοβασ" in text
-        or "απόγευμα" in text
-        or "απογευμα" in text
-        or "απόψε" in text
-        or "αποψε" in text
-        or "tramonto" in text
-        or "pomeriggio" in text
-        or "stasera" in text
-        or "tarde" in text
-        or "fim do dia" in text
     ):
         return "sunset"
 
@@ -671,16 +388,16 @@ def filter_results_by_cruise_type(results, cruise_type: str | None):
     for item in results:
         searchable_text = extract_result_text(item)
 
-        is_private_result = "private" in searchable_text
-        is_shared_result = (
+        is_private_result_flag = "private" in searchable_text
+        is_shared_result_flag = (
             "shared" in searchable_text
             or "semi private" in searchable_text
             or "semi-private" in searchable_text
         )
 
-        if is_private_result:
+        if is_private_result_flag:
             private_matches.append(item)
-        elif is_shared_result:
+        elif is_shared_result_flag:
             shared_matches.append(item)
 
     if cruise_type == "private":
@@ -722,9 +439,14 @@ def is_private_result(item: dict) -> bool:
     return tour_type == "private" or "private" in label
 
 
-def build_capacity_reply(data, language: str) -> str:
+def build_capacity_reply(data) -> str:
     if not isinstance(data, dict):
-        return get_text("availability_fallback", language, BOOKING_LINK, WHATSAPP_LINK)
+        return get_text(
+            "availability_fallback",
+            DEFAULT_LANGUAGE,
+            BOOKING_LINK,
+            WHATSAPP_LINK,
+        )
 
     spots = get_capacity_number(data)
     cruise_name = data.get("reply_label", "this cruise")
@@ -735,138 +457,6 @@ def build_capacity_reply(data, language: str) -> str:
         spots_display = "20+"
     else:
         spots_display = str(spots) if isinstance(spots, int) else None
-
-    if language == "el":
-        if is_private:
-            if spots_display == "1":
-                return (
-                    f"Το {cruise_name} είναι διαθέσιμο για την ημερομηνία που ζητήσατε.\n\n"
-                    "Μπορεί να φιλοξενήσει έως 1 άτομο.\n\n"
-                    f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                    "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-                )
-
-            if spots_display:
-                return (
-                    f"Το {cruise_name} είναι διαθέσιμο για την ημερομηνία που ζητήσατε.\n\n"
-                    f"Μπορεί να φιλοξενήσει έως {spots_display} άτομα.\n\n"
-                    f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                    "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-                )
-
-            return (
-                f"Το {cruise_name} είναι διαθέσιμο για την ημερομηνία που ζητήσατε.\n\n"
-                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-            )
-
-        if spots_display == "1":
-            return (
-                f"Για το {cruise_name} υπάρχει μόνο 1 διαθέσιμη θέση.\n\n"
-                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-            )
-
-        if spots_display:
-            return (
-                f"Για το {cruise_name} υπάρχουν {spots_display} διαθέσιμες θέσεις.\n\n"
-                f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-            )
-
-        return (
-            f"Το {cruise_name} είναι διαθέσιμο για την ημερομηνία που ζητήσατε.\n\n"
-            f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-            "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-        )
-
-    if language == "it":
-        if is_private:
-            if spots_display == "1":
-                return (
-                    f"{cruise_name} è disponibile per la data richiesta.\n\n"
-                    "Può ospitare fino a 1 persona.\n\n"
-                    f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                    "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-                )
-
-            if spots_display:
-                return (
-                    f"{cruise_name} è disponibile per la data richiesta.\n\n"
-                    f"Può ospitare fino a {spots_display} persone.\n\n"
-                    f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                    "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-                )
-
-            return (
-                f"{cruise_name} è disponibile per la data richiesta.\n\n"
-                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-            )
-
-        if spots_display == "1":
-            return (
-                f"Per {cruise_name} è disponibile solo 1 posto.\n\n"
-                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-            )
-
-        if spots_display:
-            return (
-                f"Per {cruise_name} ci sono {spots_display} posti disponibili.\n\n"
-                f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-            )
-
-        return (
-            f"{cruise_name} è disponibile per la data richiesta.\n\n"
-            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-        )
-
-    if language == "pt":
-        if is_private:
-            if spots_display == "1":
-                return (
-                    f"{cruise_name} está disponível para a data solicitada.\n\n"
-                    "Pode acomodar até 1 hóspede.\n\n"
-                    f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                    "Por favor selecione a data na página de reservas."
-                )
-
-            if spots_display:
-                return (
-                    f"{cruise_name} está disponível para a data solicitada.\n\n"
-                    f"Pode acomodar até {spots_display} hóspedes.\n\n"
-                    f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                    "Por favor selecione a data na página de reservas."
-                )
-
-            return (
-                f"{cruise_name} está disponível para a data solicitada.\n\n"
-                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                "Por favor selecione a data na página de reservas."
-            )
-
-        if spots_display == "1":
-            return (
-                f"Para {cruise_name} há apenas 1 lugar disponível.\n\n"
-                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                "Por favor selecione a data na página de reservas."
-            )
-
-        if spots_display:
-            return (
-                f"Para {cruise_name} há {spots_display} lugares disponíveis.\n\n"
-                f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                "Por favor selecione a data na página de reservas."
-            )
-
-        return (
-            f"{cruise_name} está disponível para a data solicitada.\n\n"
-            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-            "Por favor selecione a data na página de reservas."
-        )
 
     if is_private:
         if spots_display == "1":
@@ -922,69 +512,7 @@ def format_shared_vacancies(vacancies) -> str:
         return str(vacancies)
 
 
-def build_multi_capacity_reply(results: list[dict], language: str) -> str:
-    if language == "el":
-        lines = ["Οι διαθέσιμες επιλογές για το ζητούμενο χρονικό διάστημα είναι:"]
-        for item in results:
-            label = item.get("reply_label", "Κρουαζιέρα")
-
-            if is_private_result(item):
-                lines.append(f"- {label}: διαθέσιμη")
-            else:
-                vacancies_text = format_shared_vacancies(item.get("vacancies"))
-                if vacancies_text == "1":
-                    lines.append(f"- {label}: 1 διαθέσιμη θέση")
-                else:
-                    lines.append(f"- {label}: {vacancies_text} διαθέσιμες θέσεις")
-        lines.append("")
-        lines.append("Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:")
-        lines.append(BOOKING_LINK)
-        lines.append("")
-        lines.append("Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης.")
-        return "\n".join(lines)
-
-    if language == "it":
-        lines = ["Ecco le opzioni disponibili per l’orario richiesto:"]
-        for item in results:
-            label = item.get("reply_label", "Crociera")
-
-            if is_private_result(item):
-                lines.append(f"- {label}: disponibile")
-            else:
-                vacancies_text = format_shared_vacancies(item.get("vacancies"))
-                if vacancies_text == "1":
-                    lines.append(f"- {label}: 1 posto disponibile")
-                else:
-                    lines.append(f"- {label}: {vacancies_text} posti disponibili")
-        lines.append("")
-        lines.append("Puoi procedere con la prenotazione qui:")
-        lines.append(BOOKING_LINK)
-        lines.append("")
-        lines.append(
-            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-        )
-        return "\n".join(lines)
-
-    if language == "pt":
-        lines = ["Aqui estão as opções disponíveis para o horário solicitado:"]
-        for item in results:
-            label = item.get("reply_label", "Cruzeiro")
-
-            if is_private_result(item):
-                lines.append(f"- {label}: disponível")
-            else:
-                vacancies_text = format_shared_vacancies(item.get("vacancies"))
-                if vacancies_text == "1":
-                    lines.append(f"- {label}: 1 lugar disponível")
-                else:
-                    lines.append(f"- {label}: {vacancies_text} lugares disponíveis")
-        lines.append("")
-        lines.append("Pode avançar com a sua reserva aqui:")
-        lines.append(BOOKING_LINK)
-        lines.append("")
-        lines.append("Por favor selecione a data na página de reservas.")
-        return "\n".join(lines)
-
+def build_multi_capacity_reply(results: list[dict]) -> str:
     lines = ["Here are the available options for the requested time:"]
     for item in results:
         label = item.get("reply_label", "Cruise")
@@ -997,6 +525,7 @@ def build_multi_capacity_reply(results: list[dict], language: str) -> str:
                 lines.append(f"- {label}: 1 spot available")
             else:
                 lines.append(f"- {label}: {vacancies_text} spots available")
+
     lines.append("")
     lines.append("You can proceed with your booking here:")
     lines.append(BOOKING_LINK)
@@ -1006,7 +535,7 @@ def build_multi_capacity_reply(results: list[dict], language: str) -> str:
 
 
 def build_best_choice_reply(
-    history: list[dict], language: str, passenger_count: int | None = None
+    history: list[dict], passenger_count: int | None = None
 ) -> str:
     recent_text = " ".join(
         item.get("content", "")
@@ -1018,93 +547,6 @@ def build_best_choice_reply(
     mentions_diamond = "diamond" in recent_text
     mentions_gems = "gems" in recent_text
     group_large = isinstance(passenger_count, int) and passenger_count >= 10
-
-    if language == "el":
-        if mentions_red and mentions_diamond:
-            if group_large:
-                return (
-                    f"Για {passenger_count} άτομα, το Red Cruise είναι συνήθως η καλύτερη επιλογή "
-                    "αν προτιμάτε πιο ζωντανή ατμόσφαιρα και πολύ καλή σχέση αξίας.\n\n"
-                    "Αν προτιμάτε κάτι πιο premium και πιο χαλαρό, τότε το Diamond είναι η καλύτερη επιλογή.\n\n"
-                    "Με απλά λόγια:\n"
-                    "Red = καλύτερη αξία για μεγαλύτερη παρέα\n"
-                    "Diamond = πιο premium συνολική εμπειρία"
-                )
-            return (
-                "Το Red Cruise είναι συνήθως η καλύτερη επιλογή αν προτιμάτε πιο ζωντανή ατμόσφαιρα και πολύ καλή σχέση αξίας.\n\n"
-                "Αν προτιμάτε κάτι πιο premium και πιο χαλαρό, τότε το Diamond είναι η καλύτερη επιλογή.\n\n"
-                "Με απλά λόγια:\n"
-                "Red = καλύτερη αξία\n"
-                "Diamond = πιο premium εμπειρία"
-            )
-
-        if mentions_red and mentions_gems:
-            return (
-                "Το Red Cruise είναι συνήθως η καλύτερη επιλογή αν θέλετε πιο ζωντανή ατμόσφαιρα και καλύτερη αξία.\n\n"
-                "Το Gems είναι καλύτερο αν προτιμάτε πιο άνετη και πιο refined εμπειρία.\n\n"
-                "Με απλά λόγια:\n"
-                "Red = καλύτερη αξία\n"
-                "Gems = πιο ισορροπημένη και πιο άνετη εμπειρία"
-            )
-
-        if mentions_diamond:
-            return "Το Diamond είναι η καλύτερη επιλογή αν προτεραιότητά σας είναι μια πιο premium και πιο ξεχωριστή εμπειρία."
-
-        return (
-            "Εξαρτάται από το τι προτιμάτε περισσότερο.\n\n"
-            "Για καλύτερη αξία και πιο ζωντανή ατμόσφαιρα, το Red είναι συνήθως η πιο δυνατή επιλογή.\n"
-            "Για πιο premium και πιο χαλαρή εμπειρία, το Diamond ή το Gems είναι συνήθως καλύτερα."
-        )
-
-    if language == "it":
-        if mentions_red and mentions_diamond:
-            if group_large:
-                return (
-                    f"Per {passenger_count} persone, la Red Cruise è di solito la scelta migliore "
-                    "se preferite un’atmosfera più vivace e un ottimo rapporto qualità-prezzo.\n\n"
-                    "Se invece desiderate qualcosa di più premium e più rilassato, allora Diamond è la scelta migliore.\n\n"
-                    "In breve:\n"
-                    "Red = migliore valore per un gruppo più grande\n"
-                    "Diamond = esperienza complessiva più premium"
-                )
-            return (
-                "La Red Cruise è di solito la scelta migliore se preferite un’atmosfera più vivace e un ottimo rapporto qualità-prezzo.\n\n"
-                "Se invece desiderate qualcosa di più premium e più rilassato, allora Diamond è la scelta migliore.\n\n"
-                "In breve:\n"
-                "Red = migliore valore\n"
-                "Diamond = esperienza più premium"
-            )
-
-        return (
-            "Dipende dal tipo di esperienza che preferite.\n\n"
-            "Per un’atmosfera più vivace e un ottimo rapporto qualità-prezzo, Red è di solito la scelta migliore.\n"
-            "Per un’esperienza più premium e rilassata, Diamond o Gems sono generalmente opzioni migliori."
-        )
-
-    if language == "pt":
-        if mentions_red and mentions_diamond:
-            if group_large:
-                return (
-                    f"Para {passenger_count} pessoas, o Red Cruise costuma ser a melhor opção "
-                    "se preferirem um ambiente mais animado e uma excelente relação qualidade-preço.\n\n"
-                    "Se preferirem algo mais premium e mais tranquilo, então o Diamond é a melhor escolha.\n\n"
-                    "Em resumo:\n"
-                    "Red = melhor valor para um grupo maior\n"
-                    "Diamond = experiência geral mais premium"
-                )
-            return (
-                "O Red Cruise costuma ser a melhor opção se preferirem um ambiente mais animado e uma excelente relação qualidade-preço.\n\n"
-                "Se preferirem algo mais premium e mais tranquilo, então o Diamond é a melhor escolha.\n\n"
-                "Em resumo:\n"
-                "Red = melhor valor\n"
-                "Diamond = experiência mais premium"
-            )
-
-        return (
-            "Depende do tipo de experiência que preferem.\n\n"
-            "Para um ambiente mais animado e melhor valor, o Red costuma ser a melhor opção.\n"
-            "Para uma experiência mais premium e mais tranquila, Diamond ou Gems costumam ser melhores escolhas."
-        )
 
     if mentions_red and mentions_diamond:
         if group_large:
@@ -1219,7 +661,6 @@ def build_dual_period_reply(
     morning_data,
     sunset_data,
     date_str: str,
-    language: str,
 ) -> str | None:
     morning_available = is_available_result(morning_data)
     sunset_available = is_available_result(sunset_data)
@@ -1248,33 +689,6 @@ def build_dual_period_reply(
     )
 
     pretty_date = format_pretty_date(date_str)
-
-    if language == "el":
-        return (
-            f"Για τις {pretty_date}, οι παρακάτω επιλογές είναι διαθέσιμες:\n\n"
-            f"- {morning_label}\n"
-            f"- {sunset_label}\n\n"
-            f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-            "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-        )
-
-    if language == "it":
-        return (
-            f"Per il {pretty_date}, sono disponibili le seguenti opzioni:\n\n"
-            f"- {morning_label}\n"
-            f"- {sunset_label}\n\n"
-            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-        )
-
-    if language == "pt":
-        return (
-            f"Para {pretty_date}, as seguintes opções estão disponíveis:\n\n"
-            f"- {morning_label}\n"
-            f"- {sunset_label}\n\n"
-            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-            "Por favor selecione a data na página de reservas."
-        )
 
     return (
         f"For {pretty_date}, the following options are available:\n\n"
@@ -1318,7 +732,7 @@ def admin_sessions(
 def chat(request: ChatRequest):
     user_message = request.message.strip()
     history = request.history or []
-    language = detect_language(user_message)
+    language = DEFAULT_LANGUAGE
     session_id = request.session_id
 
     tour_key = detect_tour_key(user_message)
@@ -1420,7 +834,7 @@ def chat(request: ChatRequest):
 You are the Sunset Oia digital assistant.
 
 IMPORTANT LANGUAGE RULE:
-- Always reply in the same language as the user's latest message.
+- Always reply in English.
 
 TONE:
 - Warm, natural, human
@@ -1435,13 +849,13 @@ CORE BEHAVIOR:
 - If unsure, give a safe, general answer
 
 CRITICAL RULE (VERY IMPORTANT):
-If the user asks about comparison, value, experience, or recommendation 
+If the user asks about comparison, value, experience, or recommendation
 (e.g. “which is better”, “difference”, “worth it”, “which should I choose”):
 
-→ You MUST answer the question directly  
-→ DO NOT mention booking  
-→ DO NOT mention availability  
-→ DO NOT redirect to WhatsApp  
+→ You MUST answer the question directly
+→ DO NOT mention booking
+→ DO NOT mention availability
+→ DO NOT redirect to WhatsApp
 
 CONTEXT RULE:
 - Answer ONLY based on the cruises mentioned in the question
@@ -1454,7 +868,7 @@ CONVERSATION STYLE:
 - Be clear and direct
 - Do not over-explain
 - Do not add unnecessary suggestions
-- Avoid ending every reply with “If you’d like, I can help…”
+- Avoid ending every reply with “If you'd like, I can help...”
 
 SALES APPROACH:
 - Guide naturally, not aggressively
@@ -1470,13 +884,13 @@ KNOWLEDGE USAGE:
 
 WHEN INFORMATION IS UNKNOWN:
 Say:
-“I don’t have that exact detail here, but I’ll be happy to check it for you.
+“I don't have that exact detail here, but I'll be happy to check it for you.
 
 You can also reach our team directly on WhatsApp:
 {WHATSAPP_LINK}”
 
 PERSONAL BOOKINGS:
-“I can’t see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp:
+“I can't see personal booking details here. Please check your booking confirmation, or contact us on WhatsApp:
 {WHATSAPP_LINK}”
 
 BOOKING LINK:
@@ -1551,7 +965,7 @@ USER MESSAGE:
         if results:
             capacity_filtered = filter_by_capacity(results, passenger_count)
             if capacity_filtered:
-                reply_text = build_multi_capacity_reply(capacity_filtered, language)
+                reply_text = build_multi_capacity_reply(capacity_filtered)
                 return log_and_return(
                     user_message=user_message,
                     reply=reply_text,
@@ -1596,7 +1010,7 @@ USER MESSAGE:
         if last_tour_key and last_date_str:
             data = safe_check_tour_availability(last_tour_key, last_date_str)
             if data:
-                reply_text = build_capacity_reply(data, language)
+                reply_text = build_capacity_reply(data)
                 return log_and_return(
                     user_message=user_message,
                     reply=reply_text,
@@ -1641,11 +1055,6 @@ USER MESSAGE:
             "how much does it cost",
             "how much is",
             "what is the price",
-            "τιμή",
-            "ποσο κοστιζει",
-            "πόσο κοστίζει",
-            "quanto custa",
-            "prezzo",
         ]
     )
 
@@ -1673,7 +1082,7 @@ USER MESSAGE:
         )
 
     if is_sunset_concern(user_message):
-        reply = build_sunset_reassurance_reply(language)
+        reply = build_sunset_reassurance_reply()
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1743,30 +1152,11 @@ USER MESSAGE:
                 currency = "EUR"
 
                 if amount is not None:
-                    if language == "el":
-                        reply = (
-                            f"Η τιμή για το {reply_label} είναι {amount} {currency} ανά άτομο.\n\n"
-                            f"Μπορείτε να προχωρήσετε στην κράτησή σας εδώ:\n{booking_url}\n\n"
-                            "Παρακαλούμε επιλέξτε την ημερομηνία στη σελίδα κράτησης."
-                        )
-                    elif language == "it":
-                        reply = (
-                            f"Il prezzo per {reply_label} è {amount} {currency} a persona.\n\n"
-                            f"Puoi procedere con la prenotazione qui:\n{booking_url}\n\n"
-                            "Ti preghiamo di selezionare la data nella pagina di prenotazione."
-                        )
-                    elif language == "pt":
-                        reply = (
-                            f"O preço para {reply_label} é {amount} {currency} por pessoa.\n\n"
-                            f"Pode avançar com a sua reserva aqui:\n{booking_url}\n\n"
-                            "Por favor selecione a data na página de reservas."
-                        )
-                    else:
-                        reply = (
-                            f"The price for {reply_label} is {amount} {currency} per person.\n\n"
-                            f"You can proceed with your booking here:\n{booking_url}\n\n"
-                            "Please select the date on the booking page."
-                        )
+                    reply = (
+                        f"The price for {reply_label} is {amount} {currency} per person.\n\n"
+                        f"You can proceed with your booking here:\n{booking_url}\n\n"
+                        "Please select the date on the booking page."
+                    )
 
                     return log_and_return(
                         user_message=user_message,
@@ -1814,7 +1204,7 @@ USER MESSAGE:
     )
 
     if availability_intent and tour_key and not date_str:
-        reply = build_date_clarification_reply(language)
+        reply = build_date_clarification_reply()
         return log_and_return(
             user_message=user_message,
             reply=reply,
@@ -1854,7 +1244,6 @@ USER MESSAGE:
             morning_data=morning_data,
             sunset_data=sunset_data,
             date_str=date_str,
-            language=language,
         )
 
         if dual_period_reply:
@@ -1869,7 +1258,6 @@ USER MESSAGE:
 
         if is_available_result(morning_data):
             reply_text = build_availability_reply(morning_data)
-            reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,
                 reply=reply_text,
@@ -1881,7 +1269,6 @@ USER MESSAGE:
 
         if is_available_result(sunset_data):
             reply_text = build_availability_reply(sunset_data)
-            reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,
                 reply=reply_text,
@@ -1908,7 +1295,6 @@ USER MESSAGE:
 
         if is_available:
             reply_text = build_availability_reply(data)
-            reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,
                 reply=reply_text,
@@ -1968,7 +1354,6 @@ USER MESSAGE:
             reply_text = build_availability_reply(fallback_data)
             print("FINAL FALLBACK REPLY:", reply_text)
 
-            reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,
                 reply=reply_text,
@@ -2003,7 +1388,6 @@ USER MESSAGE:
                     morning_data=morning_data,
                     sunset_data=sunset_data,
                     date_str=date_str,
-                    language=language,
                 )
 
                 if dual_period_reply:
@@ -2018,7 +1402,6 @@ USER MESSAGE:
 
                 if is_available_result(morning_data):
                     reply_text = build_availability_reply(morning_data)
-                    reply_text = translate_availability_reply(reply_text, language)
                     return log_and_return(
                         user_message=user_message,
                         reply=reply_text,
@@ -2030,7 +1413,6 @@ USER MESSAGE:
 
                 if is_available_result(sunset_data):
                     reply_text = build_availability_reply(sunset_data)
-                    reply_text = translate_availability_reply(reply_text, language)
                     return log_and_return(
                         user_message=user_message,
                         reply=reply_text,
@@ -2045,7 +1427,6 @@ USER MESSAGE:
 
                 if is_available_result(data):
                     reply_text = build_availability_reply(data)
-                    reply_text = translate_availability_reply(reply_text, language)
                     return log_and_return(
                         user_message=user_message,
                         reply=reply_text,
@@ -2106,7 +1487,6 @@ USER MESSAGE:
 
             if is_available_result(data):
                 reply_text = build_availability_reply(data)
-                reply_text = translate_availability_reply(reply_text, language)
                 return log_and_return(
                     user_message=user_message,
                     reply=reply_text,
@@ -2183,7 +1563,6 @@ USER MESSAGE:
             reply_text = build_multi_availability_reply(
                 filtered_results, effective_date, period, language
             )
-            reply_text = translate_availability_reply(reply_text, language)
             return log_and_return(
                 user_message=user_message,
                 reply=reply_text,
@@ -2219,26 +1598,10 @@ USER MESSAGE:
         mentions_gems = "gems" in recent_text
 
         if mentions_red and mentions_diamond and not mentions_gems:
-            if language == "el":
-                reply = (
-                    "Αν η βασική προτεραιότητα είναι ο προϋπολογισμός, το Red Cruise είναι η καλύτερη επιλογή σε αξία.\n\n"
-                    "Το Diamond είναι η πιο premium επιλογή, με μικρότερο group και περισσότερες παροχές onboard."
-                )
-            elif language == "it":
-                reply = (
-                    "Se il budget è la priorità principale, la Red Cruise è l’opzione con il miglior rapporto qualità-prezzo.\n\n"
-                    "Diamond è la scelta più premium, con un gruppo più piccolo e più servizi a bordo."
-                )
-            elif language == "pt":
-                reply = (
-                    "Se o orçamento for a prioridade principal, o Red Cruise é a opção com melhor valor.\n\n"
-                    "Diamond é a escolha mais premium, com um grupo mais pequeno e mais extras a bordo."
-                )
-            else:
-                reply = (
-                    "If budget is the main priority, Red Cruise is the better value option.\n\n"
-                    "Diamond is the more premium choice, with a smaller group and more onboard extras."
-                )
+            reply = (
+                "If budget is the main priority, Red Cruise is the better value option.\n\n"
+                "Diamond is the more premium choice, with a smaller group and more onboard extras."
+            )
 
             return log_and_return(
                 user_message=user_message,
@@ -2250,26 +1613,10 @@ USER MESSAGE:
             )
 
         if mentions_red and mentions_gems and not mentions_diamond:
-            if language == "el":
-                reply = (
-                    "Αν η βασική προτεραιότητα είναι ο προϋπολογισμός, το Red Cruise είναι συνήθως η καλύτερη επιλογή σε αξία.\n\n"
-                    "Το Gems είναι πιο άνετο και πιο refined, αλλά συνήθως όχι η πιο οικονομική επιλογή."
-                )
-            elif language == "it":
-                reply = (
-                    "Se il budget è la priorità principale, la Red Cruise è di solito l’opzione con il miglior valore.\n\n"
-                    "Gems è più comoda e più raffinata, ma di solito non è l’opzione più economica."
-                )
-            elif language == "pt":
-                reply = (
-                    "Se o orçamento for a prioridade principal, o Red Cruise costuma ser a opção com melhor valor.\n\n"
-                    "Gems é mais confortável e mais refinado, mas normalmente não é a opção mais económica."
-                )
-            else:
-                reply = (
-                    "If budget is the main priority, Red Cruise is usually the better value option.\n\n"
-                    "Gems is more comfortable and more refined, but usually not the lower-priced option."
-                )
+            reply = (
+                "If budget is the main priority, Red Cruise is usually the better value option.\n\n"
+                "Gems is more comfortable and more refined, but usually not the lower-priced option."
+            )
 
             return log_and_return(
                 user_message=user_message,
@@ -2283,7 +1630,6 @@ USER MESSAGE:
     if is_best_choice_question(user_message) and history:
         reply = build_best_choice_reply(
             history=history,
-            language=language,
             passenger_count=passenger_count,
         )
         return log_and_return(
@@ -2341,11 +1687,7 @@ USER MESSAGE:
 You are the Sunset Oia digital assistant.
 
 IMPORTANT LANGUAGE RULE:
-- Always reply in the same language as the user's latest message.
-- If the user writes in Greek, reply in Greek.
-- If the user writes in English, reply in English.
-- If the user writes in Italian, reply in Italian.
-- If the user writes in Portuguese, reply in Portuguese.
+- Always reply in English.
 
 Your tone:
 - Warm, natural and human — never robotic

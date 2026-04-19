@@ -1,21 +1,25 @@
 import re
 
 
-def detect_cruise_type_intent(user_message: str, history: list[dict] | None = None) -> str | None:
+def detect_cruise_type_intent(
+    user_message: str, history: list[dict] | None = None
+) -> str | None:
     text = user_message.lower()
 
     private_keywords = [
-        "private", "privately", "just for us", "only for us", "for our group only",
-        "ιδιωτική", "ιδιωτικη", "μόνο για εμάς", "μονο για εμας",
-        "privata", "solo per noi",
-        "privado", "privada", "só para nós", "so para nos"
+        "private",
+        "privately",
+        "just for us",
+        "only for us",
+        "for our group only",
     ]
 
     shared_keywords = [
-        "shared", "semi private", "semi-private", "join", "group cruise",
-        "κοινή", "κοινη",
-        "condivisa", "di gruppo",
-        "partilhado", "compartilhado", "grupo"
+        "shared",
+        "semi private",
+        "semi-private",
+        "join",
+        "group cruise",
     ]
 
     has_private = any(k in text for k in private_keywords)
@@ -46,7 +50,9 @@ def detect_cruise_type_intent(user_message: str, history: list[dict] | None = No
     return None
 
 
-def detect_passenger_count(user_message: str, history: list[dict] | None = None) -> int | None:
+def detect_passenger_count(
+    user_message: str, history: list[dict] | None = None
+) -> int | None:
     texts_to_check = [user_message.lower()]
 
     if history:
@@ -66,19 +72,6 @@ def detect_passenger_count(user_message: str, history: list[dict] | None = None)
         r"\b(\d+) guests\b",
         r"\b(\d+) pax\b",
         r"\bparty of (\d+)\b",
-        r"\bείμαστε (\d+)\b",
-        r"\bειμαστε (\d+)\b",
-        r"\bγια (\d+) άτομα\b",
-        r"\bγια (\d+) ατομα\b",
-        r"\b(\d+) άτομα\b",
-        r"\b(\d+) ατομα\b",
-        r"\bsiamo (\d+)\b",
-        r"\bper (\d+) persone\b",
-        r"\b(\d+) persone\b",
-        r"\bsomos (\d+)\b",
-        r"\bpara (\d+) pessoas\b",
-        r"\b(\d+) pessoas\b",
-        r"\b(\d+) pessoa(s)?\b"
     ]
 
     for text in texts_to_check:

@@ -112,12 +112,40 @@ def detect_date(user_message: str) -> str | None:
 
     # Only attempt generic date parsing if the message contains actual date-like clues
     date_clues = [
-        "january", "february", "march", "april", "may", "june", "july",
-        "august", "september", "october", "november", "december",
-        "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec",
-        "/", "-", ".",
-        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-        "δευτέρα", "τρίτη", "τετάρτη", "πέμπτη", "παρασκευή", "σάββατο", "κυριακή",
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "sept",
+        "oct",
+        "nov",
+        "dec",
+        "/",
+        "-",
+        ".",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
     ]
 
     has_date_clue = any(clue in original_text for clue in date_clues)
@@ -127,7 +155,7 @@ def detect_date(user_message: str) -> str | None:
 
     results = search_dates(
         text,
-        languages=["en", "el"],
+        languages=["en"],
         settings={
             "PREFER_DATES_FROM": "future",
             "DATE_ORDER": "DMY",
