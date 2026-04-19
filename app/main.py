@@ -263,6 +263,70 @@ def is_cruise_passenger(user_message: str) -> bool:
     return any(k in text for k in keywords)
 
 
+def is_full_day_request(user_message: str) -> bool:
+    text = user_message.lower()
+
+    keywords = [
+        "full day",
+        "full-day",
+        "whole day",
+        "all day",
+        "day trip",
+        "full day cruise",
+        "full-day cruise",
+    ]
+
+    return any(k in text for k in keywords)
+
+
+def is_large_private_request(
+    user_message: str,
+    passenger_count: int | None,
+    cruise_type_intent: str | None,
+) -> bool:
+    if not isinstance(passenger_count, int) or passenger_count <= 15:
+        return False
+
+    text = user_message.lower()
+
+    private_keywords = [
+        "private",
+        "just for us",
+        "only for us",
+        "for our group only",
+        "private cruise",
+        "private tour",
+        "private yacht",
+        "private catamaran",
+    ]
+
+    return cruise_type_intent == "private" or any(k in text for k in private_keywords)
+
+
+def build_full_day_whatsapp_reply() -> str:
+    return (
+        "We’d be very happy to help with a full-day private cruise.\n\n"
+        "Full-day options are not shown in the live online booking, so the best way is to contact our team directly on WhatsApp and we will gladly check the best available option for your date.\n\n"
+        f"WhatsApp:\n{WHATSAPP_LINK}"
+    )
+
+
+def build_large_private_whatsapp_reply(passenger_count: int) -> str:
+    return (
+        "We’d be very happy to assist with a private cruise for your group.\n\n"
+        f"For private requests above 15 guests, the best option is to contact our team directly on WhatsApp, so we can check the most suitable yachts for your group of {passenger_count} and make the best recommendation for your date.\n\n"
+        f"WhatsApp:\n{WHATSAPP_LINK}"
+    )
+
+
+def build_cruise_passenger_whatsapp_reply() -> str:
+    return (
+        "We’d be happy to assist.\n\n"
+        "As cruise ship arrival logistics can vary depending on timing, tender boats and cable car access, the best way is to contact our team directly on WhatsApp so we can guide you properly.\n\n"
+        f"WhatsApp:\n{WHATSAPP_LINK}"
+    )
+
+
 def is_personal_booking_request(user_message: str) -> bool:
     text = user_message.lower().strip()
 
@@ -445,6 +509,8 @@ def is_relevant(user_message: str) -> bool:
         "reservation department",
         "pregnant",
         "pregnancy",
+        "full day",
+        "full-day",
     ]
 
     return any(k in text for k in keywords)
@@ -855,6 +921,7 @@ def chat(request: ChatRequest):
     period = detect_period(user_message)
     tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
     passenger_count = detect_passenger_count(user_message, history)
+    cruise_type_intent = detect_cruise_type_intent(user_message, history)
 
     if not user_message:
         reply = get_text("empty_reply", language, BOOKING_LINK, WHATSAPP_LINK)
@@ -881,15 +948,37 @@ def chat(request: ChatRequest):
 
     if is_cruise_passenger(user_message):
         clear_session_state(session_id)
-        reply = get_text(
-            "cruise_passenger_reply", language, BOOKING_LINK, WHATSAPP_LINK
-        )
+        reply = build_cruise_passenger_whatsapp_reply()
         return log_and_return(
             user_message=user_message,
             reply=reply,
             language=language,
             fallback=False,
             detected_tour=None,
+            session_id=session_id,
+        )
+
+    if is_full_day_request(user_message):
+        clear_session_state(session_id)
+        reply = build_full_day_whatsapp_reply()
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
+            session_id=session_id,
+        )
+
+    if is_large_private_request(user_message, passenger_count, cruise_type_intent):
+        clear_session_state(session_id)
+        reply = build_large_private_whatsapp_reply(passenger_count)
+        return log_and_return(
+            user_message=user_message,
+            reply=reply,
+            language=language,
+            fallback=False,
+            detected_tour=tour_key,
             session_id=session_id,
         )
 
@@ -1253,7 +1342,6 @@ USER MESSAGE:
 
         tour_facts = build_tour_facts_block(tour_key) if tour_key else ""
 
-    cruise_type_intent = detect_cruise_type_intent(user_message, history)
     user_message_lower = user_message.lower()
 
     price_intent = any(
