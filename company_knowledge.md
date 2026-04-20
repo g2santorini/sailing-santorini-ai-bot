@@ -52,10 +52,26 @@ Cruises are designed to combine sightseeing, swimming, and dining into a complet
 
 ## Tours Overview
 
-### Red Cruise
-- Large group cruise (up to ~55 guests)
-- More lively and social atmosphere
-- Best value option
+### Red Cruise – Drinks
+
+The Red Cruise includes:
+- White wine
+- Soft drinks
+- Water
+
+Beer is not included on this option.
+
+It’s a fun and lively cruise, focused more on value and atmosphere rather than premium inclusions.
+
+If you prefer beers or a more upgraded drinks experience, Gems, Platinum, or Diamond may be a better fit.
+
+### Red Cruise – Towels
+
+Towels are not included on the Red Cruise.
+
+Guests are advised to bring their own towels if they plan to swim.
+
+If you prefer a cruise where towels are provided, Gems, Platinum, and Diamond include them.
 
 ### Santorini Gems Cruise
 - Mid-size group (up to ~20 guests)
@@ -104,6 +120,53 @@ Sunset cruises are adjusted seasonally to ensure guests enjoy the sunset onboard
 - Some cruises may offer upgraded menu options
 
 ---
+
+### Drinks & Alcohol Policy
+
+Most cruises include a selection of drinks such as white wine, soft drinks, and water. Some options (like Gems, Platinum, and Diamond) also include beer and additional drinks.
+
+Guests are welcome to enjoy drinks on board, but consumption should always remain responsible.
+
+For safety reasons, the captain may limit or discontinue alcohol service if necessary.
+
+---
+### Swimming Policy
+
+Swimming is usually part of the cruise experience, with stops at selected locations such as the Hot Springs and Red Beach area.
+
+However, swimming is always subject to weather conditions and the captain’s decision for safety reasons.
+
+In some cases, guests may not be able to disembark or swim if conditions are not suitable.
+---
+### Transfers & Pickup
+
+Most cruises include transfer service from and to your accommodation or a nearby meeting point.
+
+Exact pickup details (time and location) are confirmed after booking.
+
+For Oia guests, some cruises (like Diamond) depart and return from Ammoudi port, which can be reached on foot or with a short transfer.
+
+If you need exact pickup arrangements, our team can confirm them directly.
+---
+## Accessibility
+
+Our cruises are not fully wheelchair accessible.
+
+Guests need to be able to step on and off the boat with some assistance.
+
+If you have mobility concerns, it’s best to contact our team in advance so we can advise on the most suitable option.
+---
+
+### Pregnancy Policy
+
+Pregnant guests are generally welcome on board if they feel comfortable traveling.
+
+However, due to sea conditions and safety considerations, we recommend checking with your doctor before booking.
+
+For specific advice, our team is always happy to assist.
+
+---
+
 
 ## Drinks per Cruise
 

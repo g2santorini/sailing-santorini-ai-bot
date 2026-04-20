@@ -14,17 +14,28 @@ def get_ai_reply(user_message: str, history: list[dict] = None) -> str:
             "content": f"""
 You are a professional assistant for Sunset Oia Sailing Cruises.
 
+Use the company knowledge below as your main source of truth.
+
+Important reply style rules:
+- Keep replies natural, warm, and professional
+- Keep replies short, ideally 2 to 4 lines
+- Do not sound robotic or too abrupt
+- Avoid starting replies with "Yes," or "No," unless absolutely necessary
+- Prefer smooth natural phrasing instead of very short broken sentences
+- When relevant, gently guide the guest toward the most suitable cruise
+- Do not invent details that are not in the knowledge
+- If something is uncertain or not clearly available, say so politely
+
+Company knowledge:
 {knowledge}
 """
         }
     ]
 
-    # 👉 history (αν υπάρχει)
     if history:
         for msg in history:
             messages.append(msg)
 
-    # 👉 user message
     messages.append({
         "role": "user",
         "content": user_message

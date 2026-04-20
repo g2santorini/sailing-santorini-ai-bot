@@ -128,6 +128,24 @@ def should_continue_active_topic(
     return True
 
 
+def should_break_pending_availability(
+    message_type: str,
+    detected_date: Optional[str],
+    detected_time: Optional[str],
+    current_state: Dict[str, Any],
+) -> bool:
+    if current_state.get("pending_action") != "availability":
+        return False
+
+    if message_type != "general_question":
+        return False
+
+    if detected_date or detected_time:
+        return False
+
+    return True
+
+
 def route_message(
     user_message: str,
     state: Optional[Dict[str, Any]] = None,
@@ -137,6 +155,18 @@ def route_message(
     detected_date = detect_date(user_message)
     detected_tour = detect_tour_key(user_message)
     detected_time = detect_period(user_message)
+    message_type = detect_message_type(user_message)
+
+    # --------------------------------------------------
+    # 0. Break pending availability for fresh general questions
+    # --------------------------------------------------
+    if should_break_pending_availability(
+        message_type=message_type,
+        detected_date=detected_date,
+        detected_time=detected_time,
+        current_state=current_state,
+    ):
+        current_state = clear_state()
 
     # --------------------------------------------------
     # 1. Pending flow always wins
@@ -210,7 +240,7 @@ def route_message(
     # --------------------------------------------------
     # 2. Fresh detection
     # --------------------------------------------------
-    message_type = detect_message_type(user_message)
+    # message_type already detected above
 
     # --------------------------------------------------
     # 3. Continue active non-availability topic
