@@ -506,3 +506,21 @@ For larger groups, there is an extra charge per person.
 You can check the exact price for your date on the booking page, or I can help you estimate it.
 
 ---
+
+## Follow-up Progression
+
+When the user says:
+- "yes"
+- "yes please"
+- "ok"
+
+Do NOT repeat the same answer.
+
+Instead:
+- Move one step forward in the conversation
+- Add more specific guidance
+- Narrow down options
+
+Example:
+First reply → suggest options  
+Second reply → recommend specific option
