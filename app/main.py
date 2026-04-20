@@ -28,7 +28,7 @@ from app.services.context_service import (
     get_last_tour_and_date_from_history,
     has_recent_availability_context,
 )
-from app.services.conversation_state import create_empty_state
+from app.services.conversation_state import create_empty_state, set_active_topic
 from app.services.date_detector import detect_date
 from app.services.intent_service import (
     is_availability_request,
@@ -634,6 +634,52 @@ def detect_period(user_message: str) -> str | None:
 
     return None
 
+def detect_active_topic(user_message: str) -> str | None:
+    text = (user_message or "").lower()
+
+    if any(word in text for word in ["drink", "drinks", "wine", "beer", "beverage", "beverages", "bar"]):
+        return "drinks"
+
+    if any(word in text for word in ["food", "meal", "menu", "lunch", "dinner", "bbq", "vegetarian", "vegan"]):
+        return "food"
+
+    if any(word in text for word in ["include", "included", "inclusion", "inclusions", "towel", "towels", "snorkel", "snorkeling"]):
+        return "inclusions"
+
+    if any(word in text for word in ["pickup", "pick-up", "transfer", "hotel pickup", "meeting point", "where do we meet"]):
+        return "pickup"
+
+    if any(word in text for word in ["cancel", "cancellation", "refund", "weather", "policy", "policies"]):
+        return "policies"
+
+    if any(word in text for word in ["pregnant", "pregnancy"]):
+        return "pregnancy"
+
+    if any(word in text for word in ["wheelchair", "accessible", "accessibility", "mobility"]):
+        return "accessibility"
+
+    return None
+
+
+def save_active_topic_state(
+    session_id: str | None,
+    current_state: dict,
+    topic: str | None,
+    tour_key: str | None = None,
+    date_str: str | None = None,
+    period: str | None = None,
+) -> None:
+    if not topic:
+        return
+
+    new_state = set_active_topic(
+        current_state,
+        topic=topic,
+        tour=tour_key,
+        date=date_str,
+        time=period,
+    )
+    save_session_state(session_id, new_state)
 
 def extract_result_text(item) -> str:
     if isinstance(item, dict):
@@ -1432,20 +1478,49 @@ USER MESSAGE:
         "comparison_answer",
         "recommendation_answer",
         "continue_comparison",
+        "continue_active_topic",
     }:
         save_session_state(
             session_id,
             routing_decision.get("state", create_empty_state()),
         )
+
         conversation_history = build_conversation_history(history)
         knowledge = get_company_knowledge()
 
-        prompt = build_comparison_recommendation_prompt(
-            user_message=user_message,
-            conversation_history=conversation_history,
-            knowledge=knowledge,
-            tour_facts=tour_facts,
-        )
+        if routing_action == "continue_active_topic":
+            prompt = f"""
+You are the Sunset Oia digital assistant.
+
+IMPORTANT:
+- Always reply in English
+- Keep answers short (2–4 lines)
+- Answer the user’s question directly
+- DO NOT ask for date or availability unless the user clearly asks for it
+- Continue the current topic naturally
+
+CURRENT ACTIVE TOPIC:
+{routing_decision.get("active_topic")}
+
+STRUCTURED TOUR FACTS:
+{tour_facts}
+
+COMPANY KNOWLEDGE:
+{knowledge}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+USER MESSAGE:
+{user_message}
+"""
+        else:
+            prompt = build_comparison_recommendation_prompt(
+                user_message=user_message,
+                conversation_history=conversation_history,
+                knowledge=knowledge,
+                tour_facts=tour_facts,
+            )
 
         try:
             reply = get_ai_reply(prompt)
@@ -1658,6 +1733,10 @@ USER MESSAGE:
                 "pending_date": None,
                 "pending_time": period,
                 "comparison_candidates": [],
+                "active_topic": "availability",
+                "active_tour": tour_key,
+                "active_date": None,
+                "active_time": period,
             },
         )
         return log_and_return(
@@ -2266,8 +2345,21 @@ USER MESSAGE:
 {user_message}
 """
 
-    clear_session_state(session_id)
     reply = get_ai_reply(prompt)
+
+    active_topic = detect_active_topic(user_message)
+    if active_topic:
+        save_active_topic_state(
+            session_id=session_id,
+            current_state=current_state,
+            topic=active_topic,
+            tour_key=tour_key,
+            date_str=date_str,
+            period=period,
+        )
+    else:
+        clear_session_state(session_id)
+
     return log_and_return(
         user_message=user_message,
         reply=reply,

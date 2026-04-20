@@ -10,6 +10,7 @@ from app.services.conversation_state import (
     has_pending_action,
     is_affirmative_followup,
     set_pending_action,
+    set_active_topic,
     update_state_with_new_info,
 )
 from app.services.date_detector import detect_date
@@ -24,6 +25,22 @@ COMPARISON_FOLLOWUP_PHRASES = [
     "how about",
     "and",
 ]
+
+
+NON_AVAILABILITY_ACTIVE_TOPICS = {
+    "drinks",
+    "food",
+    "inclusions",
+    "pickup",
+    "meeting_point",
+    "policies",
+    "pregnancy",
+    "accessibility",
+    "comparison",
+    "recommendation",
+    "pricing",
+    "general_info",
+}
 
 
 def detect_period(user_message: str) -> Optional[str]:
@@ -85,6 +102,30 @@ def is_comparison_followup(
         return True
 
     return any(text.startswith(phrase) for phrase in COMPARISON_FOLLOWUP_PHRASES)
+
+
+def should_continue_active_topic(
+    user_message: str,
+    state: Optional[Dict[str, Any]],
+    detected_date: Optional[str],
+    detected_time: Optional[str],
+) -> bool:
+    if not state:
+        return False
+
+    active_topic = state.get("active_topic")
+    if active_topic not in NON_AVAILABILITY_ACTIVE_TOPICS:
+        return False
+
+    message_type = detect_message_type(user_message)
+
+    if message_type != "incomplete_message":
+        return False
+
+    if detected_date or detected_time:
+        return False
+
+    return True
 
 
 def route_message(
@@ -172,7 +213,35 @@ def route_message(
     message_type = detect_message_type(user_message)
 
     # --------------------------------------------------
-    # 3. Comparison follow-up without losing context
+    # 3. Continue active non-availability topic
+    # --------------------------------------------------
+    if should_continue_active_topic(
+        user_message=user_message,
+        state=current_state,
+        detected_date=detected_date,
+        detected_time=detected_time,
+    ):
+        new_state = update_state_with_new_info(
+            current_state,
+            tour=detected_tour,
+            date=detected_date,
+            time=detected_time,
+        )
+
+        return {
+            "action": "continue_active_topic",
+            "reply": None,
+            "state": new_state,
+            "message_type": current_state.get("active_topic") or "general_info",
+            "date": detected_date or current_state.get("active_date"),
+            "tour": detected_tour or current_state.get("active_tour"),
+            "time": detected_time or current_state.get("active_time"),
+            "missing": [],
+            "active_topic": current_state.get("active_topic"),
+        }
+
+    # --------------------------------------------------
+    # 4. Comparison follow-up without losing context
     # --------------------------------------------------
     if is_comparison_followup(user_message, current_state, detected_tour):
         comparison_candidates = extract_comparison_candidates(
@@ -186,6 +255,13 @@ def route_message(
             action=current_state.get("pending_action") or "comparison",
             comparison_candidates=comparison_candidates,
         )
+        new_state = set_active_topic(
+            new_state,
+            topic="comparison",
+            tour=detected_tour,
+            date=detected_date,
+            time=detected_time,
+        )
 
         return {
             "action": "continue_comparison",
@@ -197,10 +273,11 @@ def route_message(
             "time": detected_time,
             "missing": [],
             "comparison_candidates": comparison_candidates,
+            "active_topic": "comparison",
         }
 
     # --------------------------------------------------
-    # 4. Incomplete / short follow-up without pending state
+    # 5. Incomplete / short follow-up without pending state
     # --------------------------------------------------
     if message_type == "incomplete_message":
         if detected_date and not detected_tour:
@@ -228,6 +305,13 @@ def route_message(
                     action="comparison",
                     comparison_candidates=new_candidates,
                 )
+                new_state = set_active_topic(
+                    new_state,
+                    topic="comparison",
+                    tour=detected_tour,
+                    date=detected_date,
+                    time=detected_time,
+                )
                 return {
                     "action": "continue_comparison",
                     "reply": None,
@@ -238,6 +322,27 @@ def route_message(
                     "time": detected_time,
                     "missing": [],
                     "comparison_candidates": new_candidates,
+                    "active_topic": "comparison",
+                }
+
+            active_topic = current_state.get("active_topic")
+            if active_topic in NON_AVAILABILITY_ACTIVE_TOPICS:
+                new_state = update_state_with_new_info(
+                    current_state,
+                    tour=detected_tour,
+                    date=detected_date,
+                    time=detected_time,
+                )
+                return {
+                    "action": "continue_active_topic",
+                    "reply": None,
+                    "state": new_state,
+                    "message_type": active_topic,
+                    "date": detected_date or current_state.get("active_date"),
+                    "tour": detected_tour or current_state.get("active_tour"),
+                    "time": detected_time or current_state.get("active_time"),
+                    "missing": [],
+                    "active_topic": active_topic,
                 }
 
             return {
@@ -252,6 +357,20 @@ def route_message(
             }
 
         if is_affirmative_followup(user_message):
+            active_topic = current_state.get("active_topic")
+            if active_topic in NON_AVAILABILITY_ACTIVE_TOPICS:
+                return {
+                    "action": "continue_active_topic",
+                    "reply": None,
+                    "state": current_state,
+                    "message_type": active_topic,
+                    "date": current_state.get("active_date"),
+                    "tour": current_state.get("active_tour"),
+                    "time": current_state.get("active_time"),
+                    "missing": [],
+                    "active_topic": active_topic,
+                }
+
             return {
                 "action": "clarify",
                 "reply": "Just let me know your preferred date and cruise, and I’ll guide you from there.",
@@ -275,7 +394,7 @@ def route_message(
         }
 
     # --------------------------------------------------
-    # 5. Availability flow
+    # 6. Availability flow
     # --------------------------------------------------
     if message_type == "availability_request":
         missing = detect_missing_info(
@@ -303,6 +422,7 @@ def route_message(
                 "tour": detected_tour,
                 "time": detected_time,
                 "missing": missing,
+                "active_topic": "availability",
             }
 
         return {
@@ -314,10 +434,11 @@ def route_message(
             "tour": detected_tour,
             "time": detected_time,
             "missing": [],
+            "active_topic": "availability",
         }
 
     # --------------------------------------------------
-    # 6. Comparison
+    # 7. Comparison
     # --------------------------------------------------
     if message_type == "comparison_request":
         comparison_candidates = extract_comparison_candidates(
@@ -331,6 +452,13 @@ def route_message(
             action="comparison",
             comparison_candidates=comparison_candidates,
         )
+        new_state = set_active_topic(
+            new_state,
+            topic="comparison",
+            tour=detected_tour,
+            date=detected_date,
+            time=detected_time,
+        )
 
         return {
             "action": "comparison_answer",
@@ -342,10 +470,11 @@ def route_message(
             "time": detected_time,
             "missing": [],
             "comparison_candidates": comparison_candidates,
+            "active_topic": "comparison",
         }
 
     # --------------------------------------------------
-    # 7. Recommendation
+    # 8. Recommendation
     # --------------------------------------------------
     if message_type == "recommendation_request":
         comparison_candidates = extract_comparison_candidates(
@@ -359,6 +488,13 @@ def route_message(
             action="recommendation",
             comparison_candidates=comparison_candidates,
         )
+        new_state = set_active_topic(
+            new_state,
+            topic="recommendation",
+            tour=detected_tour,
+            date=detected_date,
+            time=detected_time,
+        )
 
         return {
             "action": "recommendation_answer",
@@ -370,14 +506,13 @@ def route_message(
             "time": detected_time,
             "missing": [],
             "comparison_candidates": comparison_candidates,
+            "active_topic": "recommendation",
         }
 
     # --------------------------------------------------
-    # 8. Booking intent only
+    # 9. Booking intent only
     # --------------------------------------------------
     if message_type == "booking_intent_only":
-        # If the user already provided booking details, treat this as availability flow
-        # instead of returning generic booking guidance.
         if detected_date or detected_tour or detected_time:
             missing = detect_missing_info(
                 message_type="availability_request",
@@ -404,6 +539,7 @@ def route_message(
                     "tour": detected_tour,
                     "time": detected_time,
                     "missing": missing,
+                    "active_topic": "availability",
                 }
 
             return {
@@ -415,6 +551,7 @@ def route_message(
                 "tour": detected_tour,
                 "time": detected_time,
                 "missing": [],
+                "active_topic": "availability",
             }
 
         return {
@@ -429,15 +566,24 @@ def route_message(
         }
 
     # --------------------------------------------------
-    # 9. Default = general answer
+    # 10. Default = general answer
     # --------------------------------------------------
+    new_state = set_active_topic(
+        current_state,
+        topic="general_info",
+        tour=detected_tour,
+        date=detected_date,
+        time=detected_time,
+    )
+
     return {
         "action": "general_answer",
         "reply": None,
-        "state": clear_state(),
+        "state": new_state,
         "message_type": message_type,
         "date": detected_date,
         "tour": detected_tour,
         "time": detected_time,
         "missing": [],
+        "active_topic": "general_info",
     }

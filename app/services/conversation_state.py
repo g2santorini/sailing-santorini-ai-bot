@@ -8,6 +8,10 @@ def create_empty_state() -> Dict[str, Optional[Any]]:
         "pending_date": None,
         "pending_time": None,
         "comparison_candidates": [],
+        "active_topic": None,
+        "active_tour": None,
+        "active_date": None,
+        "active_time": None,
     }
 
 
@@ -36,6 +40,39 @@ def set_pending_action(
     new_state["pending_time"] = time
     new_state["comparison_candidates"] = comparison_candidates or []
 
+    if tour:
+        new_state["active_tour"] = tour
+    if date:
+        new_state["active_date"] = date
+    if time:
+        new_state["active_time"] = time
+
+    return new_state
+
+
+def set_active_topic(
+    state: Optional[Dict[str, Any]],
+    topic: str,
+    tour: Optional[str] = None,
+    date: Optional[str] = None,
+    time: Optional[str] = None,
+) -> Dict[str, Optional[Any]]:
+    new_state = create_empty_state()
+
+    if state:
+        new_state.update(state)
+
+    new_state["active_topic"] = topic
+
+    if tour:
+        new_state["active_tour"] = tour
+
+    if date:
+        new_state["active_date"] = date
+
+    if time:
+        new_state["active_time"] = time
+
     return new_state
 
 
@@ -53,12 +90,15 @@ def update_state_with_new_info(
 
     if tour:
         new_state["pending_tour"] = tour
+        new_state["active_tour"] = tour
 
     if date:
         new_state["pending_date"] = date
+        new_state["active_date"] = date
 
     if time:
         new_state["pending_time"] = time
+        new_state["active_time"] = time
 
     if comparison_candidates:
         existing = new_state.get("comparison_candidates") or []
