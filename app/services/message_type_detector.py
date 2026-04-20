@@ -39,6 +39,7 @@ def looks_like_question(text: str) -> bool:
         "are",
         "will",
         "would",
+        "should",
     ]
     return text.endswith("?") or any(text.startswith(starter + " ") for starter in question_starters)
 
@@ -151,6 +152,8 @@ def detect_message_type(user_message: str) -> MessageType:
         "which is better",
         "which one is better",
         "better than",
+        "what is the difference between",
+        "what's the difference between",
     ]
 
     recommendation_keywords = [
@@ -166,6 +169,17 @@ def detect_message_type(user_message: str) -> MessageType:
         "which cruise is best",
         "what do you recommend",
         "what would you recommend",
+        "worth it",
+        "is it worth",
+        "better to",
+        "should i choose",
+        "should we choose",
+        "which one should i choose",
+        "which one should we choose",
+        "what is best for",
+        "what would be best for",
+        "suitable for us",
+        "most suitable",
     ]
 
     booking_only_keywords = [
