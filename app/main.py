@@ -1499,6 +1499,18 @@ IMPORTANT:
 - DO NOT ask for date or availability unless the user clearly asks for it
 - Continue the current topic naturally
 
+VERY IMPORTANT FOLLOW-UP RULE:
+- If the user replies with a short confirmation such as:
+  "yes", "yes please", "sure", "ok", "please", "go ahead"
+  then treat it as acceptance of the assistant's previous offer
+  and provide the missing information directly.
+- Example:
+  If the assistant just said "I can also tell you what drinks are included"
+  and the user says "yes please",
+  then you MUST list the drinks directly.
+- Do NOT repeat the same general explanation.
+- Do NOT ask another vague follow-up question unless absolutely necessary.
+
 CURRENT ACTIVE TOPIC:
 {routing_decision.get("active_topic")}
 
