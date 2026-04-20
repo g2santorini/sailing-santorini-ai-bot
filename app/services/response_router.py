@@ -193,6 +193,23 @@ def route_message(
         current_state = clear_state()
 
     # --------------------------------------------------
+    # 0.5 Capacity follow-up should win early
+    # e.g. "And for 6 people?"
+    # --------------------------------------------------
+    if is_capacity_followup(user_message, current_state):
+        return {
+            "action": "capacity_followup",
+            "reply": None,
+            "state": current_state,
+            "message_type": "capacity_question",
+            "date": current_state.get("active_date"),
+            "tour": current_state.get("active_tour"),
+            "time": current_state.get("active_time"),
+            "missing": [],
+            "active_topic": "availability",
+        }
+
+    # --------------------------------------------------
     # 1. Pending flow always wins
     # --------------------------------------------------
     if has_pending_action(current_state):
@@ -334,20 +351,6 @@ def route_message(
     # 5. Incomplete / short follow-up without pending state
     # --------------------------------------------------
     if message_type == "incomplete_message":
-        # 🔥 Capacity follow-up (e.g. "And for 6 people?")
-        if is_capacity_followup(user_message, current_state):
-            return {
-                "action": "capacity_followup",
-                "reply": None,
-                "state": current_state,
-                "message_type": "capacity_question",
-                "date": current_state.get("active_date"),
-                "tour": current_state.get("active_tour"),
-                "time": current_state.get("active_time"),
-                "missing": [],
-                "active_topic": "availability",
-            }
-
         if detected_date and not detected_tour:
             return {
                 "action": "clarify",
