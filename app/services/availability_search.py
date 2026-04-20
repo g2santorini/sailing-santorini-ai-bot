@@ -1,4 +1,4 @@
-from app.services.tour_mapping import TOUR_OPTIONS
+from app.services.tour_mapping import TOUR_OPTIONS, extract_max_guests
 from app.services.availability_lookup import check_tour_availability
 
 
@@ -138,6 +138,21 @@ def has_enough_vacancies(availability: dict, passenger_count: int | None) -> boo
         return False
 
 
+def has_enough_capacity(tour: dict, passenger_count: int | None) -> bool:
+    if passenger_count is None:
+        return True
+
+    max_guests = extract_max_guests(tour)
+
+    if max_guests is None:
+        return True
+
+    try:
+        return int(passenger_count) <= int(max_guests)
+    except (TypeError, ValueError):
+        return True
+
+
 def find_available_tours(
     date_str: str,
     period: str | None = None,
@@ -173,6 +188,9 @@ def find_available_tours(
         ):
             continue
 
+        if not has_enough_capacity(tour, passenger_count):
+            continue
+
         data = check_tour_availability(tour_key, date_str)
 
         if not data or not data.get("success"):
@@ -203,6 +221,7 @@ def find_available_tours(
                 "vacancies": availability["vacancies"],
                 "date_time": availability["date_time"],
                 "tour_type": tour.get("tour_type"),
+                "max_guests": extract_max_guests(tour),
             }
         )
 

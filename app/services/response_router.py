@@ -216,7 +216,6 @@ def route_message(
             }
 
         if detected_tour and not detected_date:
-            # If user only adds a new cruise name after comparison, continue comparison
             comparison_candidates = current_state.get("comparison_candidates") or []
             if comparison_candidates:
                 new_candidates = extract_comparison_candidates(
@@ -377,6 +376,47 @@ def route_message(
     # 8. Booking intent only
     # --------------------------------------------------
     if message_type == "booking_intent_only":
+        # If the user already provided booking details, treat this as availability flow
+        # instead of returning generic booking guidance.
+        if detected_date or detected_tour or detected_time:
+            missing = detect_missing_info(
+                message_type="availability_request",
+                date=detected_date,
+                tour=detected_tour,
+                time=detected_time,
+            )
+
+            if missing:
+                new_state = set_pending_action(
+                    current_state,
+                    action="availability",
+                    tour=detected_tour,
+                    date=detected_date,
+                    time=detected_time,
+                )
+
+                return {
+                    "action": "clarify",
+                    "reply": build_clarification_reply(missing),
+                    "state": new_state,
+                    "message_type": "availability_request",
+                    "date": detected_date,
+                    "tour": detected_tour,
+                    "time": detected_time,
+                    "missing": missing,
+                }
+
+            return {
+                "action": "availability_ready",
+                "reply": None,
+                "state": clear_state(),
+                "message_type": "availability_request",
+                "date": detected_date,
+                "tour": detected_tour,
+                "time": detected_time,
+                "missing": [],
+            }
+
         return {
             "action": "booking_guidance",
             "reply": "I’ll be happy to help. Just let me know your preferred date and cruise, and I’ll guide you with the next step.",

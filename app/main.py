@@ -58,7 +58,11 @@ from app.services.request_parser_service import (
 from app.services.response_router import route_message
 from app.services.season_service import get_seasonal_reply
 from app.services.tour_detector import detect_tour_key
-from app.services.tour_mapping import build_tour_facts_block
+from app.services.tour_mapping import (
+    TOUR_OPTIONS,
+    build_tour_facts_block,
+    extract_max_guests,
+)
 from app.services.translation_service import get_text
 
 app = FastAPI()
@@ -891,6 +895,19 @@ def normalize_to_base_tour_key(tour_key: str | None) -> str | None:
     return tour_key
 
 
+def get_base_tour_max_guests(base_tour_key: str | None) -> int | None:
+    if not base_tour_key:
+        return None
+
+    for option_key, option_data in TOUR_OPTIONS.items():
+        if option_key.startswith(f"{base_tour_key}_"):
+            max_guests = extract_max_guests(option_data)
+            if max_guests is not None:
+                return max_guests
+
+    return None
+
+
 def get_locked_followup_context(history: list[dict]) -> tuple[str | None, str | None]:
     """
     For short follow-up availability questions like:
@@ -936,6 +953,8 @@ def build_dual_period_reply(
     morning_data,
     sunset_data,
     date_str: str,
+    passenger_count: int | None = None,
+    max_guests: int | None = None,
 ) -> str | None:
     morning_available = is_available_result(morning_data)
     sunset_available = is_available_result(sunset_data)
@@ -964,6 +983,20 @@ def build_dual_period_reply(
     )
 
     pretty_date = format_pretty_date(date_str)
+
+    if (
+        isinstance(passenger_count, int)
+        and isinstance(max_guests, int)
+        and passenger_count > max_guests
+    ):
+        guest_word = "guest" if max_guests == 1 else "guests"
+        return (
+            f"For {pretty_date}, both the {morning_label} and the {sunset_label} are available, "
+            f"however they can accommodate up to {max_guests} {guest_word} each, "
+            f"so they would not be suitable for your group of {passenger_count} guests.\n\n"
+            f"You may explore other suitable options here:\n{BOOKING_LINK}\n\n"
+            "Please select the date on the booking page."
+        )
 
     return (
         f"For {pretty_date}, the following options are available:\n\n"
@@ -1668,6 +1701,8 @@ USER MESSAGE:
             morning_data=morning_data,
             sunset_data=sunset_data,
             date_str=date_str,
+            passenger_count=passenger_count,
+            max_guests=get_base_tour_max_guests(tour_key),
         )
 
         if dual_period_reply:
@@ -1847,6 +1882,8 @@ USER MESSAGE:
                     morning_data=morning_data,
                     sunset_data=sunset_data,
                     date_str=date_str,
+                    passenger_count=passenger_count,
+                    max_guests=get_base_tour_max_guests(last_tour_key),
                 )
 
                 if dual_period_reply:
