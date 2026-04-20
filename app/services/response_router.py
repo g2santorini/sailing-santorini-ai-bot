@@ -43,6 +43,15 @@ NON_AVAILABILITY_ACTIVE_TOPICS = {
 }
 
 
+CAPACITY_WORDS = {
+    "people",
+    "person",
+    "guests",
+    "guest",
+    "pax",
+}
+
+
 def detect_period(user_message: str) -> Optional[str]:
     text = (user_message or "").lower()
 
@@ -144,6 +153,21 @@ def should_break_pending_availability(
         return False
 
     return True
+
+
+def is_capacity_followup(user_message: str, state: Optional[Dict[str, Any]]) -> bool:
+    if not state:
+        return False
+
+    if state.get("active_topic") != "availability":
+        return False
+
+    text = (user_message or "").lower()
+
+    has_capacity_word = any(word in text for word in CAPACITY_WORDS)
+    has_number = any(char.isdigit() for char in text)
+
+    return has_capacity_word and has_number
 
 
 def route_message(
@@ -310,6 +334,20 @@ def route_message(
     # 5. Incomplete / short follow-up without pending state
     # --------------------------------------------------
     if message_type == "incomplete_message":
+        # 🔥 Capacity follow-up (e.g. "And for 6 people?")
+        if is_capacity_followup(user_message, current_state):
+            return {
+                "action": "capacity_followup",
+                "reply": None,
+                "state": current_state,
+                "message_type": "capacity_question",
+                "date": current_state.get("active_date"),
+                "tour": current_state.get("active_tour"),
+                "time": current_state.get("active_time"),
+                "missing": [],
+                "active_topic": "availability",
+            }
+
         if detected_date and not detected_tour:
             return {
                 "action": "clarify",
