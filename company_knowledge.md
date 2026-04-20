@@ -286,6 +286,76 @@ https://sailingsantorini.link-twist.com/
 
 ---
 
+## Tours – Experience Style
+
+### Red Cruise
+A lively and social cruise, ideal for guests looking for a fun atmosphere and great value.  
+Best choice if you enjoy a more energetic experience with more people on board.
+
+### Santorini Gems
+A balanced option with a smaller group size and a more relaxed atmosphere.  
+Great value for those who want comfort without going fully premium.
+
+### Platinum Cruise
+A boutique-style experience with fewer guests and a more intimate setting.  
+Ideal if you prefer a quieter and more refined cruise.
+
+### Diamond Cruise
+The most premium shared cruise, with limited guests, more space, and upgraded inclusions.  
+Perfect for a more exclusive and relaxed experience, especially for couples or special occasions.
+
+## Private Cruises – Experience
+
+Private cruises offer a fully exclusive experience, ideal for couples, families, or groups who want privacy and flexibility.
+
+You have your own yacht, your own schedule flexibility, and a more personalized service compared to shared cruises.
+
+They are perfect for special occasions such as honeymoons, birthdays, or simply for a more premium and relaxed day at sea.
+
+## Private Options Overview
+
+### Lagoon 380 / 400
+A comfortable and great-value private catamaran, ideal for small groups or families.  
+Best choice if you want a private experience at a more accessible price point.
+
+### Lagoon 450
+A more spacious and upgraded catamaran, offering a better balance between comfort and price.  
+Ideal for guests who want more space without going to the highest tier.
+
+### Lagoon 560 / Ipanema 58
+Premium large catamarans with more space, comfort, and upgraded service.  
+Perfect for a more luxurious private experience.
+
+### Ferretti 55
+A luxury motor yacht with a sleek design and faster cruising.  
+Ideal for guests who prefer a stylish and dynamic experience.
+
+### Ferretti 731
+A top-tier luxury yacht with maximum space, comfort, and exclusivity.  
+Best choice for a high-end experience with full privacy and premium service.
+
+## Private Pricing Logic
+
+Private cruises are typically priced for a base number of guests (usually up to 4), with an extra charge per additional guest.
+
+Prices vary depending on:
+- Season (low, mid, high)
+- Duration (morning, sunset, full day)
+- Type of yacht
+
+For exact pricing, the system or booking page should always be checked, or the team can assist directly.
+
+## When to Recommend Private
+
+Suggest a private cruise when:
+- The group is large (8+ guests)
+- Guests ask for privacy or exclusivity
+- Guests mention special occasions (honeymoon, birthday)
+- Guests want a more flexible or premium experience
+
+Private cruises are also a great option when the price difference per person becomes reasonable for larger groups.
+
+
 ## WhatsApp Support
 
 For special requests, availability issues, or custom arrangements:
