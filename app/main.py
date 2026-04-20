@@ -634,6 +634,7 @@ def detect_period(user_message: str) -> str | None:
 
     return None
 
+
 def detect_active_topic(user_message: str) -> str | None:
     text = (user_message or "").lower()
 
@@ -680,6 +681,30 @@ def save_active_topic_state(
         time=period,
     )
     save_session_state(session_id, new_state)
+
+
+def save_availability_context_state(
+    session_id: str | None,
+    tour_key: str | None,
+    date_str: str | None,
+    period: str | None,
+) -> None:
+    if not session_id:
+        return
+
+    state = {
+        "pending_action": None,
+        "pending_tour": None,
+        "pending_date": None,
+        "pending_time": None,
+        "comparison_candidates": [],
+        "active_topic": "availability",
+        "active_tour": tour_key,
+        "active_date": date_str,
+        "active_time": period,
+    }
+    save_session_state(session_id, state)
+
 
 def extract_result_text(item) -> str:
     if isinstance(item, dict):
@@ -1474,6 +1499,80 @@ USER MESSAGE:
             session_id=session_id,
         )
 
+    if routing_action == "capacity_followup":
+        save_session_state(
+            session_id,
+            routing_decision.get("state", create_empty_state()),
+        )
+
+        followup_tour = routing_decision.get("tour") or tour_key
+        followup_date = routing_decision.get("date") or date_str
+        followup_time = routing_decision.get("time") or period
+
+        followup_tour_facts = (
+            build_tour_facts_block(followup_tour) if followup_tour else ""
+        )
+
+        conversation_history = build_conversation_history(history)
+        knowledge = get_company_knowledge()
+
+        prompt = f"""
+You are the Sunset Oia digital assistant.
+
+IMPORTANT LANGUAGE RULE:
+- Always reply in English.
+
+TONE:
+- Warm, natural and professional
+- Keep replies short (3–5 lines)
+- Sound helpful and confident, not robotic
+
+CAPACITY FOLLOW-UP RULE:
+The user is asking a follow-up question about group size based on an already active availability context.
+
+You MUST:
+- Keep the same cruise/date context unless the user changed it
+- Answer for the group size mentioned by the user
+- Do NOT list all cruises unless truly necessary
+- First explain whether the currently discussed cruise fits the group well
+- If relevant, mention whether private also becomes worth considering
+- Do NOT ask for the date again
+- Do NOT restart the conversation flow
+
+CURRENT CONTEXT:
+- Cruise: {followup_tour}
+- Date: {followup_date}
+- Time: {followup_time}
+- Passenger count from user message: {passenger_count}
+
+BOOKING LINK:
+{BOOKING_LINK}
+
+COMPANY KNOWLEDGE:
+{knowledge}
+
+STRUCTURED TOUR FACTS:
+{followup_tour_facts}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+USER MESSAGE:
+{user_message}
+"""
+        try:
+            reply = get_ai_reply(prompt)
+            return log_and_return(
+                user_message=user_message,
+                reply=reply,
+                language=language,
+                fallback=False,
+                detected_tour=followup_tour,
+                session_id=session_id,
+            )
+        except Exception as e:
+            print("OPENAI ERROR:", e)
+
     if routing_action in {
         "comparison_answer",
         "recommendation_answer",
@@ -1781,7 +1880,12 @@ USER MESSAGE:
         )
 
     if is_base_tour_key(tour_key) and date_str:
-        clear_session_state(session_id)
+        save_availability_context_state(
+            session_id=session_id,
+            tour_key=tour_key,
+            date_str=date_str,
+            period=period,
+        )
         morning_key = f"{tour_key}_morning"
         sunset_key = f"{tour_key}_sunset"
 
@@ -1847,7 +1951,12 @@ USER MESSAGE:
         )
 
     if tour_key and date_str:
-        clear_session_state(session_id)
+        save_availability_context_state(
+            session_id=session_id,
+            tour_key=tour_key,
+            date_str=date_str,
+            period=period,
+        )
         data = safe_check_tour_availability(tour_key, date_str)
 
         is_available = is_available_result(data)
@@ -1961,7 +2070,12 @@ USER MESSAGE:
         last_tour_key, _ = get_last_tour_and_date_from_history(user_message, history)
 
         if last_tour_key:
-            clear_session_state(session_id)
+            save_availability_context_state(
+                session_id=session_id,
+                tour_key=last_tour_key,
+                date_str=date_str,
+                period=period,
+            )
             if is_base_tour_key(last_tour_key):
                 morning_key = f"{last_tour_key}_morning"
                 sunset_key = f"{last_tour_key}_sunset"
@@ -2035,7 +2149,12 @@ USER MESSAGE:
                     )
 
     if date_str or availability_intent:
-        clear_session_state(session_id)
+        save_availability_context_state(
+            session_id=session_id,
+            tour_key=tour_key,
+            date_str=date_str,
+            period=period,
+        )
         locked_tour_key = None
         locked_date = None
 
@@ -2058,6 +2177,13 @@ USER MESSAGE:
 
         if not effective_date:
             effective_date = get_effective_date(user_message, history)
+
+        save_availability_context_state(
+            session_id=session_id,
+            tour_key=effective_tour_key,
+            date_str=effective_date,
+            period=period,
+        )
 
         base_effective_tour_key = normalize_to_base_tour_key(effective_tour_key)
 

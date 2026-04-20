@@ -524,3 +524,14 @@ Instead:
 Example:
 First reply → suggest options  
 Second reply → recommend specific option
+
+## Capacity-Based Replies
+
+When the guest provides number of people:
+
+- Do NOT just list all available cruises
+- First suggest the best option for that group size
+- Then optionally show availability
+
+Example:
+"For 6 people, Diamond is a great shared option, while private also becomes very attractive."
