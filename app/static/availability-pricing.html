@@ -44,10 +44,72 @@
     }
 
     .card {
+      position: relative;
       background: var(--card);
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       padding: 24px;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          circle at 85% 20%,
+          rgba(224, 233, 245, 0.5) 0%,
+          rgba(224, 233, 245, 0.2) 20%,
+          transparent 45%
+        ),
+        linear-gradient(
+          135deg,
+          #ffffff 0%,
+          #ffffff 55%,
+          #f3f7fc 80%,
+          #edf2f8 100%
+        );
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 0;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 8px;
+    }
+
+    .top-row-left {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .top-row-right {
+      display: none;
+    }
+
+    .controls-logo-wrap {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      margin: 0 0 30px;
+      width: 100%;
+    }
+
+    .logo {
+      height: 100px;
+      max-width: 220px;
+      width: auto;
+      object-fit: contain;
+      display: block;
     }
 
     h1 {
@@ -63,12 +125,22 @@
       line-height: 1.5;
     }
 
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
     .controls {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 0;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .controls input[type="date"] {
@@ -90,11 +162,45 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, opacity 0.2s ease;
     }
 
     .controls button:hover {
       background: var(--primary-hover);
+    }
+
+    .controls button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .loader-wrap {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+    }
+
+    .loader {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #e5e7eb;
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    .loader-text {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .message {
@@ -114,6 +220,7 @@
       width: 100%;
       border-collapse: collapse;
       min-width: 640px;
+      background: transparent;
     }
 
     th,
@@ -126,7 +233,7 @@
     }
 
     th {
-      background: var(--header-bg);
+      background: rgba(249, 250, 251, 0.75);
       color: #374151;
       font-weight: 700;
     }
@@ -182,7 +289,7 @@
       border-radius: 16px;
       padding: 16px;
       margin-bottom: 14px;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.82);
     }
 
     .mobile-tour-title {
@@ -269,6 +376,28 @@
         border-radius: 18px;
       }
 
+      .card::before {
+        background:
+          radial-gradient(
+            circle at 78% 30%,
+            rgba(224, 233, 245, 0.38) 0%,
+            rgba(224, 233, 245, 0.16) 18%,
+            transparent 38%
+          ),
+          linear-gradient(
+            135deg,
+            #ffffff 0%,
+            #ffffff 62%,
+            #f5f8fc 84%,
+            #eef3f8 100%
+          );
+      }
+
+      .logo {
+        height: 78px;
+        max-width: 200px;
+      }
+
       h1 {
         font-size: 24px;
       }
@@ -276,6 +405,33 @@
       .subtitle {
         font-size: 14px;
         margin-bottom: 20px;
+      }
+
+      .controls-row {
+        gap: 18px;
+      }
+
+      table {
+        min-width: 580px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .top-row {
+        flex-direction: column;
+        align-items: stretch;
+        margin-bottom: 0;
+      }
+
+      .controls-logo-wrap {
+        justify-content: flex-start;
+        margin-bottom: 28px;
+      }
+
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
       }
 
       .controls {
@@ -292,12 +448,15 @@
         min-width: 0;
       }
 
-      table {
-        min-width: 580px;
+      .logo {
+        height: 82px;
+        max-width: 220px;
       }
-    }
 
-    @media (max-width: 640px) {
+      .loader-wrap {
+        justify-content: center;
+      }
+
       .table-wrap {
         display: none;
       }
@@ -312,6 +471,16 @@
 
       .card {
         padding: 16px;
+      }
+
+      .card::before {
+        background:
+          linear-gradient(
+            135deg,
+            #ffffff 0%,
+            #ffffff 70%,
+            #f5f8fc 100%
+          );
       }
 
       .message {
@@ -332,12 +501,27 @@
 <body>
   <div class="page">
     <div class="card">
-      <h1>Availability & Pricing</h1>
-      <p class="subtitle">Check live availability and pricing for your selected date.</p>
+      <div class="top-row">
+        <div class="top-row-left">
+          <div class="controls-logo-wrap">
+            <img src="/static/logo.png" alt="Sailing Santorini" class="logo">
+          </div>
 
-      <div class="controls">
-        <input type="date" id="dateInput" />
-        <button id="loadBtn">Check availability</button>
+          <h1>Availability & Pricing</h1>
+          <p class="subtitle">Check live availability and pricing for your selected date.</p>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div class="controls">
+          <input type="date" id="dateInput" />
+          <button id="loadBtn">Check availability</button>
+        </div>
+      </div>
+
+      <div id="loaderWrap" class="loader-wrap">
+        <div class="loader"></div>
+        <div class="loader-text">Loading availability...</div>
       </div>
 
       <div id="message" class="message">Please select a date.</div>
@@ -369,6 +553,7 @@
   <script>
     const dateInput = document.getElementById("dateInput");
     const loadBtn = document.getElementById("loadBtn");
+    const loaderWrap = document.getElementById("loaderWrap");
     const message = document.getElementById("message");
     const resultsBody = document.getElementById("resultsBody");
     const mobileList = document.getElementById("mobileList");
@@ -521,6 +706,8 @@
       }
 
       message.textContent = "Loading...";
+      loaderWrap.style.display = "flex";
+      loadBtn.disabled = true;
 
       resultsBody.innerHTML = `
         <tr>
@@ -548,6 +735,9 @@
           </tr>
         `;
         mobileList.innerHTML = `<div class="muted">Could not load data.</div>`;
+      } finally {
+        loaderWrap.style.display = "none";
+        loadBtn.disabled = false;
       }
     }
 
