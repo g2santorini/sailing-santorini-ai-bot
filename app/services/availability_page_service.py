@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Any
 
@@ -405,7 +406,7 @@ def _fetch(tour: dict[str, Any], date: str) -> dict[str, Any]:
             "pricing_type": pricing_type,
             "details": tour.get("details", ""),
             "price": None,
-            "available_spots": 0 if category == "private" else 0,
+            "available_spots": 0,
             "status": "contact_us",
         }
 
@@ -427,15 +428,54 @@ def _fetch(tour: dict[str, Any], date: str) -> dict[str, Any]:
     }
 
 
-def get_availability_page_data(date: str) -> dict[str, Any]:
+def get_availability_page_data(date: str, view: str = "shared") -> dict[str, Any]:
     try:
         datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
         raise ValueError("Date must be YYYY-MM-DD")
 
-    tours = [_fetch(t, date) for t in TOUR_CONFIG]
+    normalized_view = (view or "shared").strip().lower()
+    if normalized_view not in {"shared", "private", "all"}:
+        normalized_view = "shared"
+
+    if normalized_view == "shared":
+        selected_tours = [t for t in TOUR_CONFIG if t.get("category") == "shared"]
+    elif normalized_view == "private":
+        selected_tours = [t for t in TOUR_CONFIG if t.get("category") == "private"]
+    else:
+        selected_tours = TOUR_CONFIG
+
+    max_workers = min(12, max(1, len(selected_tours)))
+    tours_by_key: dict[str, dict[str, Any]] = {}
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_tour = {
+            executor.submit(_fetch, tour, date): tour for tour in selected_tours
+        }
+
+        for future in as_completed(future_to_tour):
+            tour = future_to_tour[future]
+            try:
+                result = future.result()
+            except Exception as exc:
+                result = {
+                    "key": tour["key"],
+                    "name": tour["name"],
+                    "category": tour.get("category", "shared"),
+                    "pricing_type": tour.get("pricing_type", "per_person"),
+                    "details": tour.get("details", ""),
+                    "price": None,
+                    "available_spots": None,
+                    "status": "error",
+                    "error": str(exc),
+                }
+
+            tours_by_key[tour["key"]] = result
+
+    tours = [tours_by_key[tour["key"]] for tour in selected_tours if tour["key"] in tours_by_key]
 
     return {
         "date": date,
+        "view": normalized_view,
         "tours": tours,
     }

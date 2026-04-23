@@ -6,9 +6,9 @@ router = APIRouter()
 
 
 @router.get("/availability-page-data")
-def availability_page_data(date: str):
+def availability_page_data(date: str, view: str = "shared"):
     try:
-        return get_availability_page_data(date)
+        return get_availability_page_data(date, view)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
