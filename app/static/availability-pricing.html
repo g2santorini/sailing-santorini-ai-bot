@@ -16,7 +16,8 @@
       --muted: #6b7280;
       --line: #e5e7eb;
       --primary: #0b3b66;
-      --primary-hover: #145c94;
+      --primary-hover: #1d6fa5;
+      --primary-soft: rgba(29, 111, 165, 0.08);
       --success-bg: #dcfce7;
       --success-text: #166534;
       --warn-bg: #fef3c7;
@@ -114,9 +115,16 @@
     }
 
     .subtitle {
-      margin: 0 0 24px;
+      margin: 0 0 8px;
       color: var(--muted);
       font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .live-note {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 13px;
       line-height: 1.5;
     }
 
@@ -215,7 +223,8 @@
     }
 
     .segment-btn:hover:not(.active) {
-      background: #f8fafc;
+      background: var(--primary-soft);
+      color: var(--primary-hover);
     }
 
     .loader-wrap {
@@ -374,9 +383,9 @@
       align-items: center;
       justify-content: center;
       padding: 8px 12px;
-      border: 1px solid rgba(11, 59, 102, 0.16);
+      border: 1px solid rgba(29, 111, 165, 0.2);
       border-radius: 999px;
-      background: rgba(11, 59, 102, 0.06);
+      background: var(--primary-soft);
       color: var(--primary);
       font-size: 13px;
       font-weight: 700;
@@ -386,8 +395,8 @@
     }
 
     .expand-btn:hover {
-      background: rgba(11, 59, 102, 0.12);
-      border-color: rgba(11, 59, 102, 0.28);
+      background: rgba(29, 111, 165, 0.18);
+      border-color: rgba(29, 111, 165, 0.4);
       color: var(--primary-hover);
     }
 
@@ -559,6 +568,10 @@
 
       .subtitle {
         font-size: 14px;
+      }
+
+      .live-note {
+        font-size: 13px;
         margin-bottom: 20px;
       }
 
@@ -696,6 +709,7 @@
 
           <h1>Availability & Pricing</h1>
           <p class="subtitle">Check live availability and pricing for your selected date.</p>
+          <p class="live-note">Live availability – results may take a few seconds.</p>
         </div>
       </div>
 
@@ -717,7 +731,7 @@
 
       <div id="loaderWrap" class="loader-wrap">
         <div class="loader"></div>
-        <div class="loader-text">Loading availability...</div>
+        <div class="loader-text">Checking live availability...</div>
       </div>
 
       <div id="message" class="message">Please select a date.</div>
@@ -816,7 +830,11 @@
         btn.classList.toggle("active", btn.dataset.view === view);
       });
 
-      applyView();
+      if (dateInput.value) {
+        loadAvailability();
+      } else {
+        applyView();
+      }
     }
 
     function applyView() {
@@ -833,11 +851,11 @@
       resultsSections.style.display = "block";
 
       if (currentView === "shared") {
-        sharedSection.style.display = "block";
+        sharedSection.style.display = sharedTours.length ? "block" : "none";
         privateSection.style.display = "none";
       } else if (currentView === "private") {
         sharedSection.style.display = "none";
-        privateSection.style.display = "block";
+        privateSection.style.display = privateTours.length ? "block" : "none";
       } else {
         sharedSection.style.display = sharedTours.length ? "block" : "none";
         privateSection.style.display = privateTours.length ? "block" : "none";
@@ -1174,15 +1192,16 @@
     }
 
     function renderRows(tours) {
-      const sharedTours = tours.filter(tour => tour.category === "shared");
-      const privateTours = tours.filter(tour => tour.category === "private");
+      const safeTours = Array.isArray(tours) ? tours : [];
+      const sharedTours = safeTours.filter(tour => tour.category === "shared");
+      const privateTours = safeTours.filter(tour => tour.category === "private");
 
       renderSharedDesktopRows(sharedTours);
       renderPrivateDesktopRows(privateTours);
       renderSharedMobileRows(sharedTours);
       renderPrivateMobileRows(privateTours);
 
-      lastLoadedTours = tours;
+      lastLoadedTours = safeTours;
       applyView();
     }
 
@@ -1223,7 +1242,7 @@
       showLoadingState();
 
       try {
-        const response = await fetch(`/availability-page-data?date=${selectedDate}`);
+        const response = await fetch(`/availability-page-data?date=${selectedDate}&view=${currentView}`);
         const data = await response.json();
 
         if (requestId !== activeRequestId) {
@@ -1235,7 +1254,7 @@
         }
 
         message.textContent = `Showing results for ${formatDisplayDate(data.date || selectedDate)}`;
-        renderRows(Array.isArray(data.tours) ? data.tours : []);
+        renderRows(data.tours);
       } catch (error) {
         if (requestId !== activeRequestId) {
           return;
