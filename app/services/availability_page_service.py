@@ -68,14 +68,14 @@ TOUR_CONFIG = [
         "name": "Diamond Morning",
         "product_id": 41,
         "option_id": 142,
-        "details": "Departure: 09:30 Amoudi port\nReturn: 14:30 Amoudi port\nMenu: BBQ prepared on the spot with fresh fish or pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water and one cocktail\nGuests: 20 max\nNeed to Bring: Towels\n https://sailing-santorini.com/itineraries/diamond-cruise-with-ipanema-58/",
+        "details": "Departure: 09:30 Amoudi port\nReturn: 14:30 Amoudi port\nMenu: BBQ prepared on the spot with fresh fish or pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water and one cocktail\nGuests: 20 max\n https://sailing-santorini.com/itineraries/diamond-cruise-with-ipanema-58/",
     },
     {
         "key": "diamond_sunset",
         "name": "Diamond Sunset",
         "product_id": 41,
         "option_id": 143,
-        "details": "Departure: 14:30 Amoudi port\nReturn: After the Sunset at Amoudi port\nMenu: BBQ prepared on the spot with fresh fish or pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water and one cocktail\nGuests: 20 max\nNeed to Bring: Towels\n https://sailing-santorini.com/itineraries/diamond-cruise-with-ipanema-58/",
+        "details": "Departure: 14:30 Amoudi port\nReturn: After the Sunset at Amoudi port\nMenu: BBQ prepared on the spot with fresh fish or pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water and one cocktail\nGuests: 20 max\n https://sailing-santorini.com/itineraries/diamond-cruise-with-ipanema-58/",
     },
 ]
 
