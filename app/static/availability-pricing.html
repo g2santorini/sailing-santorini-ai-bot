@@ -15,7 +15,6 @@
       --text: #1f2937;
       --muted: #6b7280;
       --line: #e5e7eb;
-      --header-bg: #f9fafb;
       --primary: #0b3b66;
       --primary-hover: #145c94;
       --success-bg: #dcfce7;
@@ -92,10 +91,6 @@
       min-width: 0;
     }
 
-    .top-row-right {
-      display: none;
-    }
-
     .controls-logo-wrap {
       display: flex;
       justify-content: flex-start;
@@ -130,7 +125,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 24px;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
 
     .controls {
@@ -174,6 +169,55 @@
       cursor: not-allowed;
     }
 
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 0 0 18px;
+    }
+
+    .filter-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      flex: 0 0 auto;
+    }
+
+    .segmented-control {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .segment-btn {
+      min-width: 140px;
+      padding: 11px 18px;
+      border: none;
+      border-right: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .segment-btn:last-child {
+      border-right: none;
+    }
+
+    .segment-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .segment-btn:hover:not(.active) {
+      background: #f8fafc;
+    }
+
     .loader-wrap {
       display: none;
       align-items: center;
@@ -210,6 +254,35 @@
       line-height: 1.5;
     }
 
+    .results-sections {
+      display: none;
+    }
+
+    .results-section {
+      display: none;
+      margin-top: 18px;
+    }
+
+    .section-header {
+      margin: 18px 0 18px;
+      text-align: center;
+    }
+
+    .section-line {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 0;
+    }
+
+    .section-title {
+      margin: 14px 0;
+      font-size: 24px;
+      line-height: 1.2;
+      color: var(--text);
+      font-weight: 700;
+      text-align: center;
+    }
+
     .table-wrap {
       width: 100%;
       overflow-x: auto;
@@ -221,6 +294,10 @@
       border-collapse: collapse;
       min-width: 640px;
       background: transparent;
+    }
+
+    table.private-table {
+      min-width: 560px;
     }
 
     th,
@@ -489,8 +566,20 @@
         gap: 18px;
       }
 
+      .section-title {
+        font-size: 21px;
+      }
+
+      .segment-btn {
+        min-width: 120px;
+      }
+
       table {
         min-width: 580px;
+      }
+
+      table.private-table {
+        min-width: 500px;
       }
     }
 
@@ -524,6 +613,22 @@
 
       .controls input[type="date"] {
         min-width: 0;
+      }
+
+      .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .segmented-control {
+        width: 100%;
+      }
+
+      .segment-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        padding-left: 10px;
+        padding-right: 10px;
       }
 
       .logo {
@@ -565,6 +670,10 @@
         font-size: 13px;
       }
 
+      .section-title {
+        font-size: 19px;
+      }
+
       .mobile-tour-title {
         font-size: 16px;
       }
@@ -597,6 +706,15 @@
         </div>
       </div>
 
+      <div class="filter-row">
+        <div class="filter-label">Show:</div>
+        <div class="segmented-control" id="viewSelector">
+          <button type="button" class="segment-btn active" data-view="shared">Shared</button>
+          <button type="button" class="segment-btn" data-view="private">Private</button>
+          <button type="button" class="segment-btn" data-view="all">All</button>
+        </div>
+      </div>
+
       <div id="loaderWrap" class="loader-wrap">
         <div class="loader"></div>
         <div class="loader-text">Loading availability...</div>
@@ -604,26 +722,67 @@
 
       <div id="message" class="message">Please select a date.</div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Cruise</th>
-              <th>Price</th>
-              <th>Available Spots</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="resultsBody">
-            <tr>
-              <td colspan="4" class="muted">No data loaded yet.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <div id="resultsSections" class="results-sections">
 
-      <div id="mobileList" class="mobile-list">
-        <div class="muted">No data loaded yet.</div>
+        <div id="sharedSection" class="results-section">
+          <div class="section-header">
+            <hr class="section-line">
+            <div class="section-title">Shared & Small Group Cruises</div>
+            <hr class="section-line">
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cruise</th>
+                  <th>Price</th>
+                  <th>Available Spots</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="sharedResultsBody">
+                <tr>
+                  <td colspan="4" class="muted">No data loaded yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="sharedMobileList" class="mobile-list">
+            <div class="muted">No data loaded yet.</div>
+          </div>
+        </div>
+
+        <div id="privateSection" class="results-section">
+          <div class="section-header">
+            <hr class="section-line">
+            <div class="section-title">Private Cruises</div>
+            <hr class="section-line">
+          </div>
+
+          <div class="table-wrap">
+            <table class="private-table">
+              <thead>
+                <tr>
+                  <th>Cruise</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="privateResultsBody">
+                <tr>
+                  <td colspan="3" class="muted">No data loaded yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="privateMobileList" class="mobile-list">
+            <div class="muted">No data loaded yet.</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -633,14 +792,70 @@
     const loadBtn = document.getElementById("loadBtn");
     const loaderWrap = document.getElementById("loaderWrap");
     const message = document.getElementById("message");
-    const resultsBody = document.getElementById("resultsBody");
-    const mobileList = document.getElementById("mobileList");
+    const resultsSections = document.getElementById("resultsSections");
 
-    function formatPrice(price) {
+    const sharedSection = document.getElementById("sharedSection");
+    const privateSection = document.getElementById("privateSection");
+
+    const sharedResultsBody = document.getElementById("sharedResultsBody");
+    const privateResultsBody = document.getElementById("privateResultsBody");
+
+    const sharedMobileList = document.getElementById("sharedMobileList");
+    const privateMobileList = document.getElementById("privateMobileList");
+
+    const viewSelectorButtons = Array.from(document.querySelectorAll(".segment-btn"));
+
+    let activeRequestId = 0;
+    let currentView = "shared";
+    let lastLoadedTours = [];
+
+    function setActiveView(view) {
+      currentView = view;
+
+      viewSelectorButtons.forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.view === view);
+      });
+
+      applyView();
+    }
+
+    function applyView() {
+      const hasData = Array.isArray(lastLoadedTours) && lastLoadedTours.length > 0;
+
+      if (!hasData) {
+        resultsSections.style.display = "none";
+        return;
+      }
+
+      const sharedTours = lastLoadedTours.filter(tour => tour.category === "shared");
+      const privateTours = lastLoadedTours.filter(tour => tour.category === "private");
+
+      resultsSections.style.display = "block";
+
+      if (currentView === "shared") {
+        sharedSection.style.display = "block";
+        privateSection.style.display = "none";
+      } else if (currentView === "private") {
+        sharedSection.style.display = "none";
+        privateSection.style.display = "block";
+      } else {
+        sharedSection.style.display = sharedTours.length ? "block" : "none";
+        privateSection.style.display = privateTours.length ? "block" : "none";
+      }
+    }
+
+    function formatPrice(price, pricingType) {
       if (price === null || price === undefined) {
         return "—";
       }
-      return `€${Number(price).toFixed(0)}`;
+
+      const formatted = `€${Number(price).toFixed(0)}`;
+
+      if (pricingType === "per_group_up_to_4") {
+        return `${formatted} up to 4 guests`;
+      }
+
+      return formatted;
     }
 
     function formatSpots(spots) {
@@ -654,6 +869,26 @@
         return "Please contact us";
       }
       return String(spots);
+    }
+
+    function formatDisplayDate(dateString) {
+      if (!dateString) {
+        return "";
+      }
+
+      const parts = dateString.split("-");
+      if (parts.length !== 3) {
+        return dateString;
+      }
+
+      const [year, month, day] = parts.map(Number);
+      const date = new Date(year, month - 1, day);
+
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      }).format(date);
     }
 
     function formatDetails(details) {
@@ -728,20 +963,64 @@
       return "status-unknown";
     }
 
-    function renderDesktopRows(tours) {
+    function clearResultsUI() {
+      sharedResultsBody.innerHTML = `
+        <tr>
+          <td colspan="4" class="muted"></td>
+        </tr>
+      `;
+      privateResultsBody.innerHTML = `
+        <tr>
+          <td colspan="3" class="muted"></td>
+        </tr>
+      `;
+      sharedMobileList.innerHTML = "";
+      privateMobileList.innerHTML = "";
+      resultsSections.style.display = "none";
+      sharedSection.style.display = "none";
+      privateSection.style.display = "none";
+      lastLoadedTours = [];
+    }
+
+    function showLoadingState() {
+      resultsSections.style.display = "block";
+
+      sharedSection.style.display = currentView === "private" ? "none" : "block";
+      privateSection.style.display = currentView === "shared" ? "none" : "block";
+
+      sharedResultsBody.innerHTML = `
+        <tr>
+          <td colspan="4" class="muted">Loading data...</td>
+        </tr>
+      `;
+      privateResultsBody.innerHTML = `
+        <tr>
+          <td colspan="3" class="muted">Loading data...</td>
+        </tr>
+      `;
+
+      sharedMobileList.innerHTML = `<div class="muted">Loading data...</div>`;
+      privateMobileList.innerHTML = `<div class="muted">Loading data...</div>`;
+    }
+
+    function showEmptyTableState(targetBody, colspan, text) {
+      targetBody.innerHTML = `
+        <tr>
+          <td colspan="${colspan}" class="muted">${text}</td>
+        </tr>
+      `;
+    }
+
+    function renderSharedDesktopRows(tours) {
       if (!Array.isArray(tours) || tours.length === 0) {
-        resultsBody.innerHTML = `
-          <tr>
-            <td colspan="4" class="muted">No results found.</td>
-          </tr>
-        `;
+        showEmptyTableState(sharedResultsBody, 4, "No shared cruises found.");
         return;
       }
 
-      resultsBody.innerHTML = tours.map((tour, index) => {
+      sharedResultsBody.innerHTML = tours.map((tour, index) => {
         const statusLabel = getStatusLabel(tour.status, tour.available_spots);
         const statusClass = getStatusClass(tour.status, tour.available_spots);
-        const detailsId = `desktop-details-${index}`;
+        const detailsId = `shared-desktop-details-${index}`;
 
         return `
           <tr>
@@ -753,7 +1032,7 @@
                 </button>
               </div>
             </td>
-            <td>${formatPrice(tour.price)}</td>
+            <td>${formatPrice(tour.price, tour.pricing_type)}</td>
             <td>${formatSpots(tour.available_spots)}</td>
             <td>
               <span class="status-badge ${statusClass}">
@@ -770,18 +1049,55 @@
       }).join("");
     }
 
-    function renderMobileRows(tours) {
+    function renderPrivateDesktopRows(tours) {
       if (!Array.isArray(tours) || tours.length === 0) {
-        mobileList.innerHTML = `<div class="muted">No results found.</div>`;
+        showEmptyTableState(privateResultsBody, 3, "No private cruises found.");
         return;
       }
 
-      mobileList.innerHTML = tours.map((tour, index) => {
+      privateResultsBody.innerHTML = tours.map((tour, index) => {
+        const statusLabel = getStatusLabel(tour.status, tour.available_spots);
+        const statusClass = getStatusClass(tour.status, tour.available_spots);
+        const detailsId = `private-desktop-details-${index}`;
+
+        return `
+          <tr>
+            <td>
+              <div class="desktop-tour-name">
+                <span class="tour-name-text">${tour.name ?? "—"}</span>
+                <button class="expand-btn" type="button" onclick="toggleDesktopDetails('${detailsId}', this)">
+                  Tour Info
+                </button>
+              </div>
+            </td>
+            <td>${formatPrice(tour.price, tour.pricing_type)}</td>
+            <td>
+              <span class="status-badge ${statusClass}">
+                ${statusLabel}
+              </span>
+            </td>
+          </tr>
+          <tr id="${detailsId}" class="details-row">
+            <td colspan="3" class="details-cell">
+              <div class="details-box">${formatDetails(tour.details)}</div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderSharedMobileRows(tours) {
+      if (!Array.isArray(tours) || tours.length === 0) {
+        sharedMobileList.innerHTML = `<div class="muted">No shared cruises found.</div>`;
+        return;
+      }
+
+      sharedMobileList.innerHTML = tours.map((tour, index) => {
         const statusLabel = getStatusLabel(tour.status, tour.available_spots);
         const statusClass = getStatusClass(tour.status, tour.available_spots);
         const spotsValue = formatSpots(tour.available_spots);
         const spotsClass = spotsValue.length > 12 ? "mobile-value text-wrap" : "mobile-value";
-        const detailsId = `mobile-details-${index}`;
+        const detailsId = `shared-mobile-details-${index}`;
 
         return `
           <div class="mobile-tour-card">
@@ -789,7 +1105,7 @@
 
             <div class="mobile-tour-row">
               <div class="mobile-label">Price</div>
-              <div class="mobile-value">${formatPrice(tour.price)}</div>
+              <div class="mobile-value text-wrap">${formatPrice(tour.price, tour.pricing_type)}</div>
             </div>
 
             <div class="mobile-tour-row">
@@ -817,9 +1133,57 @@
       }).join("");
     }
 
+    function renderPrivateMobileRows(tours) {
+      if (!Array.isArray(tours) || tours.length === 0) {
+        privateMobileList.innerHTML = `<div class="muted">No private cruises found.</div>`;
+        return;
+      }
+
+      privateMobileList.innerHTML = tours.map((tour, index) => {
+        const statusLabel = getStatusLabel(tour.status, tour.available_spots);
+        const statusClass = getStatusClass(tour.status, tour.available_spots);
+        const detailsId = `private-mobile-details-${index}`;
+
+        return `
+          <div class="mobile-tour-card">
+            <div class="mobile-tour-title">${tour.name ?? "—"}</div>
+
+            <div class="mobile-tour-row">
+              <div class="mobile-label">Price</div>
+              <div class="mobile-value text-wrap">${formatPrice(tour.price, tour.pricing_type)}</div>
+            </div>
+
+            <div class="mobile-tour-row mobile-status-row">
+              <div class="mobile-label">Status</div>
+              <div class="mobile-value">
+                <span class="status-badge ${statusClass}">
+                  ${statusLabel}
+                </span>
+              </div>
+            </div>
+
+            <div class="mobile-expand-wrap">
+              <button class="expand-btn" type="button" onclick="toggleMobileDetails('${detailsId}', this)">
+                Tour Info
+              </button>
+              <div id="${detailsId}" class="mobile-details">${formatDetails(tour.details)}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
     function renderRows(tours) {
-      renderDesktopRows(tours);
-      renderMobileRows(tours);
+      const sharedTours = tours.filter(tour => tour.category === "shared");
+      const privateTours = tours.filter(tour => tour.category === "private");
+
+      renderSharedDesktopRows(sharedTours);
+      renderPrivateDesktopRows(privateTours);
+      renderSharedMobileRows(sharedTours);
+      renderPrivateMobileRows(privateTours);
+
+      lastLoadedTours = tours;
+      applyView();
     }
 
     function toggleDesktopDetails(detailsId, button) {
@@ -845,46 +1209,70 @@
 
       if (!selectedDate) {
         message.textContent = "Please select a date first.";
+        clearResultsUI();
         return;
       }
 
-      message.textContent = "Loading...";
+      const requestId = ++activeRequestId;
+
+      message.textContent = `Showing results for ${formatDisplayDate(selectedDate)}`;
       loaderWrap.style.display = "flex";
       loadBtn.disabled = true;
 
-      resultsBody.innerHTML = `
-        <tr>
-          <td colspan="4" class="muted">Loading data...</td>
-        </tr>
-      `;
-
-      mobileList.innerHTML = `<div class="muted">Loading data...</div>`;
+      clearResultsUI();
+      showLoadingState();
 
       try {
         const response = await fetch(`/availability-page-data?date=${selectedDate}`);
         const data = await response.json();
 
+        if (requestId !== activeRequestId) {
+          return;
+        }
+
         if (!response.ok) {
           throw new Error(data.detail || "Failed to load availability.");
         }
 
-        message.textContent = `Showing results for ${data.date}`;
-        renderRows(data.tours);
+        message.textContent = `Showing results for ${formatDisplayDate(data.date || selectedDate)}`;
+        renderRows(Array.isArray(data.tours) ? data.tours : []);
       } catch (error) {
+        if (requestId !== activeRequestId) {
+          return;
+        }
+
         message.textContent = `Error: ${error.message}`;
-        resultsBody.innerHTML = `
-          <tr>
-            <td colspan="4" class="muted">Could not load data.</td>
-          </tr>
-        `;
-        mobileList.innerHTML = `<div class="muted">Could not load data.</div>`;
+        clearResultsUI();
       } finally {
-        loaderWrap.style.display = "none";
-        loadBtn.disabled = false;
+        if (requestId === activeRequestId) {
+          loaderWrap.style.display = "none";
+          loadBtn.disabled = false;
+        }
       }
     }
 
+    function handleDateChange() {
+      const selectedDate = dateInput.value;
+
+      if (!selectedDate) {
+        message.textContent = "Please select a date.";
+        clearResultsUI();
+        loaderWrap.style.display = "none";
+        loadBtn.disabled = false;
+        return;
+      }
+
+      loadAvailability();
+    }
+
+    viewSelectorButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setActiveView(button.dataset.view);
+      });
+    });
+
     loadBtn.addEventListener("click", loadAvailability);
+    dateInput.addEventListener("change", handleDateChange);
 
     const today = new Date();
     const yyyy = today.getFullYear();
