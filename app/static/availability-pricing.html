@@ -280,6 +280,64 @@
       color: var(--muted);
     }
 
+    .desktop-tour-name {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .tour-name-text {
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .expand-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border: 1px solid rgba(11, 59, 102, 0.16);
+      border-radius: 999px;
+      background: rgba(11, 59, 102, 0.06);
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      text-align: left;
+    }
+
+    .expand-btn:hover {
+      background: rgba(11, 59, 102, 0.12);
+      border-color: rgba(11, 59, 102, 0.28);
+      color: var(--primary-hover);
+    }
+
+    .details-row {
+      display: none;
+    }
+
+    .details-row.open {
+      display: table-row;
+    }
+
+    .details-cell {
+      padding-top: 0;
+      padding-bottom: 16px;
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    .details-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: rgba(249, 250, 251, 0.9);
+      color: var(--text);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
     .mobile-list {
       display: none;
     }
@@ -363,6 +421,26 @@
       font-size: 12px;
       padding: 6px 10px;
       min-height: 32px;
+    }
+
+    .mobile-expand-wrap {
+      margin-top: 12px;
+    }
+
+    .mobile-details {
+      display: none;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: rgba(249, 250, 251, 0.9);
+      color: var(--text);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .mobile-details.open {
+      display: block;
     }
 
     @media (max-width: 768px) {
@@ -578,6 +656,32 @@
       return String(spots);
     }
 
+    function formatDetails(details) {
+      if (!details) {
+        return "—";
+      }
+
+      return details
+        .split("\n")
+        .map(line => {
+          const urlMatch = line.match(/https?:\/\/\S+/);
+
+          if (urlMatch) {
+            const url = urlMatch[0];
+
+            return line.replace(
+              url,
+              `<a href="${url}" target="_blank" style="color:#0b3b66; font-weight:600; text-decoration: underline;">
+                More Information
+              </a>`
+            );
+          }
+
+          return line;
+        })
+        .join("<br>");
+    }
+
     function getStatusLabel(status, spots) {
       if (status === "available") {
         if (typeof spots === "number" && spots <= 10) {
@@ -634,19 +738,32 @@
         return;
       }
 
-      resultsBody.innerHTML = tours.map((tour) => {
+      resultsBody.innerHTML = tours.map((tour, index) => {
         const statusLabel = getStatusLabel(tour.status, tour.available_spots);
         const statusClass = getStatusClass(tour.status, tour.available_spots);
+        const detailsId = `desktop-details-${index}`;
 
         return `
           <tr>
-            <td>${tour.name ?? "—"}</td>
+            <td>
+              <div class="desktop-tour-name">
+                <span class="tour-name-text">${tour.name ?? "—"}</span>
+                <button class="expand-btn" type="button" onclick="toggleDesktopDetails('${detailsId}', this)">
+                  Tour Info
+                </button>
+              </div>
+            </td>
             <td>${formatPrice(tour.price)}</td>
             <td>${formatSpots(tour.available_spots)}</td>
             <td>
               <span class="status-badge ${statusClass}">
                 ${statusLabel}
               </span>
+            </td>
+          </tr>
+          <tr id="${detailsId}" class="details-row">
+            <td colspan="4" class="details-cell">
+              <div class="details-box">${formatDetails(tour.details)}</div>
             </td>
           </tr>
         `;
@@ -659,11 +776,12 @@
         return;
       }
 
-      mobileList.innerHTML = tours.map((tour) => {
+      mobileList.innerHTML = tours.map((tour, index) => {
         const statusLabel = getStatusLabel(tour.status, tour.available_spots);
         const statusClass = getStatusClass(tour.status, tour.available_spots);
         const spotsValue = formatSpots(tour.available_spots);
         const spotsClass = spotsValue.length > 12 ? "mobile-value text-wrap" : "mobile-value";
+        const detailsId = `mobile-details-${index}`;
 
         return `
           <div class="mobile-tour-card">
@@ -687,6 +805,13 @@
                 </span>
               </div>
             </div>
+
+            <div class="mobile-expand-wrap">
+              <button class="expand-btn" type="button" onclick="toggleMobileDetails('${detailsId}', this)">
+                Tour Info
+              </button>
+              <div id="${detailsId}" class="mobile-details">${formatDetails(tour.details)}</div>
+            </div>
           </div>
         `;
       }).join("");
@@ -695,6 +820,24 @@
     function renderRows(tours) {
       renderDesktopRows(tours);
       renderMobileRows(tours);
+    }
+
+    function toggleDesktopDetails(detailsId, button) {
+      const row = document.getElementById(detailsId);
+      if (!row) return;
+
+      const isOpen = row.classList.contains("open");
+      row.classList.toggle("open");
+      button.textContent = isOpen ? "Tour Info" : "Hide Info";
+    }
+
+    function toggleMobileDetails(detailsId, button) {
+      const box = document.getElementById(detailsId);
+      if (!box) return;
+
+      const isOpen = box.classList.contains("open");
+      box.classList.toggle("open");
+      button.textContent = isOpen ? "Tour Info" : "Hide Info";
     }
 
     async function loadAvailability() {
