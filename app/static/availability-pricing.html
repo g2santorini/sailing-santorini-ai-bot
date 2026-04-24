@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Availability & Pricing</title>
+  <title>Availability & Pricing Sunset Oia</title>
   <style>
     * {
       box-sizing: border-box;
@@ -529,6 +529,61 @@
       display: block;
     }
 
+    .site-footer {
+      margin-top: 18px;
+      padding: 28px 34px;
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1.2fr 1.1fr 0.8fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .footer-col {
+      min-height: 110px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .footer-col + .footer-col {
+      border-left: 1px solid var(--line);
+      padding-left: 34px;
+    }
+
+    .footer-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .footer-line {
+      margin: 8px 0;
+      line-height: 1.4;
+    }
+
+    .site-footer a {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .footer-bottom {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
     @media (max-width: 768px) {
       .page {
         margin: 18px auto;
@@ -695,6 +750,31 @@
         flex: 0 0 100px;
         min-width: 100px;
       }
+
+      .site-footer {
+        padding: 24px 18px;
+        text-align: center;
+      }
+
+      .footer-top {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .footer-col {
+        min-height: auto;
+        padding: 20px 0;
+      }
+
+      .footer-col + .footer-col {
+        border-left: none;
+        border-top: 1px solid var(--line);
+        padding-left: 0;
+      }
+
+      .footer-bottom {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -799,6 +879,42 @@
 
       </div>
     </div>
+
+    <footer class="site-footer">
+      <div class="footer-top">
+        <div class="footer-col">
+          <div class="footer-title">Contact Us</div>
+          <div class="footer-line">
+            Tel: <a href="tel:+302286072200">+30 22860 72200</a>
+          </div>
+          <div class="footer-line">
+            WhatsApp: <a href="https://wa.me/306972805193" target="_blank" rel="noopener">+30 6972 805193</a>
+          </div>
+          <div class="footer-line">
+            Email: <a href="mailto:reservations@sunset-oia.com">reservations@sunset-oia.com</a>
+          </div>
+
+          
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-line">GNTO License Number (M.H.T.E):</div>
+          <div class="footer-line">1167E60001114901</div>
+          <div class="footer-line">GEMI: 170410038000</div>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-line">
+            <a href="/static/privacy-policy.html">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        © Copyright 2026 Sunset Oia Sailing Santorini All Rights Reserved<br>
+        Web Design &amp; Development by Sunset Oia Team
+      </div>
+    </footer>
   </div>
 
   <script>

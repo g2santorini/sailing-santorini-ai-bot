@@ -105,7 +105,7 @@ TOUR_CONFIG = [
         "pricing_type": "per_group_up_to_4",
         "product_id": 42,
         "option_id": 241,
-        "details": "Departure: 10:15 Amoudi port\nReturn: 14:30 Vlychada port\nMenu: BBQ prepared on the spot with pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta and fresh fish available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water\nGuests: 8 max\n https://sailing-santorini.com/itineraries/private-lagoon-380-400/",
+        "details": "Departure: 10:15 Amoudi port\nReturn: 15:00 Vlychada port\nMenu: BBQ prepared on the spot with pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta and fresh fish available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water\nGuests: 8 max\n https://sailing-santorini.com/itineraries/private-lagoon-380-400/",
     },
     {
         "key": "lagoon380_private_sunset",
@@ -123,7 +123,7 @@ TOUR_CONFIG = [
         "pricing_type": "per_group_up_to_4",
         "product_id": 42,
         "option_id": 144,
-        "details": "Departure: 10:15 Amoudi port\nReturn: 14:30 Vlychada port\nMenu: BBQ prepared on the spot with pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta and fresh fish available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water\nGuests: 14 max\n https://sailing-santorini.com/itineraries/private-lagoon-380-400/",
+        "details": "Departure: 10:15 Amoudi port\nReturn: 15:00 Vlychada port\nMenu: BBQ prepared on the spot with pork chops or chicken fillet or grilled vegetables (vegetarians), sea food (Shrimps saganaki), pasta with red sauce, stuffed vine leaves with rice, tzatziki, Greek salad and pita bread. Gluten free pasta and fresh fish available (prior notice required)\nDrinks: soft drinks, white local wine, beer, water\nGuests: 14 max\n https://sailing-santorini.com/itineraries/private-lagoon-380-400/",
     },
     {
         "key": "lagoon400_private_sunset",
